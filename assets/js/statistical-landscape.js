@@ -5,21 +5,22 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   DRAMATIC INTERACTIVE TOPOGRAPHIC LANDSCAPE
+   INTERACTIVE TOPOGRAPHIC LANDSCAPE
 
    File: assets/js/statistical-landscape.js
-   Version: 7.0
+   Version: 8.0
 
-   Features:
-   - Dramatic asymmetric mountains and valleys
-   - Sharp ridges and irregular formations
-   - Low-angle cinematic perspective
-   - Crisp, thick elevation contours
-   - No motion blur or trailing lines
+   Improvements:
+   - Reduced vertical exaggeration
+   - More balanced camera perspective
+   - Automatic terrain framing
+   - Peaks remain inside the viewport
+   - Irregular ridges and valleys preserved
+   - Crisp, thick contour lines
    - Orange elevation highlighting
-   - Slow camera flyover
-   - Stationary terrain geometry
-   - Responsive rendering
+   - Slow cinematic camera movement
+   - No motion blur
+   - Responsive desktop and mobile
    - Reduced-motion support
 
    Requires Three.js 0.160.1 and import map.
@@ -54,7 +55,7 @@ if (container && cover) {
 
 
 /* ==========================================================
-   02 / MAIN
+   02 / INITIALIZE
    ========================================================== */
 
 function initializeLandscape() {
@@ -67,46 +68,59 @@ function initializeLandscape() {
 
     background: 0x0180a5,
 
-    /* Terrain dimensions */
+    /* Terrain */
 
     worldWidth: 34,
     worldDepth: 24,
 
-    /* Sampling resolution */
+    verticalScale: 0.95,
+
+    /* Sampling */
 
     desktopResolution: 190,
     tabletResolution: 135,
     mobileResolution: 90,
 
-    /* Number of elevation levels */
+    /* Elevation contours */
 
     desktopContours: 38,
     tabletContours: 28,
     mobileContours: 19,
 
-    /* Vertical exaggeration */
+    contourOffset: 0.035,
 
-    verticalScale: 1.45,
-
-    /* Contour appearance */
+    /* Lines */
 
     lineWidth: 2.5,
     mobileLineWidth: 1.8,
 
-    contourOffset: 0.035,
-
-    /* Orange elevation highlight */
+    /* Highlight */
 
     highlightColor: 0xff9345,
     highlightWidth: 0.8,
     highlightResponse: 0.15,
 
-    /* Camera movement */
+    /* Camera */
+
+    cameraFov: 48,
+
+    /*
+     * Fraction of the available viewport occupied
+     * by the automatically framed landscape.
+
+     * Smaller values create more breathing room.
+     */
+
+    frameMargin: 0.82,
+
+    /*
+     * Slow ambient movement.
+     */
 
     flyoverSpeed: 0.13,
-    flyoverDistance: 1.25,
+    flyoverDistance: 0.65,
 
-    cameraSway: 0.35,
+    cameraSway: 0.20,
     cameraSwaySpeed: 0.11,
 
     /* Rendering */
@@ -117,7 +131,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     04 / FULL-COVER POSITIONING
+     04 / COVER POSITIONING
      ======================================================== */
 
   Object.assign(container.style, {
@@ -153,8 +167,9 @@ function initializeLandscape() {
   let elapsedTime = 0;
 
   let isSectionVisible = true;
-
   let currentDimensions = "";
+
+  let terrainBounds = null;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -172,31 +187,28 @@ function initializeLandscape() {
 
   /* ========================================================
      07 / CAMERA
-
-     A low viewpoint creates a stronger sense of scale.
-
-     The camera looks across the landscape rather than
-     down at it from above.
      ======================================================== */
 
   const camera = new THREE.PerspectiveCamera(
-    43,
+    SETTINGS.cameraFov,
     1,
     0.1,
-    150
+    250
   );
 
   const cameraBase = new THREE.Vector3(
     0,
-    5.4,
-    17
+    9,
+    23
   );
 
   const cameraTarget = new THREE.Vector3(
     0,
-    2.3,
-    -3.5
+    2.5,
+    0
   );
+
+  const cameraDirection = new THREE.Vector3();
 
   camera.position.copy(cameraBase);
   camera.lookAt(cameraTarget);
@@ -243,16 +255,13 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     09 / MATHEMATICAL TERRAIN HELPERS
+     09 / TERRAIN HELPERS
      ======================================================== */
 
   function gaussian(
-    x,
-    z,
-    centerX,
-    centerZ,
-    widthX,
-    widthZ,
+    x, z,
+    centerX, centerZ,
+    widthX, widthZ,
     height
   ) {
 
@@ -265,21 +274,11 @@ function initializeLandscape() {
   }
 
 
-  /*
-   * Rotated, elongated ridge.
-   *
-   * Unlike a circular Gaussian hill, this produces
-   * directional formations resembling mountain ridges.
-   */
-
   function ridge(
-    x,
-    z,
-    centerX,
-    centerZ,
+    x, z,
+    centerX, centerZ,
     angle,
-    length,
-    width,
+    length, width,
     height
   ) {
 
@@ -305,27 +304,15 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     10 / DRAMATIC ASYMMETRIC TERRAIN
+     10 / ASYMMETRIC TERRAIN
 
-     This surface combines:
+     The same irregular mountain formations as Version 7,
+     with reduced vertical exaggeration.
 
-     - Large elongated mountain ridges
-     - Sharp secondary peaks
-     - Narrow valleys
-     - Coordinate warping
-     - Smaller irregular formations
-
-     The result is intentionally not symmetrical.
+     The geometry remains stationary.
      ======================================================== */
 
   function terrainHeight(x, z) {
-
-    /* ------------------------------------------------------
-       Coordinate warping
-
-       Warping prevents formations from appearing like
-       perfectly symmetrical mathematical domes.
-       ------------------------------------------------------ */
 
     const warpedX =
       x +
@@ -338,155 +325,88 @@ function initializeLandscape() {
       0.45 * Math.sin(x * 0.9 + z * 0.2);
 
 
-    /* ------------------------------------------------------
-       Major mountain formations
-       ------------------------------------------------------ */
+    /* Major ridges */
 
     const mountainOne = ridge(
-      warpedX,
-      warpedZ,
-      -10,
-      -3,
-      0.45,
-      7.2,
-      1.8,
-      5.8
+      warpedX, warpedZ,
+      -10, -3,
+      0.45, 7.2, 1.8, 5.8
     );
 
     const mountainTwo = ridge(
-      warpedX,
-      warpedZ,
-      -3,
-      -7,
-      -0.35,
-      5.5,
-      1.4,
-      7.4
+      warpedX, warpedZ,
+      -3, -7,
+      -0.35, 5.5, 1.4, 7.4
     );
 
     const mountainThree = ridge(
-      warpedX,
-      warpedZ,
-      5,
-      -1.5,
-      0.85,
-      6.8,
-      1.65,
-      8.6
+      warpedX, warpedZ,
+      5, -1.5,
+      0.85, 6.8, 1.65, 8.6
     );
 
     const mountainFour = ridge(
-      warpedX,
-      warpedZ,
-      12,
-      -5,
-      -0.55,
-      4.6,
-      1.25,
-      6.9
+      warpedX, warpedZ,
+      12, -5,
+      -0.55, 4.6, 1.25, 6.9
     );
 
 
-    /* ------------------------------------------------------
-       Smaller sharp peaks
-       ------------------------------------------------------ */
+    /* Secondary peaks */
 
     const peakOne = gaussian(
-      warpedX,
-      warpedZ,
-      -13,
-      4,
-      2.2,
-      1.8,
-      4.1
+      warpedX, warpedZ,
+      -13, 4,
+      2.2, 1.8, 4.1
     );
 
     const peakTwo = gaussian(
-      warpedX,
-      warpedZ,
-      -5,
-      3,
-      1.7,
-      2.1,
-      5.4
+      warpedX, warpedZ,
+      -5, 3,
+      1.7, 2.1, 5.4
     );
 
     const peakThree = gaussian(
-      warpedX,
-      warpedZ,
-      1,
-      -9,
-      1.5,
-      1.8,
-      4.9
+      warpedX, warpedZ,
+      1, -9,
+      1.5, 1.8, 4.9
     );
 
     const peakFour = gaussian(
-      warpedX,
-      warpedZ,
-      10,
-      5,
-      2.1,
-      1.6,
-      5.6
+      warpedX, warpedZ,
+      10, 5,
+      2.1, 1.6, 5.6
     );
 
     const peakFive = gaussian(
-      warpedX,
-      warpedZ,
-      15,
-      1,
-      1.5,
-      2.2,
-      4.4
+      warpedX, warpedZ,
+      15, 1,
+      1.5, 2.2, 4.4
     );
 
 
-    /* ------------------------------------------------------
-       Deep valleys
-
-       Negative formations carve channels between peaks.
-       ------------------------------------------------------ */
+    /* Valleys */
 
     const valleyOne = ridge(
-      warpedX,
-      warpedZ,
-      -7,
-      -1,
-      -0.4,
-      8,
-      0.85,
-      -3.8
+      warpedX, warpedZ,
+      -7, -1,
+      -0.4, 8, 0.85, -3.8
     );
 
     const valleyTwo = ridge(
-      warpedX,
-      warpedZ,
-      3,
-      4,
-      0.65,
-      7,
-      1.1,
-      -4.6
+      warpedX, warpedZ,
+      3, 4,
+      0.65, 7, 1.1, -4.6
     );
 
     const valleyThree = ridge(
-      warpedX,
-      warpedZ,
-      11,
-      -1,
-      -0.8,
-      5,
-      0.75,
-      -3.5
+      warpedX, warpedZ,
+      11, -1,
+      -0.8, 5, 0.75, -3.5
     );
 
 
-    /* ------------------------------------------------------
-       Fine topographic variation
-
-       Creates irregular slopes and smaller ridges.
-       ------------------------------------------------------ */
+    /* Fine irregularities */
 
     const fineVariation =
       0.35 * Math.sin(
@@ -504,10 +424,6 @@ function initializeLandscape() {
         warpedZ * 1.4
       );
 
-
-    /* ------------------------------------------------------
-       Combine formations
-       ------------------------------------------------------ */
 
     const elevation =
       mountainOne +
@@ -597,20 +513,12 @@ function initializeLandscape() {
           -SETTINGS.worldWidth / 2 +
           col * stepX;
 
-        const height =
-          terrainHeight(x, z);
+        const height = terrainHeight(x, z);
 
         values.push(height);
 
-        minimum = Math.min(
-          minimum,
-          height
-        );
-
-        maximum = Math.max(
-          maximum,
-          height
-        );
+        minimum = Math.min(minimum, height);
+        maximum = Math.max(maximum, height);
       }
 
       heights.push(values);
@@ -628,11 +536,6 @@ function initializeLandscape() {
 
   /* ========================================================
      13 / MARCHING SQUARES
-
-     Extracts fixed elevation contours from the terrain.
-
-     Saddle cases use a centre-value decision to avoid
-     arbitrary crossings.
      ======================================================== */
 
   function extractContourSegments(
@@ -681,14 +584,10 @@ function initializeLandscape() {
 
       for (let col = 0; col < resolution - 1; col++) {
 
-        const x0 =
-          -halfWidth + col * stepX;
-
+        const x0 = -halfWidth + col * stepX;
         const x1 = x0 + stepX;
 
-        const z0 =
-          -halfDepth + row * stepZ;
-
+        const z0 = -halfDepth + row * stepZ;
         const z1 = z0 + stepZ;
 
         const A = heights[row][col];
@@ -798,10 +697,6 @@ function initializeLandscape() {
 
   /* ========================================================
      15 / LINE MATERIAL
-
-     Uses true screen-space line width.
-
-     No glow or duplicate motion trails.
      ======================================================== */
 
   function createLineMaterial(
@@ -856,11 +751,6 @@ function initializeLandscape() {
 
   /* ========================================================
      17 / BUILD CONTOURS
-
-     One LineSegments2 object per elevation level.
-
-     This avoids creating thousands of individual
-     Three.js objects.
      ======================================================== */
 
   function buildContours() {
@@ -876,6 +766,24 @@ function initializeLandscape() {
     const maximum =
       terrain.minimum +
       (terrain.maximum - terrain.minimum) * 0.965;
+
+
+    /* ------------------------------------------------------
+       Save terrain bounds for automatic camera framing.
+       ------------------------------------------------------ */
+
+    terrainBounds = new THREE.Box3(
+      new THREE.Vector3(
+        -SETTINGS.worldWidth / 2,
+        terrain.minimum,
+        -SETTINGS.worldDepth / 2
+      ),
+      new THREE.Vector3(
+        SETTINGS.worldWidth / 2,
+        terrain.maximum,
+        SETTINGS.worldDepth / 2
+      )
+    );
 
 
     for (let i = 0; i < contourCount; i++) {
@@ -903,7 +811,6 @@ function initializeLandscape() {
         const [start, end] = segment;
 
         positions.push(
-
           start[0],
           elevation + SETTINGS.contourOffset,
           start[1],
@@ -911,25 +818,18 @@ function initializeLandscape() {
           end[0],
           elevation + SETTINGS.contourOffset,
           end[1]
-
         );
       }
 
-      if (!positions.length) {
-        continue;
-      }
+      if (!positions.length) continue;
 
       const geometry =
         new LineSegmentsGeometry();
 
-      geometry.setPositions(
-        positions
-      );
+      geometry.setPositions(positions);
 
       const baseColor =
-        baseColors[
-          i % baseColors.length
-        ].clone();
+        baseColors[i % baseColors.length].clone();
 
       const material =
         createLineMaterial(
@@ -948,13 +848,11 @@ function initializeLandscape() {
       scene.add(line);
 
       contourLines.push({
-
         line,
         material,
         baseColor,
         normalized,
         elevation
-
       });
     }
 
@@ -963,11 +861,153 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     18 / ORANGE ELEVATION HIGHLIGHT
+     18 / AUTOMATIC CAMERA FRAMING
 
-     Only colour changes.
+     Determine a safe camera distance using the actual
+     sampled terrain bounds.
 
-     Terrain and contour geometry remain stationary.
+     All eight bounding-box corners must fit inside
+     the viewport with a margin.
+
+     The flyover is included in the framing allowance.
+     ======================================================== */
+
+  function frameTerrain() {
+
+    if (!terrainBounds) return;
+
+    const center = terrainBounds.getCenter(
+      new THREE.Vector3()
+    );
+
+    cameraTarget.copy(center);
+
+    /*
+     * Camera direction maintains a moderately elevated
+     * perspective without returning to the old top-down
+     * view.
+     */
+
+    const aspect = viewportWidth / viewportHeight;
+
+    if (aspect < 0.8) {
+
+      cameraDirection.set(0, 0.48, 1);
+
+    } else if (aspect < 1.4) {
+
+      cameraDirection.set(0, 0.40, 1);
+
+    } else {
+
+      cameraDirection.set(0, 0.34, 1);
+    }
+
+    cameraDirection.normalize();
+
+    const corners = [];
+
+    for (const x of [
+      terrainBounds.min.x,
+      terrainBounds.max.x
+    ]) {
+
+      for (const y of [
+        terrainBounds.min.y,
+        terrainBounds.max.y
+      ]) {
+
+        for (const z of [
+          terrainBounds.min.z,
+          terrainBounds.max.z
+        ]) {
+
+          corners.push(
+            new THREE.Vector3(x, y, z)
+          );
+        }
+      }
+    }
+
+    const margin = SETTINGS.frameMargin;
+
+    /*
+     * Test whether every bounding-box corner is inside
+     * the desired screen-space margin.
+     */
+
+    function fitsAtDistance(distance) {
+
+      camera.position.copy(
+        cameraTarget
+      ).addScaledVector(
+        cameraDirection,
+        distance
+      );
+
+      camera.lookAt(cameraTarget);
+      camera.updateMatrixWorld();
+
+      for (const corner of corners) {
+
+        const projected = corner.clone().project(camera);
+
+        if (
+          !Number.isFinite(projected.x) ||
+          !Number.isFinite(projected.y) ||
+          !Number.isFinite(projected.z) ||
+          Math.abs(projected.x) > margin ||
+          Math.abs(projected.y) > margin ||
+          projected.z >= 1 ||
+          projected.z <= -1
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    /*
+     * Binary search for the nearest safe camera position.
+     */
+
+    let near = 1;
+    let far = 200;
+
+    for (let i = 0; i < 32; i++) {
+
+      const middle = (near + far) / 2;
+
+      if (fitsAtDistance(middle)) {
+        far = middle;
+      } else {
+        near = middle;
+      }
+    }
+
+    /*
+     * Additional room for camera flyover.
+     */
+
+    const safeDistance =
+      far + SETTINGS.flyoverDistance * 1.5;
+
+    cameraBase.copy(cameraTarget)
+      .addScaledVector(
+        cameraDirection,
+        safeDistance
+      );
+
+    camera.position.copy(cameraBase);
+    camera.lookAt(cameraTarget);
+
+    camera.updateMatrixWorld();
+  }
+
+
+  /* ========================================================
+     19 / ORANGE ELEVATION HIGHLIGHT
      ======================================================== */
 
   function updateHighlight(
@@ -990,11 +1030,10 @@ function initializeLandscape() {
           currentElevation
         );
 
-      const influence =
-        Math.exp(
-          -(distance * distance) /
-          (2 * width * width)
-        );
+      const influence = Math.exp(
+        -(distance * distance) /
+        (2 * width * width)
+      );
 
       contour.material.color
         .copy(contour.baseColor)
@@ -1010,12 +1049,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     19 / POINTER INTERACTION
-
-     Mouse height selects elevation.
-
-     Top = higher contours.
-     Bottom = lower contours.
+     20 / POINTER INTERACTION
      ======================================================== */
 
   function handlePointer(event) {
@@ -1043,7 +1077,6 @@ function initializeLandscape() {
     }
   }
 
-
   container.addEventListener(
     "pointermove",
     handlePointer,
@@ -1057,16 +1090,14 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     20 / CINEMATIC CAMERA FLYOVER
+     21 / CAMERA FLYOVER
 
-     Gentle camera travel.
+     Camera moves gently toward and away from the terrain.
 
-     No terrain animation or deformation.
+     The terrain geometry remains stationary.
      ======================================================== */
 
-  function updateCamera(
-    deltaSeconds
-  ) {
+  function updateCamera(deltaSeconds) {
 
     if (reducedMotion.matches) return;
 
@@ -1074,34 +1105,31 @@ function initializeLandscape() {
 
     const forward =
       Math.sin(
-        elapsedTime *
-        SETTINGS.flyoverSpeed
+        elapsedTime * SETTINGS.flyoverSpeed
       ) *
       SETTINGS.flyoverDistance;
 
     const sway =
       Math.sin(
-        elapsedTime *
-        SETTINGS.cameraSwaySpeed
+        elapsedTime * SETTINGS.cameraSwaySpeed
       ) *
       SETTINGS.cameraSway;
 
-    camera.position.set(
-      cameraBase.x + sway,
-      cameraBase.y,
-      cameraBase.z - forward
-    );
+    camera.position.copy(cameraBase);
+
+    camera.position.z -= forward;
+    camera.position.x += sway;
 
     camera.lookAt(
-      cameraTarget.x + sway * 0.25,
+      cameraTarget.x + sway * 0.2,
       cameraTarget.y,
-      cameraTarget.z - forward * 0.2
+      cameraTarget.z
     );
   }
 
 
   /* ========================================================
-     21 / RESIZE
+     22 / RESIZE
      ======================================================== */
 
   function resize() {
@@ -1118,66 +1146,7 @@ function initializeLandscape() {
     camera.aspect =
       viewportWidth / viewportHeight;
 
-    const aspect =
-      viewportWidth / viewportHeight;
-
-
-    /* ------------------------------------------------------
-       Responsive camera positions
-       ------------------------------------------------------ */
-
-    if (aspect < 0.8) {
-
-      cameraBase.set(
-        0,
-        8.5,
-        24
-      );
-
-      cameraTarget.set(
-        0,
-        2,
-        -2
-      );
-
-    } else if (aspect < 1.4) {
-
-      cameraBase.set(
-        0,
-        6.8,
-        20
-      );
-
-      cameraTarget.set(
-        0,
-        2.2,
-        -3
-      );
-
-    } else {
-
-      cameraBase.set(
-        0,
-        5.4,
-        17
-      );
-
-      cameraTarget.set(
-        0,
-        2.3,
-        -3.5
-      );
-    }
-
-    camera.position.copy(cameraBase);
-    camera.lookAt(cameraTarget);
-
     camera.updateProjectionMatrix();
-
-
-    /* ------------------------------------------------------
-       Renderer
-       ------------------------------------------------------ */
 
     renderer.setPixelRatio(
       Math.min(
@@ -1191,11 +1160,6 @@ function initializeLandscape() {
       viewportHeight,
       false
     );
-
-
-    /* ------------------------------------------------------
-       Responsive contour density
-       ------------------------------------------------------ */
 
     const dimensions =
       getDimensions();
@@ -1213,10 +1177,11 @@ function initializeLandscape() {
       buildContours();
     }
 
+    /*
+     * Reframe whenever viewport dimensions change.
+     */
 
-    /* ------------------------------------------------------
-       Update line resolution
-       ------------------------------------------------------ */
+    frameTerrain();
 
     for (const contour of contourLines) {
 
@@ -1231,7 +1196,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     22 / ANIMATION
+     23 / ANIMATION
      ======================================================== */
 
   function animate(timestamp) {
@@ -1261,9 +1226,7 @@ function initializeLandscape() {
     lastFrameTime = timestamp;
 
 
-    /* ------------------------------------------------------
-       Smooth orange highlighting
-       ------------------------------------------------------ */
+    /* Highlight */
 
     if (reducedMotion.matches) {
 
@@ -1285,13 +1248,12 @@ function initializeLandscape() {
     updateHighlight();
 
 
-    /* ------------------------------------------------------
-       Camera flyover
-       ------------------------------------------------------ */
+    /* Camera */
 
-    updateCamera(
-      deltaSeconds
-    );
+    updateCamera(deltaSeconds);
+
+
+    /* Render */
 
     renderer.render(
       scene,
@@ -1299,14 +1261,12 @@ function initializeLandscape() {
     );
 
     animationFrame =
-      requestAnimationFrame(
-        animate
-      );
+      requestAnimationFrame(animate);
   }
 
 
   /* ========================================================
-     23 / ANIMATION CONTROL
+     24 / ANIMATION CONTROL
      ======================================================== */
 
   function startAnimation() {
@@ -1322,9 +1282,7 @@ function initializeLandscape() {
     lastFrameTime = null;
 
     animationFrame =
-      requestAnimationFrame(
-        animate
-      );
+      requestAnimationFrame(animate);
   }
 
 
@@ -1344,7 +1302,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     24 / VISIBILITY OBSERVER
+     25 / VISIBILITY OBSERVER
      ======================================================== */
 
   if ("IntersectionObserver" in window) {
@@ -1373,7 +1331,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     25 / REDUCED MOTION
+     26 / REDUCED MOTION
      ======================================================== */
 
   reducedMotion.addEventListener(
@@ -1382,27 +1340,24 @@ function initializeLandscape() {
 
       if (reducedMotion.matches) {
 
-        camera.position.copy(
-          cameraBase
-        );
+        stopAnimation();
 
-        camera.lookAt(
-          cameraTarget
-        );
+        camera.position.copy(cameraBase);
+        camera.lookAt(cameraTarget);
 
         updateHighlight(true);
+        renderer.render(scene, camera);
 
-        renderer.render(
-          scene,
-          camera
-        );
+      } else {
+
+        startAnimation();
       }
     }
   );
 
 
   /* ========================================================
-     26 / PAGE VISIBILITY
+     27 / PAGE VISIBILITY
      ======================================================== */
 
   document.addEventListener(
@@ -1419,7 +1374,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     27 / RESIZE OBSERVER
+     28 / RESIZE OBSERVER
      ======================================================== */
 
   if ("ResizeObserver" in window) {
@@ -1427,9 +1382,7 @@ function initializeLandscape() {
     const observer =
       new ResizeObserver(resize);
 
-    observer.observe(
-      container
-    );
+    observer.observe(container);
 
   } else {
 
@@ -1442,7 +1395,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     28 / INITIALIZE
+     29 / INITIALIZE
      ======================================================== */
 
   resize();
@@ -1457,6 +1410,6 @@ function initializeLandscape() {
   startAnimation();
 
   console.log(
-    `Dramatic topographic landscape initialized: ${contourLines.length} contour levels.`
+    `Topographic landscape v8 initialized: ${contourLines.length} elevation levels.`
   );
 }
