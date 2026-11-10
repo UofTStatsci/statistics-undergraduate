@@ -6,31 +6,34 @@
    UNDERGRADUATE DIGITAL BROCHURE
 
    File: assets/css/main.css
-   Version: 1.0
+   Version: 2.0
 
-   Based on:
+   MASTER DESIGN:
    Statistical Sciences Graduate Digital Brochure
 
-   Design system:
-   - University blue
-   - Black and white editorial sections
-   - Pale grey alternating program panels
-   - Large editorial typography
+   Preserved:
+   - Original University blue
+   - Original collision hero
+   - Original navigation
    - Full-page scrolling
-   - D3 collision hero
-   - Interactive alumni globe
+   - Editorial typography
+   - Three-column program cards
+   - Alternating program panels
+   - Metrics and research sections
+   - Alumni visualization layout
+   - Original mobile breakpoint
+
    ========================================================== */
 
 
 /* ==========================================================
-   01 / VARIABLES
+   VARIABLES
    ========================================================== */
 
 :root {
 
   --blue: #0180a5;
   --navy: #08264b;
-
   --black: #050505;
   --white: #ffffff;
   --paper: #f3f2ee;
@@ -39,7 +42,7 @@
 
 
 /* ==========================================================
-   02 / RESET / GLOBAL
+   RESET / GLOBAL
    ========================================================== */
 
 * {
@@ -59,9 +62,8 @@ body {
     sans-serif;
 
   background: #000;
-  color: #fff;
 
-  -webkit-font-smoothing: antialiased;
+  color: #fff;
 }
 
 button,
@@ -88,7 +90,7 @@ img {
 
 
 /* ==========================================================
-   03 / ACCESSIBILITY
+   ACCESSIBILITY
    ========================================================== */
 
 .skip {
@@ -111,7 +113,7 @@ img {
 
 
 /* ==========================================================
-   04 / NAVIGATION
+   NAVIGATION
    ========================================================== */
 
 .nav {
@@ -127,6 +129,7 @@ img {
   padding: 20px 3vw;
 
   display: flex;
+
   justify-content: space-between;
   align-items: center;
 
@@ -140,6 +143,7 @@ img {
 
 .wordmark {
   display: flex;
+
   gap: 10px;
   align-items: center;
 
@@ -148,16 +152,19 @@ img {
 
 .crest {
   border: 1px solid;
+
   padding: 5px;
 }
 
 .nav nav {
   display: flex;
+
   gap: 22px;
 
   font-size: 0.78rem;
 
   text-transform: uppercase;
+
   letter-spacing: 0.08em;
 }
 
@@ -171,7 +178,7 @@ img {
 
 
 /* ==========================================================
-   05 / FULL-PAGE SCROLLING
+   FULL-PAGE SCROLLING
    ========================================================== */
 
 .snap {
@@ -182,6 +189,8 @@ img {
   overflow-x: hidden;
 
   scroll-snap-type: y mandatory;
+
+  overscroll-behavior-y: contain;
 }
 
 .panel {
@@ -202,21 +211,21 @@ img {
 
 
 /* ==========================================================
-   06 / COVER
+   COVER
    ========================================================== */
 
 .cover {
   background: var(--blue);
 
   display: flex;
+
   flex-direction: column;
+
   justify-content: space-between;
 
   padding:
     5vh
     5vw;
-
-  position: relative;
 
   isolation: isolate;
 }
@@ -225,13 +234,17 @@ img {
 /*
  * Interactive collision canvas.
  *
- * It sits above the blue background but below all
+ * Original graduate brochure implementation.
+ *
+ * Positioned above the background and below all
  * typography and navigation.
  *
- * collision.js controls this canvas.
+ * IMPORTANT:
+ * Do not disable pointer events.
+ * collision.js requires direct canvas interaction.
  */
 
-#collision-canvas {
+.cover canvas {
   position: absolute;
 
   inset: 0;
@@ -250,13 +263,14 @@ img {
 
 
 /*
- * Foreground elements.
+ * Cover foreground.
  */
 
 .cover-top,
 .cover-bottom,
 .down {
   position: relative;
+
   z-index: 2;
 }
 
@@ -267,10 +281,13 @@ img {
 
 .logo-lockup {
   display: flex;
+
   gap: 14px;
+
   align-items: center;
 
   font-size: 0.78rem;
+
   line-height: 1.3;
 }
 
@@ -284,15 +301,15 @@ img {
 
 
 /* ----------------------------------------------------------
-   Main headline
+   Main heading
    ---------------------------------------------------------- */
 
 .cover h1 {
   font-size:
     clamp(
-      4rem,
-      10vw,
-      10rem
+      4.5rem,
+      13vw,
+      12rem
     );
 
   margin:
@@ -367,6 +384,7 @@ img {
   bottom: 5vh;
 
   color: #fff;
+
   text-decoration: none;
 
   font-size: 2rem;
@@ -374,7 +392,7 @@ img {
 
 
 /* ==========================================================
-   07 / COMMON TYPOGRAPHY
+   COMMON TYPOGRAPHY
    ========================================================== */
 
 .dark {
@@ -385,6 +403,7 @@ img {
   margin-bottom: 2rem;
 
   text-transform: uppercase;
+
   letter-spacing: 0.12em;
 
   font-size: 0.75rem;
@@ -403,6 +422,7 @@ img {
     );
 
   line-height: 0.9;
+
   letter-spacing: -0.055em;
 }
 
@@ -423,13 +443,9 @@ img {
   line-height: 1.55;
 }
 
-.panel p {
-  line-height: 1.55;
-}
-
 
 /* ==========================================================
-   08 / PROGRAM OVERVIEW
+   PROGRAM OVERVIEW
    ========================================================== */
 
 .cards {
@@ -456,6 +472,7 @@ img {
   padding: 2.2rem;
 
   display: flex;
+
   flex-direction: column;
 }
 
@@ -480,9 +497,11 @@ img {
 .cards a {
   color: #fff;
 
+  display: inline-block;
+
   margin-top: auto;
 
-  padding-top: 1rem;
+  padding-top: 1.2rem;
 
   text-decoration: none;
 }
@@ -493,11 +512,12 @@ img {
 
 
 /* ==========================================================
-   09 / INDIVIDUAL PROGRAMS
+   INDIVIDUAL PROGRAMS
    ========================================================== */
 
 .program {
   background: var(--paper);
+
   color: #111;
 
   display: grid;
@@ -513,22 +533,9 @@ img {
 
 .program.alt {
   background: var(--blue);
+
   color: #fff;
 }
-
-
-/* ----------------------------------------------------------
-   Program description
-   ---------------------------------------------------------- */
-
-.program .lede {
-  max-width: 650px;
-}
-
-
-/* ----------------------------------------------------------
-   Program information
-   ---------------------------------------------------------- */
 
 .program dl {
   margin: 0;
@@ -554,6 +561,7 @@ img {
 
 .program dt {
   text-transform: uppercase;
+
   letter-spacing: 0.08em;
 
   font-size: 0.75rem;
@@ -567,7 +575,7 @@ img {
 
 
 /* ==========================================================
-   10 / METRICS AND RESEARCH EXCELLENCE
+   WHY U OF T / METRICS
    ========================================================== */
 
 .metrics {
@@ -636,7 +644,7 @@ img {
 
 
 /* ==========================================================
-   11 / ALUMNI — INTERACTIVE GLOBE
+   ALUMNI MAP / GLOBE
    ========================================================== */
 
 .map-panel {
@@ -660,7 +668,10 @@ img {
 
 .map-copy {
   position: relative;
+
   z-index: 2;
+
+  min-width: 0;
 }
 
 .map-copy p {
@@ -669,11 +680,18 @@ img {
   line-height: 1.55;
 }
 
+.map-note {
+  font-size: 0.8rem;
+
+  opacity: 0.55;
+}
+
 
 /* ----------------------------------------------------------
    Alumni statistics
 
-   Three statistics visually anchored together.
+   Three statistics remain visually anchored together,
+   following the graduate brochure's editorial style.
    ---------------------------------------------------------- */
 
 .globe-stats {
@@ -694,13 +712,19 @@ img {
 
 .globe-stats > div {
   display: flex;
+
   flex-direction: column;
 
   min-width: 0;
 
   border-top:
     1px solid
-    rgba(255, 255, 255, 0.45);
+    rgba(
+      255,
+      255,
+      255,
+      0.45
+    );
 
   padding-top: 1.2rem;
 }
@@ -730,6 +754,7 @@ img {
   font-size: 0.72rem;
 
   text-transform: uppercase;
+
   letter-spacing: 0.09em;
 
   opacity: 0.65;
@@ -737,7 +762,7 @@ img {
 
 
 /* ----------------------------------------------------------
-   Globe canvas
+   Interactive globe container
    ---------------------------------------------------------- */
 
 .globe-container {
@@ -759,6 +784,11 @@ img {
 .globe-container:active {
   cursor: grabbing;
 }
+
+
+/* ----------------------------------------------------------
+   Globe canvas
+   ---------------------------------------------------------- */
 
 #globe-canvas {
   display: block;
@@ -783,10 +813,23 @@ img {
 
   pointer-events: none;
 
-  background: rgba(3, 17, 35, 0.94);
+  background: rgba(
+    3,
+    17,
+    35,
+    0.94
+  );
+
   color: #fff;
 
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    );
 
   padding:
     7px
@@ -796,20 +839,27 @@ img {
 
   opacity: 0;
 
-  transition: opacity 180ms ease;
+  transform: translateY(5px);
+
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .globe-tooltip.is-visible {
   opacity: 1;
+
+  transform: translateY(0);
 }
 
 
 /* ==========================================================
-   12 / RESEARCH AND EXPERIENCE
+   RESEARCH / EXPERIENCE
    ========================================================== */
 
 .research {
   background: #fff;
+
   color: #111;
 
   display: grid;
@@ -843,7 +893,7 @@ img {
 
 
 /* ==========================================================
-   13 / TORONTO AND STUDENT COMMUNITY
+   STUDENT COMMUNITY
    ========================================================== */
 
 .city {
@@ -855,6 +905,7 @@ img {
     );
 
   display: flex;
+
   align-items: center;
 }
 
@@ -870,7 +921,7 @@ img {
 
 
 /* ==========================================================
-   14 / ADMISSIONS AND APPLY
+   ADMISSIONS / APPLY
    ========================================================== */
 
 .apply {
@@ -894,14 +945,18 @@ img {
 }
 
 .apply-copy h3 {
+  font-size: 1.3rem;
+
   margin-top: 1.8rem;
   margin-bottom: 0.7rem;
-
-  font-size: 1.3rem;
 }
 
 .apply-copy li {
   margin-bottom: 1rem;
+}
+
+.apply-copy a {
+  color: #fff;
 }
 
 
@@ -933,17 +988,19 @@ img {
 
 .button:hover {
   background: #fff;
+
   color: var(--blue);
+
   opacity: 1;
 }
 
 
 /* ----------------------------------------------------------
-   Program code list
+   Program codes
    ---------------------------------------------------------- */
 
 .program-codes {
-  margin-top: 2rem;
+  margin: 0;
 }
 
 .program-codes > div {
@@ -957,10 +1014,10 @@ img {
 
   border-top:
     1px solid
-    rgba(255, 255, 255, 0.5);
+    currentColor;
 
   padding:
-    0.9rem
+    1.2rem
     0;
 }
 
@@ -970,20 +1027,13 @@ img {
 
 .program-codes span {
   font-size: 0.85rem;
-  line-height: 1.4;
-}
 
-.apply-acorn {
-  margin-top: 1.5rem;
-
-  font-size: 0.85rem;
-
-  opacity: 0.85;
+  line-height: 1.45;
 }
 
 
 /* ==========================================================
-   15 / FOOTER
+   FOOTER
    ========================================================== */
 
 .footer {
@@ -1008,7 +1058,7 @@ img {
 
 
 /* ==========================================================
-   16 / MOBILE
+   MOBILE
    ========================================================== */
 
 @media (max-width: 800px) {
@@ -1063,7 +1113,7 @@ img {
 
 
   /* --------------------------------------------------------
-     Program panels
+     Program sections
      -------------------------------------------------------- */
 
   .program {
@@ -1100,19 +1150,6 @@ img {
     font-size: 3.3rem;
   }
 
-  .globe-container {
-    width: 100%;
-
-    height: 48vh;
-
-    min-height: 300px;
-  }
-
-
-  /* --------------------------------------------------------
-     Alumni statistics
-     -------------------------------------------------------- */
-
   .globe-stats {
     margin-top: 2rem;
 
@@ -1120,20 +1157,27 @@ img {
   }
 
   .globe-stats strong {
-    font-size: clamp(
-      1.8rem,
-      6vw,
-      3rem
-    );
+    font-size:
+      clamp(
+        1.8rem,
+        6vw,
+        3rem
+      );
   }
 
   .globe-stats span {
     font-size: 0.65rem;
   }
 
+  .globe-container {
+    height: 48vh;
+
+    min-height: 300px;
+  }
+
 
   /* --------------------------------------------------------
-     Undergraduate research columns
+     Research columns
      -------------------------------------------------------- */
 
   .columns {
@@ -1144,15 +1188,11 @@ img {
 
 
   /* --------------------------------------------------------
-     Cover
+     Cover heading
      -------------------------------------------------------- */
 
   .cover h1 {
-    font-size: clamp(
-      3.5rem,
-      12vw,
-      7rem
-    );
+    font-size: 16vw;
   }
 
 
@@ -1182,7 +1222,7 @@ img {
 
 
 /* ==========================================================
-   17 / SMALL MOBILE
+   SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
@@ -1193,6 +1233,8 @@ img {
 
   .logo-lockup {
     font-size: 0.68rem;
+
+    gap: 10px;
   }
 
   .logo-mark {
@@ -1211,6 +1253,9 @@ img {
     font-size: 0.9rem;
   }
 
+
+  /* Alumni statistics */
+
   .globe-stats {
     gap: 0.65rem;
   }
@@ -1221,20 +1266,32 @@ img {
 
   .globe-stats span {
     font-size: 0.6rem;
+
     letter-spacing: 0.05em;
   }
 
+
+  /* Globe */
+
   .globe-container {
     height: 46vh;
+
     min-height: 280px;
   }
+
+
+  /* Content columns */
 
   .columns {
     grid-template-columns: 1fr;
   }
 
+
+  /* Program codes */
+
   .program-codes > div {
     grid-template-columns: 1fr;
+
     gap: 0.3rem;
   }
 
@@ -1242,10 +1299,12 @@ img {
 
 
 /* ==========================================================
-   18 / REDUCED MOTION
+   REDUCED MOTION
    ========================================================== */
 
-@media (prefers-reduced-motion: reduce) {
+@media (
+  prefers-reduced-motion: reduce
+) {
 
   html {
     scroll-behavior: auto;
