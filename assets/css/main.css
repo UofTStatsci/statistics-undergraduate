@@ -6,15 +6,22 @@
    UNDERGRADUATE DIGITAL BROCHURE
 
    File: assets/css/main.css
-   Version: 6.0
+   Version: 7.0
 
-   Updates:
-   - Full-width responsive topographic artwork
-   - Feathered image edges blending into #002A5C
-   - Single WebGL artwork and overlay composite
-   - No zoom or translation
-   - Existing brochure layouts preserved
-   - Interactive alumni globe preserved
+   Restored:
+   - Original D3 collision-particle hero
+   - Pantone blue background (#002A5C)
+   - Full-screen collision canvas
+   - Original foreground typography
+   - Full-page scrolling
+   - Interactive alumni globe
+   - Responsive layouts
+
+   Removed:
+   - Topographic image and mask
+   - WebGL elevation shader
+   - SVG displacement effects
+   - Generative data-stream experiment
    ========================================================== */
 
 
@@ -32,10 +39,6 @@
   --white: #ffffff;
   --paper: #f3f2ee;
   --grey: #b9b9b9;
-
-  --topo-bg: #002A5C;
-  --topo-orange: #ff690d;
-  --topo-cyan: #67dbff;
 
   --page-padding: 7vw;
   --section-top: 12vh;
@@ -69,6 +72,7 @@ body {
   color: var(--white);
 
   font-family: var(--font-body);
+
   -webkit-font-smoothing: antialiased;
 }
 
@@ -110,8 +114,10 @@ img {
 
 .skip {
   position: fixed;
+
   top: 0;
   left: -9999px;
+
   z-index: 100;
 
   padding: 1rem 1.5rem;
@@ -139,8 +145,10 @@ img {
 
 .nav {
   position: fixed;
+
   top: 0;
   left: 0;
+
   z-index: 30;
 
   display: flex;
@@ -148,6 +156,7 @@ img {
   align-items: center;
 
   width: 100%;
+
   padding: 20px 3vw;
 
   mix-blend-mode: difference;
@@ -169,6 +178,7 @@ img {
 
 .crest {
   padding: 5px;
+
   border: 1px solid currentColor;
 }
 
@@ -179,6 +189,7 @@ img {
 
   font-size: 0.78rem;
   font-weight: 600;
+
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -205,6 +216,7 @@ img {
   overflow-y: auto;
 
   scroll-snap-type: y mandatory;
+
   overscroll-behavior-y: contain;
 }
 
@@ -272,19 +284,25 @@ img {
 
 
 /* ==========================================================
-   07 / COVER — TOPOGRAPHIC EXPERIENCE
+   07 / COVER — COLLISION HERO
    ========================================================== */
 
-.cover.topo-section {
-  display: block;
+.cover {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
   width: 100%;
+
   height: 100vh;
   height: 100dvh;
 
-  min-height: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
 
-  padding: 0;
+  padding: 5vh 5vw;
 
   overflow: hidden;
 
@@ -294,181 +312,23 @@ img {
   isolation: isolate;
 }
 
-.topo-section *,
-.topo-section *::before,
-.topo-section *::after {
-  box-sizing: border-box;
-}
-
-
-/* ==========================================================
-   08 / TOPOGRAPHIC EXPERIENCE
-   ========================================================== */
-
-.topo-section .topo-experience {
-  position: relative;
-
-  display: flex;
-  flex-direction: column;
-
-  width: 100%;
-  height: 100%;
-
-  min-height: 100vh;
-  min-height: 100dvh;
-
-  background: var(--pantone-blue);
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Arial,
-    sans-serif;
-}
-
-
-/* ==========================================================
-   09 / TOPOGRAPHIC VIEWPORT
-   ========================================================== */
-
-.topo-section .topo-viewport {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 1 1 auto;
-
-  width: 100%;
-  min-height: 0;
-
-  overflow: hidden;
-
-  background: var(--pantone-blue);
-}
-
-
-/* ==========================================================
-   10 / FULL-WIDTH TOPOGRAPHIC ARTWORK
-   ========================================================== */
-
-.topo-section .topo-art {
-  position: relative;
-
-  display: block;
-
-  width: 100%;
-
-  aspect-ratio: 2048 / 1365;
-
-  flex: 0 0 auto;
-
-  overflow: hidden;
-
-  isolation: isolate;
-
-  background: var(--pantone-blue);
-
-  cursor: ns-resize;
-
-  touch-action: none;
-
-  outline: none;
-
-  transform: none !important;
-}
-
 
 /* ----------------------------------------------------------
-   Feathered vertical edges
+   Collision canvas
 
-   Smoothly blends the topographic artwork into the
-   surrounding institutional blue.
+   This is the original D3 particle canvas.
 
-   The fade applies equally to the artwork and overlay.
+   It sits above the background and below all typography.
+
+   IMPORTANT:
+   Do not use pointer-events: none.
+   The collision.js script listens for pointer events
+   directly on this canvas.
    ---------------------------------------------------------- */
 
-.topo-section .topo-art {
-  -webkit-mask-image:
-    linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000000 11%,
-      #000000 89%,
-      transparent 100%
-    );
-
-  mask-image:
-    linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000000 11%,
-      #000000 89%,
-      transparent 100%
-    );
-}
-
-.topo-section .topo-art:focus-visible {
-  outline: 2px solid var(--topo-cyan);
-  outline-offset: -3px;
-}
-
-
-/* ----------------------------------------------------------
-   Source image
-
-   Displayed as a fallback before WebGL initialization.
-   ---------------------------------------------------------- */
-
-.topo-section .topo-art img {
+#collision-canvas {
   position: absolute;
-  inset: 0;
 
-  display: block;
-
-  width: 100%;
-  height: 100%;
-
-  object-fit: fill;
-
-  opacity: 0.21;
-
-  user-select: none;
-
-  -webkit-user-drag: none;
-
-  pointer-events: none;
-
-  transition: none;
-}
-
-
-/*
- * Once WebGL is ready, the original image is rendered
- * inside the canvas. Hide the HTML image to prevent
- * duplicate rendering.
- */
-
-.topo-section .topo-art.topo-webgl-ready img {
-  opacity: 0;
-}
-
-
-/* ----------------------------------------------------------
-   Unified WebGL canvas
-
-   The canvas renders:
-   - Original artwork
-   - Orange elevation highlight
-   - Subtle flowing displacement
-
-   All three effects share the same UV coordinates.
-   ---------------------------------------------------------- */
-
-.topo-section .topo-art canvas {
-  position: absolute;
   inset: 0;
 
   display: block;
@@ -478,39 +338,41 @@ img {
 
   max-width: none;
 
-  opacity: 1;
+  z-index: 0;
 
-  pointer-events: none;
+  background: transparent;
 
-  transition: none;
+  touch-action: none;
 }
 
 
 /* ==========================================================
-   11 / COVER FOREGROUND
+   08 / COVER FOREGROUND
    ========================================================== */
 
-.topo-section .cover-top {
-  position: absolute;
+.cover-top,
+.cover-bottom {
+  position: relative;
 
-  top: 0;
-  left: 0;
-
-  z-index: 3;
-
-  width: 100%;
-
-  padding: 5vh 5vw;
+  z-index: 2;
 
   pointer-events: none;
 }
 
+.cover .down {
+  position: absolute;
 
-/* ----------------------------------------------------------
-   Logo lockup
-   ---------------------------------------------------------- */
+  z-index: 3;
 
-.topo-section .logo-lockup {
+  pointer-events: auto;
+}
+
+
+/* ==========================================================
+   09 / COVER LOGO LOCKUP
+   ========================================================== */
+
+.logo-lockup {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -521,50 +383,39 @@ img {
   line-height: 1.3;
 }
 
-.topo-section .logo-mark {
+.logo-mark {
   padding: 8px;
 
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--white);
 
   font-weight: 800;
 }
 
 
-/* ----------------------------------------------------------
-   Main headline
-   ---------------------------------------------------------- */
+/* ==========================================================
+   10 / COVER MAIN HEADLINE
+   ========================================================== */
 
-.topo-section .cover h1 {
+.cover h1 {
   max-width: 100%;
 
-  margin: 0.3em 0 0;
+  margin: 0.25em 0 0;
 
   color: var(--white);
 
-  font-size: clamp(3.5rem, 6.5vw, 7.5rem);
+  font-size: clamp(4.5rem, 13vw, 12rem);
   font-weight: 900;
 
-  line-height: 0.9;
+  line-height: 0.8;
   letter-spacing: -0.065em;
-
-  text-shadow:
-    0 2px 20px rgba(0, 0, 0, 0.18),
-    0 2px 40px rgba(0, 0, 0, 0.12);
 }
 
 
 /* ==========================================================
-   12 / UNDERGRADUATE PROGRAM LABEL
+   11 / COVER PROGRAM LABEL
    ========================================================== */
 
-.topo-section .cover-bottom {
-  position: absolute;
-
-  left: 5vw;
-  bottom: 5vh;
-
-  z-index: 3;
-
+.cover-bottom {
   width: min(620px, 85vw);
 
   padding-top: 18px;
@@ -572,55 +423,48 @@ img {
   border-top: 1px solid rgba(255, 255, 255, 0.75);
 
   color: var(--white);
-
-  pointer-events: none;
-
-  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
 }
 
-.topo-section .cover-bottom p {
+.cover-bottom p {
   margin: 0 0 8px;
 
   font-size: clamp(1.5rem, 3vw, 3rem);
-  font-weight: 800;
+  font-weight: 700;
 
   line-height: 1.1;
 }
 
-.topo-section .cover-bottom div {
+.cover-bottom div {
   font-size: 1.15rem;
   font-weight: 600;
 
   letter-spacing: 0.02em;
 }
 
-.topo-section .cover-bottom span {
+.cover-bottom span {
   margin: 0 0.35rem;
   opacity: 0.6;
 }
 
 
 /* ==========================================================
-   13 / SCROLL INDICATOR
+   12 / COVER SCROLL INDICATOR
    ========================================================== */
 
-.topo-section .down {
-  position: absolute;
-
+.down {
   right: 5vw;
   bottom: 5vh;
-
-  z-index: 4;
 
   color: var(--white);
 
   font-size: 2rem;
+
   text-decoration: none;
 }
 
 
 /* ==========================================================
-   14 / WHY STUDY STATISTICS
+   13 / WHY STUDY STATISTICS
    ========================================================== */
 
 .why-panel {
@@ -631,8 +475,11 @@ img {
 
 .why-layout {
   display: grid;
+
   grid-template-columns: 1.2fr 0.8fr;
+
   align-items: start;
+
   gap: 8vw;
 }
 
@@ -648,6 +495,7 @@ img {
   margin: 0 0 1rem;
 
   color: var(--blue);
+
   font-size: clamp(1.25rem, 1.8vw, 1.8rem);
 }
 
@@ -655,12 +503,14 @@ img {
   margin: 0 0 2rem;
 
   color: #d0d0d0;
+
   font-size: 1rem;
+  line-height: 1.6;
 }
 
 
 /* ==========================================================
-   15 / UNDERGRADUATE PROGRAM OVERVIEW
+   14 / UNDERGRADUATE PROGRAM OVERVIEW
    ========================================================== */
 
 .programs-panel {
@@ -675,7 +525,10 @@ img {
 
 .program-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
   gap: 1px;
 
   margin-top: 6vh;
@@ -689,6 +542,7 @@ img {
   flex-direction: column;
 
   min-height: 245px;
+
   padding: 1.5rem;
 
   background: #0b0b0b;
@@ -705,6 +559,7 @@ img {
 
   font-size: 0.75rem;
   font-weight: 700;
+
   letter-spacing: 0.1em;
 }
 
@@ -743,18 +598,22 @@ img {
 
   font-size: 0.85rem;
   font-weight: 700;
+
   text-decoration: none;
 }
 
 
 /* ==========================================================
-   16 / PROGRAM DETAIL SECTIONS
+   15 / PROGRAM DETAIL SECTIONS
    ========================================================== */
 
 .program-detail {
   display: grid;
+
   grid-template-columns: 1.1fr 0.9fr;
+
   align-items: center;
+
   gap: 8vw;
 
   background: var(--paper);
@@ -773,6 +632,7 @@ img {
 .detail-list {
   display: flex;
   flex-direction: column;
+
   gap: 2rem;
 }
 
@@ -805,6 +665,7 @@ img {
 
 .detail-list p {
   max-width: 480px;
+
   margin: 0;
 
   line-height: 1.55;
@@ -812,19 +673,25 @@ img {
 
 
 /* ==========================================================
-   17 / RESEARCH RANKINGS
+   16 / RESEARCH RANKINGS
    ========================================================== */
 
 .metrics {
   display: grid;
+
   grid-template-columns: 1fr 1.2fr;
+
   align-items: center;
+
   gap: 8vw;
 }
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
   gap: 1rem;
 }
 
@@ -859,6 +726,7 @@ img {
 
 .metrics small {
   position: absolute;
+
   right: var(--page-padding);
   bottom: 4vh;
 
@@ -869,13 +737,16 @@ img {
 
 
 /* ==========================================================
-   18 / CAREERS
+   17 / CAREERS
    ========================================================== */
 
 .careers-panel {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   align-items: center;
+
   gap: 8vw;
 
   background: var(--paper);
@@ -898,12 +769,15 @@ img {
 
 .columns {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   gap: 2rem;
 }
 
 .columns ul {
   margin: 0;
+
   padding-left: 1.2rem;
 }
 
@@ -916,7 +790,7 @@ img {
 
 
 /* ==========================================================
-   19 / ALUMNI — INTERACTIVE GLOBE
+   18 / ALUMNI — INTERACTIVE GLOBE
    ========================================================== */
 
 .globe-panel {
@@ -927,6 +801,7 @@ img {
     minmax(0, 1.25fr);
 
   align-items: center;
+
   gap: 4vw;
 
   width: 100%;
@@ -934,14 +809,22 @@ img {
   background: var(--globe-bg);
 }
 
+
+/* ----------------------------------------------------------
+   Globe copy — LEFT
+   ---------------------------------------------------------- */
+
 .globe-copy {
   position: relative;
+
   z-index: 2;
 
   grid-column: 1;
 
   width: 100%;
+
   min-width: 0;
+
   max-width: 520px;
 }
 
@@ -953,18 +836,28 @@ img {
   line-height: 1.55;
 }
 
+
+/* ----------------------------------------------------------
+   Three anchored statistics
+   ---------------------------------------------------------- */
+
 .globe-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
   gap: 1.5rem;
 
   width: 100%;
+
   margin-top: 3rem;
 }
 
 .globe-stats > div {
   display: flex;
   flex-direction: column;
+
   min-width: 0;
 }
 
@@ -972,7 +865,9 @@ img {
   color: var(--white);
 
   font-size: clamp(2rem, 3vw, 4rem);
+
   line-height: 1;
+
   letter-spacing: -0.04em;
 }
 
@@ -980,11 +875,17 @@ img {
   margin-top: 0.5rem;
 
   font-size: 0.72rem;
+
   text-transform: uppercase;
   letter-spacing: 0.1em;
 
   opacity: 0.6;
 }
+
+
+/* ----------------------------------------------------------
+   Globe — RIGHT
+   ---------------------------------------------------------- */
 
 .globe-container {
   position: relative;
@@ -992,12 +893,14 @@ img {
   grid-column: 2;
 
   width: 100%;
+
   height: 80vh;
 
   min-width: 0;
   min-height: 520px;
 
   align-self: center;
+
   justify-self: stretch;
 
   cursor: grab;
@@ -1019,14 +922,54 @@ img {
 }
 
 
+/* ----------------------------------------------------------
+   Globe tooltip
+   ---------------------------------------------------------- */
+
+.globe-tooltip {
+  position: absolute;
+
+  z-index: 5;
+
+  pointer-events: none;
+
+  padding: 9px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+
+  background: rgba(2, 15, 30, 0.92);
+
+  color: var(--white);
+
+  font-size: 0.78rem;
+
+  opacity: 0;
+
+  transform: translateY(5px);
+
+  transition:
+    opacity var(--transition),
+    transform var(--transition);
+}
+
+.globe-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
 /* ==========================================================
-   20 / EXPERIENCE AND OPPORTUNITY
+   19 / EXPERIENCE AND OPPORTUNITY
    ========================================================== */
 
 .experience-panel {
   display: grid;
+
   grid-template-columns: 0.8fr 1.2fr;
+
   align-items: center;
+
   gap: 7vw;
 
   background: var(--white);
@@ -1035,7 +978,10 @@ img {
 
 .experience-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
   gap: 2rem;
 }
 
@@ -1058,6 +1004,7 @@ img {
   margin: 1rem 0;
 
   font-size: clamp(1.3rem, 1.8vw, 2rem);
+
   letter-spacing: -0.04em;
 }
 
@@ -1072,13 +1019,16 @@ img {
 
 
 /* ==========================================================
-   21 / ADMISSIONS
+   20 / ADMISSIONS
    ========================================================== */
 
 .admissions-panel {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   align-items: center;
+
   gap: 8vw;
 
   background: var(--paper);
@@ -1088,6 +1038,7 @@ img {
 .admissions-content {
   display: flex;
   flex-direction: column;
+
   gap: 3rem;
 }
 
@@ -1101,6 +1052,7 @@ img {
   margin: 0 0 1rem;
 
   color: var(--blue);
+
   font-size: 1.5rem;
 }
 
@@ -1112,20 +1064,25 @@ img {
 
 .admissions-content a {
   color: #111111;
+
   font-weight: 700;
+
   text-decoration: underline;
   text-underline-offset: 4px;
 }
 
 
 /* ==========================================================
-   22 / EXPLORE AND APPLY
+   21 / EXPLORE AND APPLY
    ========================================================== */
 
 .apply-panel {
   display: grid;
+
   grid-template-columns: 0.85fr 1.15fr;
+
   align-items: center;
+
   gap: 8vw;
 
   background: var(--blue);
@@ -1149,7 +1106,9 @@ img {
 
 .program-codes > div {
   display: grid;
+
   grid-template-columns: 130px 1fr;
+
   gap: 1rem;
 
   padding: 0.85rem 0;
@@ -1169,6 +1128,7 @@ img {
   display: inline-block;
 
   margin-top: 2rem;
+
   padding: 15px 20px;
 
   border: 1px solid var(--white);
@@ -1188,18 +1148,21 @@ img {
 .button:hover {
   background: var(--white);
   color: var(--blue);
+
   opacity: 1;
 }
 
 
 /* ==========================================================
-   23 / FOOTER
+   22 / FOOTER
    ========================================================== */
 
 .footer {
   display: flex;
+
   justify-content: space-between;
   align-items: flex-end;
+
   gap: 3rem;
 
   min-height: 100vh;
@@ -1224,28 +1187,20 @@ img {
 
 
 /* ==========================================================
-   24 / LARGE DESKTOP
+   23 / LARGE DESKTOP
    ========================================================== */
 
 @media (min-width: 1200px) {
 
-  .topo-section .cover h1 {
-    font-size: clamp(5rem, 6.2vw, 7.5rem);
-  }
-
-  .topo-section .cover-top {
-    padding: 5vh 5vw;
-  }
-
-  .topo-section .cover-bottom {
-    bottom: 5vh;
+  .cover h1 {
+    font-size: clamp(5rem, 10vw, 11rem);
   }
 
 }
 
 
 /* ==========================================================
-   25 / TABLET AND SMALL LAPTOP
+   24 / TABLET AND SMALL LAPTOP
    ========================================================== */
 
 @media (max-width: 1100px) {
@@ -1259,7 +1214,8 @@ img {
   }
 
   .program-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
   .programs-panel {
@@ -1289,7 +1245,7 @@ img {
 
 
 /* ==========================================================
-   26 / MOBILE
+   25 / MOBILE
    ========================================================== */
 
 @media (max-width: 800px) {
@@ -1318,43 +1274,32 @@ img {
 
 
   /* --------------------------------------------------------
-     Topographic cover
+     Collision hero
      -------------------------------------------------------- */
 
-  .topo-section .topo-experience {
-    min-height: 100dvh;
-  }
-
-  .topo-section .topo-viewport {
-    min-height: 0;
-  }
-
-  .topo-section .cover-top {
+  .cover {
     padding: 5vh 5vw;
   }
 
-  .topo-section .cover h1 {
-    font-size: clamp(3rem, 10vw, 5.2rem);
+  .cover h1 {
+    font-size: clamp(3.5rem, 13vw, 6rem);
   }
 
-  .topo-section .cover-bottom {
-    left: 5vw;
-    bottom: 4vh;
-
-    width: 75%;
+  .cover-bottom {
+    width: 85%;
   }
 
-  .topo-section .cover-bottom p {
+  .cover-bottom p {
     font-size: clamp(1.25rem, 5vw, 2rem);
   }
 
-  .topo-section .cover-bottom div {
+  .cover-bottom div {
     font-size: 0.9rem;
   }
 
-  .topo-section .down {
+  .down {
     right: 5vw;
-    bottom: 3vh;
+    bottom: 4vh;
   }
 
 
@@ -1416,7 +1361,8 @@ img {
   }
 
   .metric-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
   }
 
   .metric-grid strong {
@@ -1429,7 +1375,9 @@ img {
 
   .metrics small {
     position: static;
+
     display: block;
+
     margin-top: 2rem;
   }
 
@@ -1459,10 +1407,6 @@ img {
     max-width: none;
   }
 
-  .globe-copy > p {
-    display: none;
-  }
-
   .globe-stats {
     margin-top: 1.5rem;
     gap: 1rem;
@@ -1476,6 +1420,7 @@ img {
     grid-column: 1;
 
     width: 100%;
+
     height: 46vh;
     min-height: 310px;
   }
@@ -1521,6 +1466,7 @@ img {
 
   .footer {
     flex-direction: column;
+
     justify-content: flex-end;
     align-items: flex-start;
   }
@@ -1529,34 +1475,34 @@ img {
 
 
 /* ==========================================================
-   27 / SMALL MOBILE
+   26 / SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
 
-  .topo-section .cover h1 {
-    font-size: 10.5vw;
+  .cover h1 {
+    font-size: 11vw;
   }
 
-  .topo-section .logo-lockup {
+  .logo-lockup {
     font-size: 0.68rem;
     gap: 10px;
   }
 
-  .topo-section .logo-mark {
+  .logo-mark {
     padding: 6px;
   }
 
-  .topo-section .cover-bottom {
-    width: 72%;
+  .cover-bottom {
+    width: 78%;
   }
 
-  .topo-section .cover-bottom p {
+  .cover-bottom p {
     font-size: 1.2rem;
   }
 
-  .topo-section .cover-bottom div {
-    font-size: 0.75rem;
+  .cover-bottom div {
+    font-size: 0.8rem;
   }
 
   .metric-grid {
@@ -1605,28 +1551,28 @@ img {
 
 
 /* ==========================================================
-   28 / SHORT SCREENS
+   27 / SHORT SCREENS
    ========================================================== */
 
 @media (max-height: 700px) and (min-width: 801px) {
 
-  .topo-section .cover-top {
-    padding-top: 3vh;
+  .cover-top {
+    padding-top: 0;
   }
 
-  .topo-section .cover h1 {
-    font-size: clamp(3.5rem, 5.5vw, 6rem);
+  .cover h1 {
+    font-size: clamp(3.5rem, 7vw, 6rem);
   }
 
-  .topo-section .cover-bottom {
-    bottom: 3vh;
+  .cover-bottom {
+    margin-bottom: 0;
   }
 
 }
 
 
 /* ==========================================================
-   29 / REDUCED MOTION
+   28 / REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
