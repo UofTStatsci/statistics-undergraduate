@@ -3,47 +3,47 @@
    U OF T STATISTICAL SCIENCES
    UNDERGRADUATE DIGITAL BROCHURE
 
-   Interactive Collision Hero
+   Interactive Correlation Scatterplot
 
-   Based on:
-   D3 / Observable Collision Detection
-   https://observablehq.com/@d3/collision-detection/2
+   Features:
+   - Positive-correlation scatterplot
+   - White particles on U of T blue
+   - Pointer repulsion
+   - Collision detection
+   - Spring-like return to target positions
+   - Responsive particle counts
+   - Pre-settled initial state
+   - Pause when off-screen
+   - Reduced-motion support
 
-   Responsive particles:
-   Mobile:  100
-   Tablet:  200
-   Desktop: 400
+   File: assets/js/collision.js
+   Version: 2.0
    ========================================================== */
 
 (() => {
   "use strict";
 
   /* ==========================================================
-     ELEMENTS
+     01 / ELEMENTS
      ========================================================== */
 
   const canvas = document.getElementById("collision-canvas");
 
-  if (!canvas) {
-    console.warn("Collision hero: canvas not found.");
-    return;
-  }
-
-  if (typeof d3 === "undefined") {
-    console.warn("Collision hero: D3 is not loaded.");
+  if (!canvas || typeof d3 === "undefined") {
+    console.warn("Scatterplot: canvas or D3 unavailable.");
     return;
   }
 
   const context = canvas.getContext("2d");
 
   if (!context) {
-    console.warn("Collision hero: canvas context unavailable.");
+    console.warn("Scatterplot: canvas context unavailable.");
     return;
   }
 
 
   /* ==========================================================
-     SETTINGS
+     02 / SETTINGS
      ========================================================== */
 
   const SETTINGS = {
@@ -56,20 +56,36 @@
 
     particleColor: "#ffffff",
 
-    alphaTarget: 0.3,
-    velocityDecay: 0.1,
+    /*
+     * Strength of the return to each particle's
+     * assigned scatterplot coordinate.
+     */
 
-    centerStrength: 0.01,
+    returnStrength: 0.065,
 
-    collisionPadding: 2,
-    collisionIterations: 8,
+    /*
+     * How strongly the cursor pushes particles.
+     */
+
+    pointerStrength: -1800,
+
+    /*
+     * Controls how quickly particles settle.
+     */
+
+    velocityDecay: 0.22,
+
+    collisionPadding: 1.5,
+    collisionIterations: 4,
+
+    alphaTarget: 0.12,
 
     maxDevicePixelRatio: 2
   };
 
 
   /* ==========================================================
-     STATE
+     03 / STATE
      ========================================================== */
 
   let width = 0;
@@ -79,22 +95,22 @@
   let nodes = [];
   let simulation = null;
 
-  let isVisible = true;
+  let isSectionVisible = true;
   let resizeTimer = null;
+
+  let pointerActive = false;
 
 
   /* ==========================================================
-     RESPONSIVE PARTICLE COUNT
+     04 / RESPONSIVE PARTICLE COUNT
      ========================================================== */
 
   function getParticleCount() {
-    const viewportWidth = window.innerWidth;
-
-    if (viewportWidth <= SETTINGS.mobileBreakpoint) {
+    if (window.innerWidth <= SETTINGS.mobileBreakpoint) {
       return SETTINGS.mobileParticles;
     }
 
-    if (viewportWidth <= SETTINGS.tabletBreakpoint) {
+    if (window.innerWidth <= SETTINGS.tabletBreakpoint) {
       return SETTINGS.tabletParticles;
     }
 
@@ -103,28 +119,7 @@
 
 
   /* ==========================================================
-     CREATE PARTICLES
-     ========================================================== */
-
-  function createData() {
-    const referenceSize = Math.min(width, height);
-    const k = referenceSize / 200;
-
-    const radius = d3.randomUniform(k, k * 4);
-    const particleCount = getParticleCount();
-
-    return Array.from(
-      { length: particleCount + 1 },
-      (_, i) => ({
-        r: radius(),
-        group: i === 0 ? 0 : ((i - 1) % 4) + 1
-      })
-    );
-  }
-
-
-  /* ==========================================================
-     CANVAS SIZE
+     05 / CANVAS SIZE
      ========================================================== */
 
   function resizeCanvas() {
@@ -150,7 +145,104 @@
 
 
   /* ==========================================================
-     DRAW PARTICLES
+     06 / SCATTERPLOT DATA
+     ========================================================== */
+
+  function createScatterplotData() {
+    const count = getParticleCount();
+
+    /*
+     * Plot dimensions inside the canvas.
+     */
+
+    const plotWidth = width * 0.78;
+    const plotHeight = height * 0.72;
+
+    /*
+     * Use a seeded random generator so the initial
+     * distribution remains visually consistent.
+     */
+
+    const random = d3.randomLcg(0.42);
+    const normal = d3.randomNormal.source(random)(0, 0.16);
+
+    const particles = [];
+
+    for (let i = 0; i < count; i++) {
+      /*
+       * Normalized X coordinate.
+       */
+
+      const x = random();
+
+      /*
+       * Positive relationship:
+       *
+       * y = 0.15 + 0.7x + noise
+       */
+
+      const y = Math.max(
+        0.05,
+        Math.min(
+          0.95,
+          0.15 + 0.7 * x + normal()
+        )
+      );
+
+      /*
+       * Canvas Y increases downward, so invert the
+       * statistical Y coordinate.
+       */
+
+      const targetX =
+        (x - 0.5) * plotWidth;
+
+      const targetY =
+        (0.5 - y) * plotHeight;
+
+      /*
+       * Scale particle size to viewport.
+       */
+
+      const baseRadius = Math.min(
+        width,
+        height
+      ) / 220;
+
+      const radius =
+        Math.max(
+          1.6,
+          Math.min(
+            4.8,
+            baseRadius * (0.7 + random() * 0.9)
+          )
+        );
+
+      particles.push({
+        r: radius,
+
+        targetX,
+        targetY,
+
+        /*
+         * Start near the intended position.
+         * No long convergence animation.
+         */
+
+        x: targetX,
+        y: targetY,
+
+        vx: 0,
+        vy: 0
+      });
+    }
+
+    return particles;
+  }
+
+
+  /* ==========================================================
+     07 / DRAW
      ========================================================== */
 
   function draw() {
@@ -159,12 +251,11 @@
     context.save();
     context.translate(width / 2, height / 2);
 
-    /*
-     * Node 0 is the invisible pointer repulsor.
-     * Only nodes 1 onward are rendered.
-     */
-
     context.fillStyle = SETTINGS.particleColor;
+
+    /*
+     * Node 0 is the invisible cursor repulsor.
+     */
 
     for (let i = 1; i < nodes.length; i++) {
       const node = nodes[i];
@@ -187,7 +278,7 @@
 
 
   /* ==========================================================
-     POINTER INTERACTION
+     08 / POINTER INTERACTION
      ========================================================== */
 
   function pointerMoved(event) {
@@ -195,18 +286,38 @@
 
     const [x, y] = d3.pointer(event, canvas);
 
+    pointerActive = true;
+
     nodes[0].fx = x - width / 2;
     nodes[0].fy = y - height / 2;
 
-    if (simulation && isVisible) {
+    if (simulation && isSectionVisible) {
       simulation.alphaTarget(SETTINGS.alphaTarget);
       simulation.restart();
     }
   }
 
+  function pointerLeft() {
+    pointerActive = false;
+
+    if (!nodes.length) return;
+
+    /*
+     * Move the invisible repulsor away from the plot.
+     */
+
+    nodes[0].fx = width * 3;
+    nodes[0].fy = height * 3;
+
+    if (simulation) {
+      simulation.alphaTarget(0);
+      simulation.alpha(0.3).restart();
+    }
+  }
+
 
   /* ==========================================================
-     SIMULATION
+     09 / SIMULATION
      ========================================================== */
 
   function createSimulation() {
@@ -214,49 +325,49 @@
       simulation.stop();
     }
 
-    nodes = createData().map(Object.create);
+    const particles = createScatterplotData();
 
     /*
-     * Start all particles near the centre.
-     *
-     * This avoids the long convergence animation
-     * encountered during early graduate-site testing.
+     * Invisible pointer node.
      */
 
-    const initialRadius = Math.min(width, height) * 0.12;
+    const pointerNode = {
+      r: 16,
+      x: width * 3,
+      y: height * 3,
+      fx: width * 3,
+      fy: height * 3,
+      vx: 0,
+      vy: 0
+    };
 
-    for (let i = 1; i < nodes.length; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.sqrt(Math.random()) * initialRadius;
-
-      nodes[i].x = Math.cos(angle) * distance;
-      nodes[i].y = Math.sin(angle) * distance;
-
-      nodes[i].vx = 0;
-      nodes[i].vy = 0;
-    }
-
-    /*
-     * Invisible repulsion node begins away from the
-     * visible particle cluster until pointer interaction.
-     */
-
-    nodes[0].fx = width * 2;
-    nodes[0].fy = height * 2;
+    nodes = [pointerNode, ...particles];
 
     simulation = d3.forceSimulation(nodes)
-      .alphaTarget(SETTINGS.alphaTarget)
+      .alpha(0.35)
+      .alphaTarget(0)
       .velocityDecay(SETTINGS.velocityDecay)
+
+      /*
+       * Every particle returns to its own scatterplot
+       * coordinate rather than the global centre.
+       */
 
       .force(
         "x",
-        d3.forceX().strength(SETTINGS.centerStrength)
+        d3.forceX(d => d.targetX || 0)
+          .strength(d => d === pointerNode ? 0 : SETTINGS.returnStrength)
       )
 
       .force(
         "y",
-        d3.forceY().strength(SETTINGS.centerStrength)
+        d3.forceY(d => d.targetY || 0)
+          .strength(d => d === pointerNode ? 0 : SETTINGS.returnStrength)
       )
+
+      /*
+       * Edge-to-edge collision.
+       */
 
       .force(
         "collide",
@@ -266,37 +377,43 @@
           .iterations(SETTINGS.collisionIterations)
       )
 
+      /*
+       * Only the invisible pointer node repels.
+       */
+
       .force(
         "charge",
         d3.forceManyBody()
-          .strength((d, i) => (
-            i === 0 ? -width * 2 / 3 : 0
-          ))
+          .strength((d, i) =>
+            i === 0 ? SETTINGS.pointerStrength : 0
+          )
       )
 
       .on("tick", draw);
 
     /*
-     * Pre-settle the initial cluster before it appears.
-     * This avoids waiting for particles to converge.
+     * Pre-settle before displaying the plot.
      */
 
     simulation.stop();
 
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 50; i++) {
       simulation.tick();
     }
 
     draw();
 
-    if (isVisible && !prefersReducedMotion()) {
+    if (
+      isSectionVisible &&
+      !prefersReducedMotion()
+    ) {
       simulation.restart();
     }
   }
 
 
   /* ==========================================================
-     RESIZE
+     10 / RESIZE
      ========================================================== */
 
   function handleResize() {
@@ -310,7 +427,7 @@
 
 
   /* ==========================================================
-     REDUCED MOTION
+     11 / REDUCED MOTION
      ========================================================== */
 
   function prefersReducedMotion() {
@@ -321,29 +438,36 @@
 
 
   /* ==========================================================
-     VISIBILITY OBSERVER
+     12 / VISIBILITY OBSERVER
      ========================================================== */
 
   function observeVisibility() {
     const cover = document.getElementById("cover");
 
-    if (!cover || !("IntersectionObserver" in window)) {
+    if (
+      !cover ||
+      !("IntersectionObserver" in window)
+    ) {
       return;
     }
 
     const observer = new IntersectionObserver(
       entries => {
-        isVisible = entries[0].isIntersecting;
+        isSectionVisible = entries[0].isIntersecting;
 
         if (!simulation) return;
 
-        if (isVisible && !prefersReducedMotion()) {
+        if (
+          isSectionVisible &&
+          !prefersReducedMotion()
+        ) {
           simulation.restart();
         } else {
           simulation.stop();
         }
       },
       {
+        root: document.querySelector(".snap"),
         threshold: 0.05
       }
     );
@@ -353,7 +477,7 @@
 
 
   /* ==========================================================
-     INITIALIZE
+     13 / INITIALIZE
      ========================================================== */
 
   function init() {
@@ -362,9 +486,8 @@
 
     d3.select(canvas)
       .on("pointermove", pointerMoved)
-      .on("touchmove", event => {
-        event.preventDefault();
-      });
+      .on("pointerleave", pointerLeft)
+      .on("touchmove", event => event.preventDefault());
 
     window.addEventListener(
       "resize",
@@ -375,7 +498,7 @@
     observeVisibility();
 
     console.log(
-      `Collision hero initialized: ${getParticleCount()} visible particles.`
+      `Correlation scatterplot initialized: ${getParticleCount()} particles.`
     );
   }
 
