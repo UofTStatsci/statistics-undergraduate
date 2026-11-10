@@ -5,30 +5,25 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   INTERACTIVE 3D STATISTICAL LANDSCAPE
+   INTERACTIVE 3D TOPOGRAPHIC PARTICLE FIELD
 
    File: assets/js/statistical-landscape.js
-   Version: 1.0
+   Version: 2.0
 
    Features:
-   - Three-dimensional statistical surface
-   - X/Y grid with vertical data stems
-   - White spherical data points
-   - Perspective projection
-   - Ambient rotation
-   - Mouse-responsive camera movement
-   - Drag-to-rotate
-   - Inertial momentum
-   - Responsive rendering
+   - Full-width three-dimensional particle landscape
+   - White spheres on U of T blue
+   - Rolling topographic hills and valleys
+   - Mouse-generated travelling waves
+   - Spring physics and damping
+   - Neighbour-to-neighbour wave propagation
+   - Subtle ambient surface movement
+   - Responsive particle counts
+   - Touch interaction
    - Reduced-motion support
+   - Pauses when off-screen
 
-   No build system required.
-   Three.js loaded from CDN.
-   ========================================================== */
-
-
-/* ==========================================================
-   01 / IMPORT THREE.JS
+   Three.js CDN, no build system required.
    ========================================================== */
 
 import * as THREE from
@@ -36,91 +31,120 @@ import * as THREE from
 
 
 /* ==========================================================
-   02 / INITIALIZE
+   01 / ELEMENT
    ========================================================== */
 
 const container = document.getElementById(
   "statistical-landscape"
 );
 
-if (!container) {
-  console.warn(
-    "Statistical landscape: container not found."
-  );
-} else {
+if (container) {
   initializeLandscape();
 }
 
 
 /* ==========================================================
-   03 / MAIN FUNCTION
+   02 / MAIN
    ========================================================== */
 
 function initializeLandscape() {
 
-  /* --------------------------------------------------------
-     Configuration
-     -------------------------------------------------------- */
+  const cover = document.getElementById("cover");
+
+  if (!cover) return;
+
+
+  /* ========================================================
+     03 / SETTINGS
+
+     These are the main controls for the experience.
+     ======================================================== */
 
   const SETTINGS = {
-    background: 0x0180a5,
 
-    gridColor: 0xffffff,
-    stemColor: 0xffffff,
-    pointColor: 0xffffff,
+    color: 0xffffff,
 
-    gridOpacity: 0.30,
-    stemOpacity: 0.46,
+    desktopColumns: 42,
+    desktopRows: 24,
 
-    desktopGridSize: 13,
-    tabletGridSize: 11,
-    mobileGridSize: 8,
+    tabletColumns: 32,
+    tabletRows: 20,
 
-    gridSpacing: 0.48,
+    mobileColumns: 22,
+    mobileRows: 16,
 
-    maximumHeight: 3.2,
+    pointRadius: 0.065,
 
-    pointRadius: 0.085,
+    terrainHeight: 1.45,
 
-    autoRotateSpeed: 0.11,
+    waveStrength: 2.8,
+    waveRadius: 1.65,
 
-    dragSensitivity: 0.006,
+    springStrength: 0.075,
+    neighbourStrength: 0.16,
+    damping: 0.91,
 
-    momentumFriction: 0.94,
-    momentumMinimum: 0.00008,
-    maximumMomentum: 0.055,
+    ambientAmplitude: 0.065,
+    ambientSpeed: 0.65,
 
-    pointerTiltStrength: 0.075,
+    maxVelocity: 0.38,
 
     maxPixelRatio: 2
+
   };
 
 
   /* ========================================================
-     04 / STATE
+     04 / FULL-WIDTH COVER POSITIONING
+
+     Override the previous centre-right chart placement.
+
+     The visualization occupies the full cover but remains
+     beneath the heading and program labels.
+
+     No CSS changes are required for this initial test.
      ======================================================== */
 
-  let width = 1;
-  let height = 1;
+  Object.assign(container.style, {
+    position: "absolute",
+    inset: "0",
+    top: "0",
+    left: "0",
+    right: "0",
+    bottom: "0",
+    width: "100%",
+    height: "100%",
+    overflow: "hidden",
+    zIndex: "1",
+    cursor: "crosshair",
+    touchAction: "pan-y"
+  });
 
-  let isDragging = false;
-  let isVisible = true;
 
-  let momentumX = 0;
-  let momentumY = 0;
+  /* ========================================================
+     05 / STATE
+     ======================================================== */
 
-  let pointerX = 0;
-  let pointerY = 0;
+  let columns = 0;
+  let rows = 0;
 
-  let lastPointerX = 0;
-  let lastPointerY = 0;
-  let lastPointerTime = 0;
+  let points = [];
+  let spheres = null;
+  let gridLines = null;
 
-  let lastFrameTime = null;
+  let gridWidth = 0;
+  let gridDepth = 0;
+
+  let spacingX = 0;
+  let spacingZ = 0;
 
   let animationFrame = null;
+  let lastFrameTime = null;
 
-  let gridSize = 0;
+  let isSectionVisible = true;
+  let pointerDown = false;
+
+  let simulationTime = 0;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -128,67 +152,78 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     05 / THREE.JS SCENE
+     06 / SCENE
      ======================================================== */
 
   const scene = new THREE.Scene();
-
-  /*
-   * Transparent background allows the U of T blue
-   * cover background to show through.
-   */
 
   scene.background = null;
 
 
   /* ========================================================
-     06 / CAMERA
+     07 / CAMERA
+
+     Perspective view looking across the landscape.
+
+     The camera is stationary. The data points move.
      ======================================================== */
 
   const camera = new THREE.PerspectiveCamera(
-    35,
+    38,
     1,
     0.1,
     100
   );
 
   camera.position.set(
-    8,
-    7,
-    10
+    0,
+    9.5,
+    15.5
   );
 
   camera.lookAt(
     0,
-    1.1,
+    0,
     0
   );
 
 
   /* ========================================================
-     07 / RENDERER
+     08 / RENDERER
      ======================================================== */
 
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance"
-  });
+  let renderer;
 
-  renderer.setPixelRatio(
-    Math.min(
-      window.devicePixelRatio || 1,
-      SETTINGS.maxPixelRatio
-    )
-  );
+  try {
+
+    renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: "default"
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Unable to initialize 3D landscape:",
+      error
+    );
+
+    return;
+  }
 
   renderer.setClearColor(
-    SETTINGS.background,
+    0x0180a5,
     0
   );
 
   renderer.outputColorSpace =
     THREE.SRGBColorSpace;
+
+  renderer.domElement.style.display = "block";
+  renderer.domElement.style.width = "100%";
+  renderer.domElement.style.height = "100%";
+  renderer.domElement.style.touchAction = "pan-y";
 
   container.appendChild(
     renderer.domElement
@@ -196,456 +231,709 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     08 / LIGHTING
+     09 / LIGHTING
      ======================================================== */
 
-  const ambientLight = new THREE.AmbientLight(
-    0xffffff,
-    1.7
-  );
-
   scene.add(
-    ambientLight
+    new THREE.AmbientLight(
+      0xffffff,
+      2.2
+    )
   );
 
-
-  const directionalLight = new THREE.DirectionalLight(
+  const light = new THREE.DirectionalLight(
     0xffffff,
     2.4
   );
 
-  directionalLight.position.set(
-    5,
-    9,
-    7
+  light.position.set(
+    -5,
+    12,
+    8
   );
 
-  scene.add(
-    directionalLight
-  );
+  scene.add(light);
 
 
   /* ========================================================
-     09 / ROTATING GROUP
+     10 / GEOMETRY GROUP
      ======================================================== */
 
-  /*
-   * All statistical geometry lives inside one group.
+  const landscape = new THREE.Group();
 
-   * Rotating this group rotates the entire chart
-   * without changing the camera position.
-   */
+  scene.add(landscape);
 
-  const landscapeGroup = new THREE.Group();
-
-  scene.add(
-    landscapeGroup
+  const sphereGeometry = new THREE.SphereGeometry(
+    SETTINGS.pointRadius,
+    8,
+    6
   );
+
+  const sphereMaterial = new THREE.MeshStandardMaterial({
+    color: SETTINGS.color,
+    roughness: 0.48,
+    metalness: 0
+  });
+
+  const dummy = new THREE.Object3D();
 
 
   /* ========================================================
-     10 / GRID SIZE
+     11 / RESPONSIVE GRID
      ======================================================== */
 
-  function getGridSize() {
-    const viewportWidth = window.innerWidth;
+  function getGridDimensions() {
 
-    if (viewportWidth <= 800) {
-      return SETTINGS.mobileGridSize;
+    const viewport = window.innerWidth;
+
+    if (viewport <= 800) {
+      return [
+        SETTINGS.mobileColumns,
+        SETTINGS.mobileRows
+      ];
     }
 
-    if (viewportWidth <= 1200) {
-      return SETTINGS.tabletGridSize;
+    if (viewport <= 1200) {
+      return [
+        SETTINGS.tabletColumns,
+        SETTINGS.tabletRows
+      ];
     }
 
-    return SETTINGS.desktopGridSize;
+    return [
+      SETTINGS.desktopColumns,
+      SETTINGS.desktopRows
+    ];
   }
 
 
   /* ========================================================
-     11 / STATISTICAL FUNCTION
+     12 / TOPOGRAPHIC HEIGHT FUNCTION
+
+     Three overlapping Gaussian hills create a smooth,
+     irregular statistical landscape.
+
+     This is an illustrative mathematical surface.
      ======================================================== */
 
-  /*
-   * The data heights represent a smooth statistical
-   * landscape with two overlapping peaks.
+  function terrainHeight(x, z) {
 
-   * This produces a visually interesting surface
-   * rather than a perfectly symmetrical bell curve.
-
-   * It is an illustrative function, not real data.
-   */
-
-  function statisticalHeight(x, z) {
-
-    const peakOne =
-      2.5 *
-      Math.exp(
+    const hillOne =
+      1.55 * Math.exp(
         -(
-          Math.pow(x + 0.9, 2) / 3.5 +
-          Math.pow(z - 0.3, 2) / 2.2
+          ((x + 3.4) ** 2) / 13 +
+          ((z + 0.5) ** 2) / 8
         )
       );
 
-    const peakTwo =
-      1.6 *
-      Math.exp(
+    const hillTwo =
+      2.1 * Math.exp(
         -(
-          Math.pow(x - 1.3, 2) / 1.8 +
-          Math.pow(z + 1.1, 2) / 2.8
+          ((x - 2.2) ** 2) / 8 +
+          ((z - 1.2) ** 2) / 10
         )
       );
 
-    const variation =
-      0.12 *
-      Math.sin(x * 2.1) *
-      Math.cos(z * 1.7);
+    const hillThree =
+      1.15 * Math.exp(
+        -(
+          ((x - 0.5) ** 2) / 16 +
+          ((z + 3.1) ** 2) / 5
+        )
+      );
 
-    return Math.max(
-      0.12,
-      Math.min(
-        SETTINGS.maximumHeight,
-        peakOne + peakTwo + variation
-      )
+    const rolling =
+      0.22 *
+      Math.sin(x * 0.75) *
+      Math.cos(z * 0.9);
+
+    return (
+      (hillOne + hillTwo + hillThree + rolling) *
+      SETTINGS.terrainHeight *
+      0.65
     );
   }
 
 
   /* ========================================================
-     12 / CLEAR GEOMETRY
+     13 / CLEAN UP OLD GRID
      ======================================================== */
 
-  function clearLandscape() {
+  function clearGrid() {
 
-    while (landscapeGroup.children.length) {
-
-      const child =
-        landscapeGroup.children[0];
-
-      landscapeGroup.remove(
-        child
-      );
-
-      child.traverse(object => {
-
-        if (object.geometry) {
-          object.geometry.dispose();
-        }
-
-        if (object.material) {
-
-          const materials = Array.isArray(
-            object.material
-          )
-            ? object.material
-            : [object.material];
-
-          materials.forEach(material => {
-            material.dispose();
-          });
-        }
-
-      });
-    }
-  }
-
-
-  /* ========================================================
-     13 / CREATE GRID
-     ======================================================== */
-
-  function createGrid(size) {
-
-    const spacing =
-      SETTINGS.gridSpacing;
-
-    const totalSize =
-      (size - 1) * spacing;
-
-    const halfSize =
-      totalSize / 2;
-
-    const gridMaterial =
-      new THREE.LineBasicMaterial({
-        color: SETTINGS.gridColor,
-        transparent: true,
-        opacity: SETTINGS.gridOpacity,
-        depthWrite: false
-      });
-
-    const gridPoints = [];
-
-    for (let i = 0; i < size; i++) {
-
-      const position =
-        -halfSize + i * spacing;
-
-      /*
-       * Lines parallel to X axis.
-       */
-
-      gridPoints.push(
-        -halfSize, 0, position,
-        halfSize, 0, position
-      );
-
-      /*
-       * Lines parallel to Z axis.
-       */
-
-      gridPoints.push(
-        position, 0, -halfSize,
-        position, 0, halfSize
-      );
+    if (spheres) {
+      landscape.remove(spheres);
+      spheres.dispose();
+      spheres = null;
     }
 
-    const geometry =
-      new THREE.BufferGeometry();
+    if (gridLines) {
+      landscape.remove(gridLines);
+      gridLines.geometry.dispose();
+      gridLines.material.dispose();
+      gridLines = null;
+    }
 
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(
-        gridPoints,
-        3
-      )
-    );
-
-    const grid =
-      new THREE.LineSegments(
-        geometry,
-        gridMaterial
-      );
-
-    landscapeGroup.add(
-      grid
-    );
+    points = [];
   }
 
 
   /* ========================================================
-     14 / CREATE STEMS AND POINTS
+     14 / CREATE PARTICLE FIELD
      ======================================================== */
 
-  function createObservations(size) {
+  function createGrid() {
 
-    const spacing =
-      SETTINGS.gridSpacing;
+    clearGrid();
 
-    const totalSize =
-      (size - 1) * spacing;
+    const dimensions = getGridDimensions();
 
-    const halfSize =
-      totalSize / 2;
+    columns = dimensions[0];
+    rows = dimensions[1];
 
+    /*
+     * Wide landscape, extending across the cover.
+     */
 
-    /* ------------------------------------------------------
-       Stem material
-       ------------------------------------------------------ */
+    gridWidth = 16;
+    gridDepth = 10;
 
-    const stemMaterial =
-      new THREE.LineBasicMaterial({
-        color: SETTINGS.stemColor,
-        transparent: true,
-        opacity: SETTINGS.stemOpacity,
-        depthWrite: false
-      });
+    spacingX = gridWidth / (columns - 1);
+    spacingZ = gridDepth / (rows - 1);
 
+    const count = columns * rows;
 
-    /* ------------------------------------------------------
-       Point material
-       ------------------------------------------------------ */
+    spheres = new THREE.InstancedMesh(
+      sphereGeometry,
+      sphereMaterial,
+      count
+    );
 
-    const pointMaterial =
-      new THREE.MeshStandardMaterial({
-        color: SETTINGS.pointColor,
-        roughness: 0.35,
-        metalness: 0.0
-      });
+    spheres.instanceMatrix.setUsage(
+      THREE.DynamicDrawUsage
+    );
 
-
-    /* ------------------------------------------------------
-       Shared sphere geometry
-       ------------------------------------------------------ */
-
-    const sphereGeometry =
-      new THREE.SphereGeometry(
-        SETTINGS.pointRadius,
-        12,
-        10
-      );
-
-
-    /* ------------------------------------------------------
-       Instanced spheres for performance
-       ------------------------------------------------------ */
-
-    const observationCount =
-      size * size;
-
-    const spheres =
-      new THREE.InstancedMesh(
-        sphereGeometry,
-        pointMaterial,
-        observationCount
-      );
-
-    const dummy =
-      new THREE.Object3D();
-
-    const stemPositions =
-      [];
+    spheres.frustumCulled = false;
 
     let index = 0;
 
+    for (let row = 0; row < rows; row++) {
 
-    /* ------------------------------------------------------
-       Populate observations
-       ------------------------------------------------------ */
-
-    for (let xIndex = 0; xIndex < size; xIndex++) {
-
-      for (let zIndex = 0; zIndex < size; zIndex++) {
+      for (let col = 0; col < columns; col++) {
 
         const x =
-          -halfSize + xIndex * spacing;
+          -gridWidth / 2 +
+          col * spacingX;
 
         const z =
-          -halfSize + zIndex * spacing;
+          -gridDepth / 2 +
+          row * spacingZ;
 
-        const height =
-          statisticalHeight(
-            x,
-            z
-          );
+        const baseHeight = terrainHeight(x, z);
 
-        /*
-         * Sphere position.
-         */
+        points.push({
 
-        dummy.position.set(
           x,
-          height,
-          z
-        );
+          z,
 
-        dummy.updateMatrix();
+          row,
+          col,
 
-        spheres.setMatrixAt(
-          index,
-          dummy.matrix
-        );
+          baseHeight,
 
+          displacement: 0,
+          velocity: 0,
 
-        /*
-         * Vertical stem from grid to sphere.
-         */
+          index
 
-        stemPositions.push(
-          x, 0, z,
-          x, height, z
-        );
+        });
 
         index++;
       }
     }
 
-    spheres.instanceMatrix.needsUpdate =
-      true;
+    landscape.add(spheres);
 
-    landscapeGroup.add(
-      spheres
-    );
+    createGridLines();
+
+    updateGeometry();
+  }
 
 
-    /* ------------------------------------------------------
-       Create all stems as one line-segment geometry.
-       ------------------------------------------------------ */
+  /* ========================================================
+     15 / SUBTLE TOPOGRAPHIC GRID
 
-    const stemGeometry =
-      new THREE.BufferGeometry();
+     A faint wireframe beneath the particle surface.
+     ======================================================== */
 
-    stemGeometry.setAttribute(
+  function createGridLines() {
+
+    const positions = [];
+
+    for (let row = 0; row < rows; row++) {
+
+      for (let col = 0; col < columns; col++) {
+
+        const index = row * columns + col;
+        const point = points[index];
+
+        if (col < columns - 1) {
+
+          const next = points[index + 1];
+
+          positions.push(
+            point.x, -0.28, point.z,
+            next.x, -0.28, next.z
+          );
+        }
+
+        if (row < rows - 1) {
+
+          const next = points[index + columns];
+
+          positions.push(
+            point.x, -0.28, point.z,
+            next.x, -0.28, next.z
+          );
+        }
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+
+    geometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(
-        stemPositions,
+        positions,
         3
       )
     );
 
-    const stems =
-      new THREE.LineSegments(
-        stemGeometry,
-        stemMaterial
-      );
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.13,
+      depthWrite: false
+    });
 
-    landscapeGroup.add(
-      stems
+    gridLines = new THREE.LineSegments(
+      geometry,
+      material
     );
+
+    landscape.add(gridLines);
   }
 
 
   /* ========================================================
-     15 / BUILD LANDSCAPE
+     16 / UPDATE PARTICLE POSITIONS
      ======================================================== */
 
-  function buildLandscape() {
+  function updateGeometry() {
 
-    const nextGridSize =
-      getGridSize();
+    if (!spheres) return;
+
+    for (const point of points) {
+
+      const ambient =
+        reducedMotion.matches
+          ? 0
+          : SETTINGS.ambientAmplitude *
+            Math.sin(
+              point.x * 0.85 +
+              point.z * 0.55 +
+              simulationTime * SETTINGS.ambientSpeed
+            );
+
+      const height =
+        point.baseHeight +
+        point.displacement +
+        ambient;
+
+      dummy.position.set(
+        point.x,
+        height,
+        point.z
+      );
+
+      /*
+       * Slightly vary sphere size by elevation
+       * to reinforce the landscape's depth.
+       */
+
+      const scale =
+        THREE.MathUtils.clamp(
+          0.85 + height * 0.065,
+          0.8,
+          1.25
+        );
+
+      dummy.scale.setScalar(scale);
+
+      dummy.updateMatrix();
+
+      spheres.setMatrixAt(
+        point.index,
+        dummy.matrix
+      );
+    }
+
+    spheres.instanceMatrix.needsUpdate = true;
+  }
+
+
+  /* ========================================================
+     17 / WAVE PHYSICS
+
+     Every particle is connected to neighbouring particles
+     through a virtual spring system.
+
+     A disturbance at one point propagates across the field.
+     ======================================================== */
+
+  function updatePhysics(frameScale) {
+
+    const accelerations = new Float32Array(
+      points.length
+    );
+
+    for (let i = 0; i < points.length; i++) {
+
+      const point = points[i];
+
+      let neighbourSum = 0;
+      let neighbourCount = 0;
+
+      if (point.col > 0) {
+        neighbourSum += points[i - 1].displacement;
+        neighbourCount++;
+      }
+
+      if (point.col < columns - 1) {
+        neighbourSum += points[i + 1].displacement;
+        neighbourCount++;
+      }
+
+      if (point.row > 0) {
+        neighbourSum += points[i - columns].displacement;
+        neighbourCount++;
+      }
+
+      if (point.row < rows - 1) {
+        neighbourSum += points[i + columns].displacement;
+        neighbourCount++;
+      }
+
+      const neighbourAverage =
+        neighbourCount > 0
+          ? neighbourSum / neighbourCount
+          : 0;
+
+      /*
+       * Spring pulls the particle back to its
+       * original topographic height.
+       */
+
+      const springForce =
+        -point.displacement *
+        SETTINGS.springStrength;
+
+      /*
+       * Neighbour coupling spreads the wave.
+       */
+
+      const waveForce =
+        (neighbourAverage - point.displacement) *
+        SETTINGS.neighbourStrength;
+
+      accelerations[i] =
+        springForce + waveForce;
+    }
+
+    /*
+     * Apply all accelerations after calculating them.
+     * This avoids updating neighbours out of sequence.
+     */
+
+    const step = Math.min(frameScale, 2);
+
+    const damping = Math.pow(
+      SETTINGS.damping,
+      step
+    );
+
+    for (let i = 0; i < points.length; i++) {
+
+      const point = points[i];
+
+      point.velocity +=
+        accelerations[i] * step;
+
+      point.velocity = THREE.MathUtils.clamp(
+        point.velocity,
+        -SETTINGS.maxVelocity,
+        SETTINGS.maxVelocity
+      );
+
+      point.velocity *= damping;
+
+      point.displacement +=
+        point.velocity * step;
+    }
+  }
+
+
+  /* ========================================================
+     18 / GENERATE RADIAL WAVE
+
+     The cursor creates a localized impulse.
+
+     Nearby particles receive a stronger impulse,
+     while distant particles respond as the wave travels.
+     ======================================================== */
+
+  function createWave(x, z, strength = 1) {
+
+    if (reducedMotion.matches) return;
+
+    const radius = SETTINGS.waveRadius;
+    const radiusSquared = radius * radius;
+
+    for (const point of points) {
+
+      const dx = point.x - x;
+      const dz = point.z - z;
+
+      const distanceSquared =
+        dx * dx + dz * dz;
+
+      if (distanceSquared > radiusSquared * 5) {
+        continue;
+      }
+
+      /*
+       * Smooth Gaussian falloff.
+       */
+
+      const influence = Math.exp(
+        -distanceSquared /
+        (radiusSquared * 0.7)
+      );
+
+      point.velocity +=
+        SETTINGS.waveStrength *
+        influence *
+        strength *
+        0.11;
+
+      point.velocity = THREE.MathUtils.clamp(
+        point.velocity,
+        -SETTINGS.maxVelocity,
+        SETTINGS.maxVelocity
+      );
+    }
+  }
+
+
+  /* ========================================================
+     19 / POINTER RAYCASTING
+
+     Convert the cursor's screen position into a point
+     on the 3D landscape's X/Z plane.
+     ======================================================== */
+
+  const raycaster = new THREE.Raycaster();
+
+  const pointer = new THREE.Vector2();
+
+  const interactionPlane = new THREE.Plane(
+    new THREE.Vector3(0, 1, 0),
+    -0.8
+  );
+
+  const intersection = new THREE.Vector3();
+
+  let previousWaveX = null;
+  let previousWaveZ = null;
+  let previousWaveTime = 0;
+
+
+  function pointerMoved(event) {
+
+    if (reducedMotion.matches) return;
+
+    const rect = container.getBoundingClientRect();
+
+    pointer.x =
+      ((event.clientX - rect.left) / rect.width) * 2 - 1;
+
+    pointer.y =
+      -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+
+    const hit = raycaster.ray.intersectPlane(
+      interactionPlane,
+      intersection
+    );
+
+    if (!hit) return;
+
+    const x = intersection.x;
+    const z = intersection.z;
 
     if (
-      gridSize === nextGridSize &&
-      landscapeGroup.children.length
+      Math.abs(x) > gridWidth / 2 + 1 ||
+      Math.abs(z) > gridDepth / 2 + 1
     ) {
       return;
     }
 
-    gridSize =
-      nextGridSize;
+    const now = performance.now();
 
-    clearLandscape();
+    /*
+     * Prevent excessive impulses when the browser
+     * sends many pointer events per frame.
+     */
 
-    createGrid(
-      gridSize
+    if (now - previousWaveTime < 28) {
+      return;
+    }
+
+    let movement = 1;
+
+    if (
+      previousWaveX !== null &&
+      previousWaveZ !== null
+    ) {
+
+      const distance = Math.hypot(
+        x - previousWaveX,
+        z - previousWaveZ
+      );
+
+      movement = THREE.MathUtils.clamp(
+        distance * 2.2,
+        0.25,
+        1.5
+      );
+    }
+
+    createWave(
+      x,
+      z,
+      pointerDown ? movement * 1.4 : movement
     );
 
-    createObservations(
-      gridSize
-    );
+    previousWaveX = x;
+    previousWaveZ = z;
+    previousWaveTime = now;
   }
 
 
   /* ========================================================
-     16 / RESIZE
+     20 / TOUCH AND POINTER EVENTS
      ======================================================== */
+
+  container.addEventListener(
+    "pointermove",
+    pointerMoved,
+    { passive: true }
+  );
+
+  container.addEventListener(
+    "pointerdown",
+    event => {
+
+      pointerDown = true;
+
+      previousWaveX = null;
+      previousWaveZ = null;
+
+      pointerMoved(event);
+
+    }
+  );
+
+  window.addEventListener(
+    "pointerup",
+    () => {
+      pointerDown = false;
+    }
+  );
+
+  window.addEventListener(
+    "pointercancel",
+    () => {
+      pointerDown = false;
+    }
+  );
+
+  container.addEventListener(
+    "pointerleave",
+    () => {
+
+      previousWaveX = null;
+      previousWaveZ = null;
+
+    }
+  );
+
+
+  /* ========================================================
+     21 / RESIZE
+     ======================================================== */
+
+  let currentGridKey = "";
 
   function resize() {
 
-    const rect =
-      container.getBoundingClientRect();
+    const rect = container.getBoundingClientRect();
 
-    width =
-      Math.max(
-        1,
-        rect.width
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+
+    camera.aspect = width / height;
+
+    /*
+     * Adjust camera distance to preserve a broad
+     * landscape on different aspect ratios.
+     */
+
+    const aspect = width / height;
+
+    if (aspect < 0.8) {
+
+      camera.position.set(
+        0,
+        12,
+        22
       );
 
-    height =
-      Math.max(
-        1,
-        rect.height
+    } else if (aspect < 1.4) {
+
+      camera.position.set(
+        0,
+        10.5,
+        18
       );
 
-    camera.aspect =
-      width / height;
+    } else {
+
+      camera.position.set(
+        0,
+        9.5,
+        15.5
+      );
+    }
+
+    camera.lookAt(
+      0,
+      0.55,
+      0
+    );
 
     camera.updateProjectionMatrix();
-
-    renderer.setSize(
-      width,
-      height,
-      false
-    );
 
     renderer.setPixelRatio(
       Math.min(
@@ -654,382 +942,87 @@ function initializeLandscape() {
       )
     );
 
-    buildLandscape();
-
-    renderer.render(
-      scene,
-      camera
-    );
-  }
-
-
-  /* ========================================================
-     17 / POINTER POSITION
-     ======================================================== */
-
-  function updatePointerPosition(event) {
-
-    const rect =
-      container.getBoundingClientRect();
-
-    pointerX =
-      (
-        (event.clientX - rect.left) /
-        Math.max(1, rect.width)
-      ) * 2 - 1;
-
-    pointerY =
-      (
-        (event.clientY - rect.top) /
-        Math.max(1, rect.height)
-      ) * 2 - 1;
-
-    pointerX =
-      THREE.MathUtils.clamp(
-        pointerX,
-        -1,
-        1
-      );
-
-    pointerY =
-      THREE.MathUtils.clamp(
-        pointerY,
-        -1,
-        1
-      );
-  }
-
-
-  /* ========================================================
-     18 / POINTER DOWN
-     ======================================================== */
-
-  function pointerDown(event) {
-
-    isDragging =
-      true;
-
-    /*
-     * Immediately cancel existing momentum.
-     */
-
-    momentumX =
-      0;
-
-    momentumY =
-      0;
-
-    lastPointerX =
-      event.clientX;
-
-    lastPointerY =
-      event.clientY;
-
-    lastPointerTime =
-      performance.now();
-
-    container.setPointerCapture?.(
-      event.pointerId
+    renderer.setSize(
+      width,
+      height,
+      false
     );
 
-    container.style.cursor =
-      "grabbing";
-  }
+    const dimensions = getGridDimensions();
+    const gridKey = dimensions.join("x");
 
+    if (gridKey !== currentGridKey) {
 
-  /* ========================================================
-     19 / POINTER MOVE
-     ======================================================== */
+      currentGridKey = gridKey;
+      createGrid();
 
-  function pointerMove(event) {
-
-    updatePointerPosition(
-      event
-    );
-
-    if (!isDragging) {
-      return;
     }
 
-    const now =
-      performance.now();
-
-    const elapsed =
-      Math.max(
-        1,
-        now - lastPointerTime
-      );
-
-    const dx =
-      event.clientX - lastPointerX;
-
-    const dy =
-      event.clientY - lastPointerY;
-
-    lastPointerX =
-      event.clientX;
-
-    lastPointerY =
-      event.clientY;
-
-    lastPointerTime =
-      now;
-
-
-    /* ------------------------------------------------------
-       Direct rotation
-       ------------------------------------------------------ */
-
-    const deltaX =
-      dx * SETTINGS.dragSensitivity;
-
-    const deltaY =
-      dy * SETTINGS.dragSensitivity;
-
-    landscapeGroup.rotation.y +=
-      deltaX;
-
-    landscapeGroup.rotation.x +=
-      deltaY;
-
-    landscapeGroup.rotation.x =
-      THREE.MathUtils.clamp(
-        landscapeGroup.rotation.x,
-        -0.65,
-        0.65
-      );
-
-
-    /* ------------------------------------------------------
-       Measure angular velocity
-       ------------------------------------------------------ */
-
-    const frameScale =
-      (1000 / 60) / elapsed;
-
-    const measuredX =
-      deltaX * frameScale;
-
-    const measuredY =
-      deltaY * frameScale;
-
-    momentumX =
-      THREE.MathUtils.lerp(
-        momentumX,
-        measuredX,
-        0.65
-      );
-
-    momentumY =
-      THREE.MathUtils.lerp(
-        momentumY,
-        measuredY,
-        0.65
-      );
-
-    momentumX =
-      THREE.MathUtils.clamp(
-        momentumX,
-        -SETTINGS.maximumMomentum,
-        SETTINGS.maximumMomentum
-      );
-
-    momentumY =
-      THREE.MathUtils.clamp(
-        momentumY,
-        -SETTINGS.maximumMomentum,
-        SETTINGS.maximumMomentum
-      );
+    renderer.render(scene, camera);
   }
 
 
   /* ========================================================
-     20 / POINTER UP
+     22 / ANIMATION
+
+     Physics runs at a fixed 60Hz step to keep the
+     surface response consistent across refresh rates.
      ======================================================== */
 
-  function pointerUp(event) {
+  const FIXED_STEP = 1000 / 60;
 
-    if (!isDragging) {
-      return;
-    }
-
-    isDragging =
-      false;
-
-    container.releasePointerCapture?.(
-      event.pointerId
-    );
-
-    container.style.cursor =
-      "grab";
-
-    lastFrameTime =
-      null;
-  }
-
-
-  /* ========================================================
-     21 / ANIMATION
-     ======================================================== */
+  let accumulator = 0;
 
   function animate(timestamp) {
+
+    animationFrame = null;
+
+    if (
+      !isSectionVisible ||
+      reducedMotion.matches ||
+      document.hidden
+    ) {
+      return;
+    }
 
     if (lastFrameTime === null) {
       lastFrameTime = timestamp;
     }
 
-    const delta =
-      Math.min(
-        50,
-        timestamp - lastFrameTime
-      );
+    const delta = Math.min(
+      50,
+      Math.max(0, timestamp - lastFrameTime)
+    );
 
-    lastFrameTime =
-      timestamp;
+    lastFrameTime = timestamp;
 
-    const frameScale =
-      delta / (1000 / 60);
+    accumulator += delta;
 
+    let steps = 0;
 
-    /* ------------------------------------------------------
-       Momentum
-       ------------------------------------------------------ */
+    while (
+      accumulator >= FIXED_STEP &&
+      steps < 3
+    ) {
 
-    if (!isDragging) {
+      updatePhysics(1);
 
-      if (
-        Math.abs(momentumX) >
-        SETTINGS.momentumMinimum
-      ) {
+      simulationTime += FIXED_STEP / 1000;
 
-        landscapeGroup.rotation.y +=
-          momentumX * frameScale;
+      accumulator -= FIXED_STEP;
 
-        momentumX *=
-          Math.pow(
-            SETTINGS.momentumFriction,
-            frameScale
-          );
-
-      } else {
-
-        momentumX = 0;
-
-        /*
-         * Ambient rotation.
-         */
-
-        landscapeGroup.rotation.y +=
-          SETTINGS.autoRotateSpeed *
-          (delta / 1000);
-      }
-
-
-      if (
-        Math.abs(momentumY) >
-        SETTINGS.momentumMinimum
-      ) {
-
-        landscapeGroup.rotation.x +=
-          momentumY * frameScale;
-
-        momentumY *=
-          Math.pow(
-            SETTINGS.momentumFriction,
-            frameScale
-          );
-
-      } else {
-
-        momentumY = 0;
-      }
-
-
-      landscapeGroup.rotation.x =
-        THREE.MathUtils.clamp(
-          landscapeGroup.rotation.x,
-          -0.65,
-          0.65
-        );
+      steps++;
     }
 
-
-    /* ------------------------------------------------------
-       Subtle mouse-responsive tilt
-       ------------------------------------------------------ */
-
-    if (!isDragging) {
-
-      const targetTiltX =
-        -pointerY *
-        SETTINGS.pointerTiltStrength;
-
-      const targetTiltZ =
-        -pointerX *
-        SETTINGS.pointerTiltStrength;
-
-      landscapeGroup.rotation.x +=
-        (targetTiltX - landscapeGroup.rotation.x) *
-        0.0025;
-
-      landscapeGroup.rotation.z +=
-        (targetTiltZ - landscapeGroup.rotation.z) *
-        0.025;
-    }
-
+    updateGeometry();
 
     renderer.render(
       scene,
       camera
     );
 
-    animationFrame =
-      requestAnimationFrame(
-        animate
-      );
-  }
-
-
-  /* ========================================================
-     22 / VISIBILITY OBSERVER
-     ======================================================== */
-
-  function observeVisibility() {
-
-    const cover =
-      document.getElementById(
-        "cover"
-      );
-
-    if (
-      !cover ||
-      !("IntersectionObserver" in window)
-    ) {
-      return;
-    }
-
-    const observer =
-      new IntersectionObserver(
-        entries => {
-
-          isVisible =
-            entries[0].isIntersecting;
-
-          if (isVisible) {
-            startAnimation();
-          } else {
-            stopAnimation();
-          }
-
-        },
-        {
-          root: document.querySelector(".snap"),
-          threshold: 0.05
-        }
-      );
-
-    observer.observe(
-      cover
+    animationFrame = requestAnimationFrame(
+      animate
     );
   }
 
@@ -1042,89 +1035,122 @@ function initializeLandscape() {
 
     if (
       animationFrame !== null ||
-      reducedMotion.matches
+      reducedMotion.matches ||
+      !isSectionVisible ||
+      document.hidden
     ) {
       return;
     }
 
-    lastFrameTime =
-      null;
+    lastFrameTime = null;
+    accumulator = 0;
 
-    animationFrame =
-      requestAnimationFrame(
-        animate
-      );
+    animationFrame = requestAnimationFrame(
+      animate
+    );
   }
 
 
   function stopAnimation() {
 
-    if (
-      animationFrame !== null
-    ) {
+    if (animationFrame !== null) {
 
       cancelAnimationFrame(
         animationFrame
       );
 
-      animationFrame =
-        null;
+      animationFrame = null;
     }
 
-    lastFrameTime =
-      null;
+    lastFrameTime = null;
+    accumulator = 0;
   }
 
 
   /* ========================================================
-     24 / EVENT LISTENERS
+     24 / VISIBILITY OBSERVER
      ======================================================== */
 
-  container.addEventListener(
-    "pointerdown",
-    pointerDown
+  const visibilityObserver = new IntersectionObserver(
+    entries => {
+
+      isSectionVisible = entries[0].isIntersecting;
+
+      if (isSectionVisible) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+
+    },
+    {
+      root: document.querySelector(".snap"),
+      threshold: 0.05
+    }
   );
 
-  container.addEventListener(
-    "pointermove",
-    pointerMove
+  visibilityObserver.observe(cover);
+
+
+  /* ========================================================
+     25 / REDUCED MOTION
+     ======================================================== */
+
+  function handleMotionChange() {
+
+    if (reducedMotion.matches) {
+
+      stopAnimation();
+
+      for (const point of points) {
+        point.displacement = 0;
+        point.velocity = 0;
+      }
+
+      updateGeometry();
+      renderer.render(scene, camera);
+
+    } else {
+
+      startAnimation();
+    }
+  }
+
+  reducedMotion.addEventListener(
+    "change",
+    handleMotionChange
   );
 
-  container.addEventListener(
-    "pointerup",
-    pointerUp
-  );
 
-  container.addEventListener(
-    "pointercancel",
-    pointerUp
-  );
+  /* ========================================================
+     26 / PAGE VISIBILITY
+     ======================================================== */
 
-  container.addEventListener(
-    "pointerleave",
+  document.addEventListener(
+    "visibilitychange",
     () => {
-      pointerX = 0;
-      pointerY = 0;
+
+      if (document.hidden) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+
     }
   );
 
 
   /* ========================================================
-     25 / RESIZE OBSERVER
+     27 / RESIZE OBSERVER
      ======================================================== */
 
-  if (
-    "ResizeObserver" in window
-  ) {
+  if ("ResizeObserver" in window) {
 
-    const resizeObserver =
-      new ResizeObserver(
-        resize
-      );
-
-    resizeObserver.observe(
-      container
+    const observer = new ResizeObserver(
+      resize
     );
+
+    observer.observe(container);
 
   } else {
 
@@ -1137,22 +1163,18 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     26 / INITIALIZE
+     28 / INITIALIZE
      ======================================================== */
-
-  buildLandscape();
 
   resize();
 
-  observeVisibility();
+  updateGeometry();
 
-  if (
-    !reducedMotion.matches
-  ) {
-    startAnimation();
-  }
+  renderer.render(scene, camera);
+
+  startAnimation();
 
   console.log(
-    "3D statistical landscape initialized."
+    `3D topographic landscape initialized: ${points.length} particles.`
   );
 }
