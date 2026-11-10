@@ -8,21 +8,22 @@
    IMAGE-LOCKED INTERACTIVE TOPOGRAPHY
 
    File: assets/js/topography.js
-   Version: 4.0
+   Version: 5.0
 
    Features:
-   - Fixed original topographic artwork
-   - Pixel-aligned elevation mask
-   - Smooth orange contour highlighting
-   - Mouse and touch elevation interaction
+   - Single WebGL rendering pipeline
+   - Original artwork and elevation mask synchronized
+   - Full-width responsive image
+   - Smooth vertical edge blending
+   - Subtle continuous contour wave movement
+   - No camera zoom or translation
+   - Smooth orange elevation highlighting
+   - Mouse and touch interaction
    - Automatic idle elevation sweep
    - 4.2-second idle delay
-   - Gentle cinematic flyover
-   - Subtle continuous contour wave animation
-   - Approximately 2px displacement
-   - Original line weights and opacity preserved
-   - No visible elevation controls
-   - Responsive rendering
+   - Improved contour coverage sampling
+   - Reduced artwork and highlight opacity
+   - Full-page scrolling compatibility
    - Reduced-motion support
 
    Required assets:
@@ -33,326 +34,66 @@
    ========================================================== */
 
 (() => {
-
   "use strict";
 
-
-  /* ==========================================================
+  /* ========================================================
      01 / CONFIGURATION
-     ========================================================== */
+     ======================================================== */
 
   const CONFIG = {
-
-    /* Asset paths relative to index.html */
-
     mapUrl: "assets/images/elevation-map.png",
 
     imageWidth: 2048,
     imageHeight: 1365,
 
-    /* Initial elevation */
-
     initialElevation: 0.50,
 
-    /* Orange contour selection */
-
     bandWidth: 0.040,
-    highlightOpacity: 0.98,
-
-    /* Idle elevation animation */
+    highlightOpacity: 0.48,
+    artworkOpacity: 0.21,
 
     idleAnimation: true,
     idleDelayMs: 4200,
     idleSpeed: 0.00018,
     idleRange: 0.25,
 
-    /* Smooth elevation transitions */
-
     smoothing: 0.095,
 
-    /* Artwork appearance */
+    /*
+     * Continuous low-amplitude displacement.
+     * The artwork and elevation mask use identical UVs.
+     */
 
-    artworkOpacity: 0.26,
-    overlayOpacity: 0.55,
+    waveEnabled: true,
+    waveSpeed: 0.55,
+    waveAmplitudeX: 0.00085,
+    waveAmplitudeY: 0.00075,
 
-    /* Cinematic flyover */
+    /*
+     * Slight feathering at the top and bottom.
+     */
 
-    flyoverEnabled: true,
-    flyoverZoom: 0.035,
-    flyoverPanX: 0.006,
-    flyoverPanY: 0.005,
-    flyoverSpeed: 0.000035,
-    flyoverSmoothing: 0.035,
-
-    /* Subtle contour wave */
-
-    waveAnimation: true,
-    waveDisplacement: 2.1,
-    waveDuration: "26s",
-    waveFrequencyStart: "0.003 0.005",
-    waveFrequencyMiddle: "0.0045 0.0065",
-
-    /* Rendering */
+    edgeFade: 0.10,
 
     maxPixelRatio: 2
-
   };
 
 
-  /* ==========================================================
+  /* ========================================================
      02 / UTILITIES
-     ========================================================== */
+     ======================================================== */
 
-  const clamp = (
-    value,
-    minimum = 0,
-    maximum = 1
-  ) => Math.max(
-    minimum,
-    Math.min(maximum, value)
-  );
-
+  const clamp = (value, minimum = 0, maximum = 1) =>
+    Math.max(minimum, Math.min(maximum, value));
 
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   );
 
 
-  /* ==========================================================
-     03 / SHARED SVG WAVE FILTER
-     
-     The filter is applied to the combined artwork element,
-     not separately to the image and canvas.
-
-     This is important: both layers receive exactly the
-     same displacement, preserving their alignment.
-     ========================================================== */
-
-  function createWaveFilter() {
-
-    if (
-      !CONFIG.waveAnimation ||
-      prefersReducedMotion.matches
-    ) {
-      return null;
-    }
-
-    const existing = document.getElementById(
-      "topography-wave-filter"
-    );
-
-    if (existing) {
-      return existing;
-    }
-
-    const svgNS =
-      "http://www.w3.org/2000/svg";
-
-    const svg = document.createElementNS(
-      svgNS,
-      "svg"
-    );
-
-    svg.setAttribute("aria-hidden", "true");
-
-    Object.assign(svg.style, {
-      position: "fixed",
-      width: "1px",
-      height: "1px",
-      left: "-10000px",
-      top: "-10000px",
-      overflow: "hidden",
-      pointerEvents: "none"
-    });
-
-
-    const defs = document.createElementNS(
-      svgNS,
-      "defs"
-    );
-
-    const filter = document.createElementNS(
-      svgNS,
-      "filter"
-    );
-
-    filter.setAttribute(
-      "id",
-      "topography-wave-filter"
-    );
-
-    /*
-     * Extend the filter region slightly so the subtle
-     * displacement does not clip the image edges.
-     */
-
-    filter.setAttribute(
-      "filterUnits",
-      "objectBoundingBox"
-    );
-
-    filter.setAttribute(
-      "primitiveUnits",
-      "userSpaceOnUse"
-    );
-
-    filter.setAttribute("x", "-1%");
-    filter.setAttribute("y", "-1%");
-    filter.setAttribute("width", "102%");
-    filter.setAttribute("height", "102%");
-
-
-    /* ------------------------------------------------------
-       Smooth low-frequency turbulence
-       ------------------------------------------------------ */
-
-    const turbulence =
-      document.createElementNS(
-        svgNS,
-        "feTurbulence"
-      );
-
-    turbulence.setAttribute(
-      "type",
-      "fractalNoise"
-    );
-
-    turbulence.setAttribute(
-      "baseFrequency",
-      CONFIG.waveFrequencyStart
-    );
-
-    turbulence.setAttribute(
-      "numOctaves",
-      "1"
-    );
-
-    turbulence.setAttribute(
-      "seed",
-      "8"
-    );
-
-    turbulence.setAttribute(
-      "stitchTiles",
-      "stitch"
-    );
-
-    turbulence.setAttribute(
-      "result",
-      "topographicNoise"
-    );
-
-
-    /* ------------------------------------------------------
-       Gradually evolve the noise pattern.
-
-       The low frequency and long duration make the
-       movement broad, organic and barely noticeable.
-       ------------------------------------------------------ */
-
-    const animateFrequency =
-      document.createElementNS(
-        svgNS,
-        "animate"
-      );
-
-    animateFrequency.setAttribute(
-      "attributeName",
-      "baseFrequency"
-    );
-
-    animateFrequency.setAttribute(
-      "dur",
-      CONFIG.waveDuration
-    );
-
-    animateFrequency.setAttribute(
-      "values",
-      [
-        CONFIG.waveFrequencyStart,
-        CONFIG.waveFrequencyMiddle,
-        CONFIG.waveFrequencyStart
-      ].join(";")
-    );
-
-    animateFrequency.setAttribute(
-      "repeatCount",
-      "indefinite"
-    );
-
-    animateFrequency.setAttribute(
-      "calcMode",
-      "spline"
-    );
-
-    animateFrequency.setAttribute(
-      "keyTimes",
-      "0;0.5;1"
-    );
-
-    animateFrequency.setAttribute(
-      "keySplines",
-      "0.42 0 0.58 1;0.42 0 0.58 1"
-    );
-
-    turbulence.appendChild(
-      animateFrequency
-    );
-
-
-    /* ------------------------------------------------------
-       Displace the combined image and contour overlay.
-
-       The displacement is deliberately very small.
-       ------------------------------------------------------ */
-
-    const displacement =
-      document.createElementNS(
-        svgNS,
-        "feDisplacementMap"
-      );
-
-    displacement.setAttribute(
-      "in",
-      "SourceGraphic"
-    );
-
-    displacement.setAttribute(
-      "in2",
-      "topographicNoise"
-    );
-
-    displacement.setAttribute(
-      "scale",
-      String(CONFIG.waveDisplacement)
-    );
-
-    displacement.setAttribute(
-      "xChannelSelector",
-      "R"
-    );
-
-    displacement.setAttribute(
-      "yChannelSelector",
-      "G"
-    );
-
-
-    filter.appendChild(turbulence);
-    filter.appendChild(displacement);
-
-    defs.appendChild(filter);
-    svg.appendChild(defs);
-
-    document.body.appendChild(svg);
-
-    return svg;
-  }
-
-
-  /* ==========================================================
-     04 / INITIALIZE TOPOGRAPHY
-     ========================================================== */
+  /* ========================================================
+     03 / INITIALIZE
+     ======================================================== */
 
   function initTopography(root) {
 
@@ -368,141 +109,76 @@
       "[data-topo-canvas]"
     );
 
+    const artwork = art?.querySelector("img");
 
-    if (!viewport || !art || !canvas) {
-
-      console.warn(
-        "[topography] Required artwork elements not found."
-      );
-
+    if (!viewport || !art || !canvas || !artwork) {
+      console.warn("[topography] Required elements missing.");
       return;
     }
 
 
-    /* ========================================================
-       05 / REMOVE OBSOLETE CONTROLS
-       ======================================================== */
+    /* ======================================================
+       04 / REMOVE OLD CONTROLS
+       ====================================================== */
 
-    root.querySelector(
-      ".topo-readout"
-    )?.remove();
-
-    root.querySelector(
-      ".topo-footer"
-    )?.remove();
+    root.querySelector(".topo-readout")?.remove();
+    root.querySelector(".topo-footer")?.remove();
 
 
-    /* ========================================================
-       06 / VISUAL STYLING
-       ======================================================== */
+    /* ======================================================
+       05 / VISUAL STYLING
+       ====================================================== */
 
     root.style.backgroundColor = "#002A5C";
-
     viewport.style.backgroundColor = "#002A5C";
-
     art.style.backgroundColor = "#002A5C";
 
-    art.style.transformOrigin = "50% 50%";
+    art.style.transform = "none";
+    art.style.filter = "none";
+    art.style.willChange = "auto";
 
-    art.style.willChange = "transform, filter";
+    artwork.style.opacity = String(CONFIG.artworkOpacity);
+    artwork.style.transition = "none";
 
-    art.style.overflow = "hidden";
-
-
-    const artwork = art.querySelector("img");
-
-    if (artwork) {
-
-      artwork.style.opacity =
-        String(CONFIG.artworkOpacity);
-
-      artwork.style.transition = "none";
-
-    }
-
-    canvas.style.opacity =
-      String(CONFIG.overlayOpacity);
-
+    canvas.style.opacity = "1";
     canvas.style.transition = "none";
 
 
-    /* ------------------------------------------------------
-       Install subtle wave filter on the complete artwork.
-
-       The original image and orange overlay are displaced
-       as a single composite, so they never drift apart.
-       ------------------------------------------------------ */
-
-    let waveFilter = createWaveFilter();
-
-    function applyWaveFilter() {
-
-      if (
-        CONFIG.waveAnimation &&
-        !prefersReducedMotion.matches &&
-        waveFilter
-      ) {
-
-        art.style.filter =
-          "url(#topography-wave-filter)";
-
-      } else {
-
-        art.style.filter = "none";
-
-      }
-
-    }
-
-    applyWaveFilter();
-
-
-    /* ========================================================
-       07 / STATE
-       ======================================================== */
+    /* ======================================================
+       06 / STATE
+       ====================================================== */
 
     let target = CONFIG.initialElevation;
-
     let current = target;
 
     let lastInteraction = performance.now();
-
     let lastFrame = performance.now();
 
     let activePointerId = null;
 
     let isIdling = false;
-
     let idleOrigin = target;
-
     let idleStart = 0;
 
-    let idleMix = 0;
-
     let inView = true;
-
     let ready = false;
 
     let rafId = 0;
 
     let gl = null;
-
     let program = null;
-
     let uniforms = null;
 
-    let texture = null;
-
-    let vertexBuffer = null;
+    let artworkTexture = null;
+    let elevationTexture = null;
 
     let lastArtWidth = 0;
-
     let lastArtHeight = 0;
 
 
-    /* ========================================================
-       08 / SET ELEVATION
-       ======================================================== */
+    /* ======================================================
+       07 / POINTER ELEVATION
+       ====================================================== */
 
     function setElevation(level) {
 
@@ -510,19 +186,11 @@
 
       lastInteraction = performance.now();
 
-      /*
-       * A fresh interaction interrupts the idle sweep.
-       */
-
       isIdling = false;
 
       startRendering();
     }
 
-
-    /* ========================================================
-       09 / POINTER INTERACTION
-       ======================================================== */
 
     function elevationFromPointer(event) {
 
@@ -533,97 +201,62 @@
       const normalizedY =
         (event.clientY - box.top) / box.height;
 
-      setElevation(
-        1 - normalizedY
-      );
+      setElevation(1 - normalizedY);
     }
 
 
-    art.addEventListener(
-      "pointerdown",
-      event => {
+    /* ======================================================
+       08 / POINTER EVENTS
+       ====================================================== */
 
-        if (
-          event.pointerType !== "mouse" &&
-          activePointerId !== null
-        ) {
-          return;
-        }
+    art.addEventListener("pointerdown", event => {
 
-        activePointerId = event.pointerId;
-
-        try {
-
-          art.setPointerCapture(
-            event.pointerId
-          );
-
-        } catch (_) {
-          /* Pointer capture is optional. */
-        }
-
-        elevationFromPointer(event);
-
+      if (
+        event.pointerType !== "mouse" &&
+        activePointerId !== null
+      ) {
+        return;
       }
-    );
+
+      activePointerId = event.pointerId;
+
+      try {
+        art.setPointerCapture(event.pointerId);
+      } catch (_) {}
+
+      elevationFromPointer(event);
+    });
 
 
-    art.addEventListener(
-      "pointermove",
-      event => {
+    art.addEventListener("pointermove", event => {
 
-        if (
-          event.pointerType === "mouse" ||
-          activePointerId === event.pointerId
-        ) {
+      if (
+        event.pointerType === "mouse" ||
+        activePointerId === event.pointerId
+      ) {
+        elevationFromPointer(event);
+      }
 
-          elevationFromPointer(event);
+    }, { passive: true });
 
-        }
-
-      },
-      { passive: true }
-    );
-
-
-    /* ========================================================
-       10 / POINTER RELEASE
-       ======================================================== */
 
     function finishPointer(event) {
 
-      if (
-        activePointerId === event.pointerId
-      ) {
-
+      if (activePointerId === event.pointerId) {
         activePointerId = null;
-
         lastInteraction = performance.now();
-
       }
-
     }
 
 
-    art.addEventListener(
-      "pointerup",
-      finishPointer
-    );
-
-    art.addEventListener(
-      "pointercancel",
-      finishPointer
-    );
-
-    art.addEventListener(
-      "lostpointercapture",
-      finishPointer
-    );
+    art.addEventListener("pointerup", finishPointer);
+    art.addEventListener("pointercancel", finishPointer);
+    art.addEventListener("lostpointercapture", finishPointer);
 
 
-    /* ========================================================
-       11 / TOUCH COMPATIBILITY
-       ======================================================== */
+    /* ======================================================
+       09 / TOUCH COMPATIBILITY
+       ====================================================== */
 
     for (const type of [
       "touchstart",
@@ -631,490 +264,176 @@
       "touchend",
       "touchcancel"
     ]) {
-
       art.addEventListener(
         type,
         event => event.stopPropagation(),
         { passive: true }
       );
-
     }
 
 
-    /* ========================================================
-       12 / KEYBOARD ACCESSIBILITY
-       ======================================================== */
+    /* ======================================================
+       10 / KEYBOARD ACCESSIBILITY
+       ====================================================== */
 
-    art.addEventListener(
-      "keydown",
-      event => {
+    art.addEventListener("keydown", event => {
 
-        const step = event.shiftKey
-          ? 0.10
-          : 0.02;
-
-        if (
-          event.key === "ArrowUp" ||
-          event.key === "ArrowRight"
-        ) {
-
-          setElevation(target + step);
-
-        } else if (
-          event.key === "ArrowDown" ||
-          event.key === "ArrowLeft"
-        ) {
-
-          setElevation(target - step);
-
-        } else if (event.key === "Home") {
-
-          setElevation(0);
-
-        } else if (event.key === "End") {
-
-          setElevation(1);
-
-        } else {
-
-          return;
-
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-      }
-    );
-
-
-    /* ========================================================
-       13 / ARTWORK SIZING
-       ======================================================== */
-
-    function fitArt() {
-
-      const box =
-        viewport.getBoundingClientRect();
+      const step = event.shiftKey ? 0.10 : 0.02;
 
       if (
-        box.width < 1 ||
-        box.height < 1
+        event.key === "ArrowUp" ||
+        event.key === "ArrowRight"
       ) {
+        setElevation(target + step);
+      } else if (
+        event.key === "ArrowDown" ||
+        event.key === "ArrowLeft"
+      ) {
+        setElevation(target - step);
+      } else if (event.key === "Home") {
+        setElevation(0);
+      } else if (event.key === "End") {
+        setElevation(1);
+      } else {
         return;
       }
 
-      const ratio =
-        CONFIG.imageWidth /
-        CONFIG.imageHeight;
+      event.preventDefault();
+      event.stopPropagation();
+    });
 
-      const width = Math.min(
-        box.width,
-        box.height * ratio
-      );
+
+    /* ======================================================
+       11 / RESPONSIVE ARTWORK SIZING
+
+       Always use the full available viewport width.
+
+       Height follows the original 2048:1365 ratio.
+
+       This intentionally preserves the blue space
+       above and below the centered artwork.
+       ====================================================== */
+
+    function fitArt() {
+
+      const box = viewport.getBoundingClientRect();
+
+      if (box.width < 1 || box.height < 1) return;
+
+      const width = box.width;
 
       const height =
-        width / ratio;
+        width * CONFIG.imageHeight / CONFIG.imageWidth;
 
       if (
         Math.abs(width - lastArtWidth) > 0.5 ||
         Math.abs(height - lastArtHeight) > 0.5
       ) {
 
-        art.style.width =
-          `${width}px`;
-
-        art.style.height =
-          `${height}px`;
+        art.style.width = `${width}px`;
+        art.style.height = `${height}px`;
 
         lastArtWidth = width;
         lastArtHeight = height;
 
-        if (gl) {
-          resizeCanvas();
-        }
-
+        if (gl) resizeCanvas();
       }
-
     }
 
 
-    /* ========================================================
-       14 / RESIZE WEBGL CANVAS
-       ======================================================== */
+    /* ======================================================
+       12 / RESIZE CANVAS
+       ====================================================== */
 
     function resizeCanvas() {
 
-      const box =
-        art.getBoundingClientRect();
+      if (!gl) return;
 
-      if (
-        !gl ||
-        box.width < 1 ||
-        box.height < 1
-      ) {
-        return;
-      }
+      const box = art.getBoundingClientRect();
 
-      const maxSize =
-        gl.getParameter(
-          gl.MAX_RENDERBUFFER_SIZE
-        );
+      if (box.width < 1 || box.height < 1) return;
+
+      const maxSize = gl.getParameter(
+        gl.MAX_RENDERBUFFER_SIZE
+      );
 
       const dpr = Math.min(
         window.devicePixelRatio || 1,
         CONFIG.maxPixelRatio
       );
 
-      const width = Math.max(
-        1,
-        Math.min(
-          maxSize,
-          Math.round(box.width * dpr)
-        )
+      const width = Math.min(
+        maxSize,
+        Math.max(1, Math.round(box.width * dpr))
       );
 
-      const height = Math.max(
-        1,
-        Math.min(
-          maxSize,
-          Math.round(box.height * dpr)
-        )
+      const height = Math.min(
+        maxSize,
+        Math.max(1, Math.round(box.height * dpr))
       );
 
       if (
         canvas.width !== width ||
         canvas.height !== height
       ) {
-
         canvas.width = width;
         canvas.height = height;
-
       }
 
-      gl.viewport(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      gl.viewport(0, 0, canvas.width, canvas.height);
 
-      if (ready) {
-        startRendering();
-      }
-
+      if (ready) startRendering();
     }
 
 
-    /* ========================================================
-       15 / SHADER COMPILATION
-       ======================================================== */
+    /* ======================================================
+       13 / SHADER COMPILATION
+       ====================================================== */
 
     function createShader(type, source) {
 
-      const instance =
-        gl.createShader(type);
+      const shader = gl.createShader(type);
 
-      gl.shaderSource(
-        instance,
-        source
-      );
-
-      gl.compileShader(instance);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
 
       if (
-        !gl.getShaderParameter(
-          instance,
-          gl.COMPILE_STATUS
-        )
+        !gl.getShaderParameter(shader, gl.COMPILE_STATUS)
       ) {
 
-        const message =
-          gl.getShaderInfoLog(instance);
+        const message = gl.getShaderInfoLog(shader);
 
-        gl.deleteShader(instance);
+        gl.deleteShader(shader);
 
         throw new Error(
           message || "Shader compilation failed."
         );
-
       }
 
-      return instance;
+      return shader;
     }
 
 
-    /* ========================================================
-       16 / WEBGL INITIALIZATION
-       ======================================================== */
+    /* ======================================================
+       14 / CREATE TEXTURE
+       ====================================================== */
 
-    function initializeRenderer(image) {
+    function createTexture(image, unit, preserveData = false) {
 
-      gl = canvas.getContext(
-        "webgl",
-        {
-          alpha: true,
-          premultipliedAlpha: false,
-          antialias: false,
-          depth: false,
-          stencil: false,
-          powerPreference: "low-power"
-        }
-      );
+      const texture = gl.createTexture();
 
-      if (!gl) {
+      gl.activeTexture(gl.TEXTURE0 + unit);
 
-        throw new Error(
-          "WebGL is not available."
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+      if (preserveData) {
+        gl.pixelStorei(
+          gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,
+          gl.NONE
         );
-
       }
-
-
-      /* ------------------------------------------------------
-         Vertex shader
-         ------------------------------------------------------ */
-
-      const vertex = createShader(
-        gl.VERTEX_SHADER,
-        `
-          attribute vec2 aPosition;
-
-          varying vec2 vUv;
-
-          void main() {
-
-            vUv = aPosition * 0.5 + 0.5;
-
-            gl_Position = vec4(
-              aPosition,
-              0.0,
-              1.0
-            );
-
-          }
-        `
-      );
-
-
-      /* ------------------------------------------------------
-         Fragment shader
-
-         RED:
-         Estimated elevation.
-
-         GREEN:
-         Coverage of original contour strokes.
-
-         Only existing contour pixels are highlighted.
-         ------------------------------------------------------ */
-
-      const fragment = createShader(
-        gl.FRAGMENT_SHADER,
-        `
-          precision highp float;
-
-          uniform sampler2D uMap;
-
-          uniform float uElevation;
-          uniform float uBandWidth;
-          uniform float uOpacity;
-
-          uniform vec2 uTexel;
-
-          varying vec2 vUv;
-
-
-          float strokeAt(vec2 uv) {
-
-            vec2 mask = texture2D(
-              uMap,
-              uv
-            ).rg;
-
-            float distanceFromLevel =
-              (mask.r - uElevation) /
-              uBandWidth;
-
-            float band = exp(
-              -0.5 *
-              distanceFromLevel *
-              distanceFromLevel
-            );
-
-            float coverage = smoothstep(
-              0.14,
-              0.85,
-              mask.g
-            );
-
-            return band * coverage;
-          }
-
-
-          void main() {
-
-            float line = strokeAt(vUv);
-
-            vec2 d = 3.0 * uTexel;
-
-            float softGlow = (
-
-              strokeAt(
-                vUv + vec2(d.x, 0.0)
-              ) +
-
-              strokeAt(
-                vUv + vec2(-d.x, 0.0)
-              ) +
-
-              strokeAt(
-                vUv + vec2(0.0, d.y)
-              ) +
-
-              strokeAt(
-                vUv + vec2(0.0, -d.y)
-              ) +
-
-              strokeAt(
-                vUv + vec2(d.x, d.y)
-              ) +
-
-              strokeAt(
-                vUv + vec2(-d.x, -d.y)
-              )
-
-            ) / 6.0;
-
-            float alpha = min(
-              0.99,
-              (
-                line * 0.96 +
-                softGlow * 0.23
-              ) * uOpacity
-            );
-
-            gl_FragColor = vec4(
-              1.0,
-              0.408,
-              0.051,
-              alpha
-            );
-
-          }
-        `
-      );
-
-
-      /* ======================================================
-         17 / LINK PROGRAM
-         ====================================================== */
-
-      program = gl.createProgram();
-
-      gl.attachShader(
-        program,
-        vertex
-      );
-
-      gl.attachShader(
-        program,
-        fragment
-      );
-
-      gl.linkProgram(program);
-
-      if (
-        !gl.getProgramParameter(
-          program,
-          gl.LINK_STATUS
-        )
-      ) {
-
-        const message =
-          gl.getProgramInfoLog(program);
-
-        throw new Error(
-          message || "Shader linking failed."
-        );
-
-      }
-
-      gl.useProgram(program);
-
-
-      /* ======================================================
-         18 / FULL-SCREEN QUAD
-         ====================================================== */
-
-      vertexBuffer =
-        gl.createBuffer();
-
-      gl.bindBuffer(
-        gl.ARRAY_BUFFER,
-        vertexBuffer
-      );
-
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array([
-          -1, -1,
-           1, -1,
-          -1,  1,
-           1,  1
-        ]),
-        gl.STATIC_DRAW
-      );
-
-      const position =
-        gl.getAttribLocation(
-          program,
-          "aPosition"
-        );
-
-      gl.enableVertexAttribArray(
-        position
-      );
-
-      gl.vertexAttribPointer(
-        position,
-        2,
-        gl.FLOAT,
-        false,
-        0,
-        0
-      );
-
-
-      /* ======================================================
-         19 / ELEVATION MASK TEXTURE
-         ====================================================== */
-
-      gl.pixelStorei(
-        gl.UNPACK_ALIGNMENT,
-        1
-      );
-
-      gl.pixelStorei(
-        gl.UNPACK_FLIP_Y_WEBGL,
-        true
-      );
-
-      gl.pixelStorei(
-        gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,
-        false
-      );
-
-      texture = gl.createTexture();
-
-      gl.activeTexture(
-        gl.TEXTURE0
-      );
-
-      gl.bindTexture(
-        gl.TEXTURE_2D,
-        texture
-      );
 
       gl.texParameteri(
         gl.TEXTURE_2D,
@@ -1149,9 +468,419 @@
         image
       );
 
+      return texture;
+    }
+
+
+    /* ======================================================
+       15 / WEBGL INITIALIZATION
+       ====================================================== */
+
+    function initializeRenderer(image, mask) {
+
+      gl = canvas.getContext("webgl", {
+
+        alpha: false,
+        premultipliedAlpha: false,
+        antialias: false,
+        depth: false,
+        stencil: false,
+
+        powerPreference: "high-performance"
+
+      });
+
+      if (!gl) {
+        throw new Error("WebGL is not available.");
+      }
+
+
+      /* ----------------------------------------------------
+         Vertex shader
+         ---------------------------------------------------- */
+
+      const vertex = createShader(
+        gl.VERTEX_SHADER,
+        `
+          attribute vec2 aPosition;
+
+          varying vec2 vUv;
+
+          void main() {
+
+            vUv = aPosition * 0.5 + 0.5;
+
+            gl_Position = vec4(
+              aPosition,
+              0.0,
+              1.0
+            );
+
+          }
+        `
+      );
+
+
+      /* ----------------------------------------------------
+         Fragment shader
+
+         Both artwork and elevation mask use the SAME
+         displaced UV coordinates.
+
+         This is essential for maintaining alignment.
+         ---------------------------------------------------- */
+
+      const fragment = createShader(
+        gl.FRAGMENT_SHADER,
+        `
+          precision highp float;
+
+          uniform sampler2D uArtwork;
+          uniform sampler2D uMap;
+
+          uniform float uElevation;
+          uniform float uBandWidth;
+          uniform float uHighlightOpacity;
+          uniform float uArtworkOpacity;
+          uniform float uTime;
+          uniform float uWaveEnabled;
+          uniform float uEdgeFade;
+
+          uniform vec2 uTexel;
+
+          varying vec2 vUv;
+
+
+          /* ------------------------------------------------
+             Smooth continuous wave displacement
+             ------------------------------------------------ */
+
+          vec2 displacedUV(vec2 uv) {
+
+            float t = uTime;
+
+            float waveX =
+
+              sin(
+                uv.y * 11.0 +
+                t * 0.55
+              ) * 0.00085 +
+
+              sin(
+                uv.y * 23.0 -
+                t * 0.31
+              ) * 0.00025;
+
+            float waveY =
+
+              sin(
+                uv.x * 8.0 -
+                t * 0.43
+              ) * 0.00075 +
+
+              sin(
+                uv.x * 19.0 +
+                t * 0.27
+              ) * 0.00020;
+
+            return clamp(
+              uv + vec2(
+                waveX * uWaveEnabled,
+                waveY * uWaveEnabled
+              ),
+              vec2(0.001),
+              vec2(0.999)
+            );
+          }
+
+
+          /* ------------------------------------------------
+             Elevation contour activation
+             ------------------------------------------------ */
+
+          float strokeAt(vec2 uv) {
+
+            vec2 mask = texture2D(
+              uMap,
+              uv
+            ).rg;
+
+            float normalizedDistance =
+              (mask.r - uElevation) /
+              uBandWidth;
+
+            float band = exp(
+              -0.5 *
+              normalizedDistance *
+              normalizedDistance
+            );
+
+            float coverage = smoothstep(
+              0.025,
+              0.42,
+              mask.g
+            );
+
+            return band * coverage;
+          }
+
+
+          /* ------------------------------------------------
+             Improved pixel coverage
+
+             Neighbour sampling fills small gaps in the
+             contour mask while preserving fine detail.
+             ------------------------------------------------ */
+
+          float smoothStroke(vec2 uv) {
+
+            vec2 d = uTexel * 1.5;
+
+            float center = strokeAt(uv);
+
+            float neighbours = max(
+              max(
+                strokeAt(uv + vec2(d.x, 0.0)),
+                strokeAt(uv + vec2(-d.x, 0.0))
+              ),
+              max(
+                strokeAt(uv + vec2(0.0, d.y)),
+                strokeAt(uv + vec2(0.0, -d.y))
+              )
+            );
+
+            float diagonals = max(
+              max(
+                strokeAt(uv + vec2(d.x, d.y)),
+                strokeAt(uv + vec2(-d.x, -d.y))
+              ),
+              max(
+                strokeAt(uv + vec2(-d.x, d.y)),
+                strokeAt(uv + vec2(d.x, -d.y))
+              )
+            );
+
+            return max(
+              center,
+              max(
+                neighbours * 0.82,
+                diagonals * 0.68
+              )
+            );
+          }
+
+
+          /* ------------------------------------------------
+             Main rendering
+             ------------------------------------------------ */
+
+          void main() {
+
+            vec2 uv = displacedUV(vUv);
+
+            /* Source artwork */
+
+            vec3 artwork = texture2D(
+              uArtwork,
+              uv
+            ).rgb;
+
+            /*
+             * U of T institutional blue.
+             */
+
+            vec3 background = vec3(
+              0.0,
+              0.164706,
+              0.360784
+            );
+
+            /*
+             * Blend the original image into the blue
+             * background instead of applying CSS opacity.
+             */
+
+            vec3 base = mix(
+              background,
+              artwork,
+              uArtworkOpacity
+            );
+
+
+            /* Orange elevation contour */
+
+            float line = smoothStroke(uv);
+
+            float orangeAlpha = clamp(
+              line * uHighlightOpacity,
+              0.0,
+              0.90
+            );
+
+            vec3 orange = vec3(
+              1.0,
+              0.408,
+              0.051
+            );
+
+            vec3 finalColor = mix(
+              base,
+              orange,
+              orangeAlpha
+            );
+
+
+            /* ------------------------------------------------
+               Feathered top and bottom edges
+               ------------------------------------------------ */
+
+            float top = smoothstep(
+              0.0,
+              uEdgeFade,
+              uv.y
+            );
+
+            float bottom = smoothstep(
+              0.0,
+              uEdgeFade,
+              1.0 - uv.y
+            );
+
+            float horizontalLeft = smoothstep(
+              0.0,
+              0.012,
+              uv.x
+            );
+
+            float horizontalRight = smoothstep(
+              0.0,
+              0.012,
+              1.0 - uv.x
+            );
+
+            float edge = (
+              top *
+              bottom *
+              horizontalLeft *
+              horizontalRight
+            );
+
+            finalColor = mix(
+              background,
+              finalColor,
+              edge
+            );
+
+            gl_FragColor = vec4(
+              finalColor,
+              1.0
+            );
+
+          }
+        `
+      );
+
 
       /* ======================================================
-         20 / UNIFORMS
+         16 / LINK PROGRAM
+         ====================================================== */
+
+      program = gl.createProgram();
+
+      gl.attachShader(program, vertex);
+      gl.attachShader(program, fragment);
+
+      gl.linkProgram(program);
+
+      if (
+        !gl.getProgramParameter(
+          program,
+          gl.LINK_STATUS
+        )
+      ) {
+        throw new Error(
+          gl.getProgramInfoLog(program) ||
+          "Shader linking failed."
+        );
+      }
+
+      gl.useProgram(program);
+
+
+      /* ======================================================
+         17 / FULL-SCREEN QUAD
+         ====================================================== */
+
+      const buffer = gl.createBuffer();
+
+      gl.bindBuffer(
+        gl.ARRAY_BUFFER,
+        buffer
+      );
+
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+          -1, -1,
+           1, -1,
+          -1,  1,
+           1,  1
+        ]),
+        gl.STATIC_DRAW
+      );
+
+      const position = gl.getAttribLocation(
+        program,
+        "aPosition"
+      );
+
+      gl.enableVertexAttribArray(position);
+
+      gl.vertexAttribPointer(
+        position,
+        2,
+        gl.FLOAT,
+        false,
+        0,
+        0
+      );
+
+
+      /* ======================================================
+         18 / UPLOAD ARTWORK AND MASK
+         ====================================================== */
+
+      artworkTexture = createTexture(
+        image,
+        0,
+        false
+      );
+
+      elevationTexture = createTexture(
+        mask,
+        1,
+        true
+      );
+
+      gl.uniform1i(
+        gl.getUniformLocation(
+          program,
+          "uArtwork"
+        ),
+        0
+      );
+
+      gl.uniform1i(
+        gl.getUniformLocation(
+          program,
+          "uMap"
+        ),
+        1
+      );
+
+
+      /* ======================================================
+         19 / UNIFORMS
          ====================================================== */
 
       uniforms = {
@@ -1166,9 +895,29 @@
           "uBandWidth"
         ),
 
-        opacity: gl.getUniformLocation(
+        highlightOpacity: gl.getUniformLocation(
           program,
-          "uOpacity"
+          "uHighlightOpacity"
+        ),
+
+        artworkOpacity: gl.getUniformLocation(
+          program,
+          "uArtworkOpacity"
+        ),
+
+        time: gl.getUniformLocation(
+          program,
+          "uTime"
+        ),
+
+        waveEnabled: gl.getUniformLocation(
+          program,
+          "uWaveEnabled"
+        ),
+
+        edgeFade: gl.getUniformLocation(
+          program,
+          "uEdgeFade"
         ),
 
         texel: gl.getUniformLocation(
@@ -1179,22 +928,32 @@
       };
 
 
-      gl.uniform1i(
-        gl.getUniformLocation(
-          program,
-          "uMap"
-        ),
-        0
-      );
-
       gl.uniform1f(
         uniforms.bandWidth,
         CONFIG.bandWidth
       );
 
       gl.uniform1f(
-        uniforms.opacity,
+        uniforms.highlightOpacity,
         CONFIG.highlightOpacity
+      );
+
+      gl.uniform1f(
+        uniforms.artworkOpacity,
+        CONFIG.artworkOpacity
+      );
+
+      gl.uniform1f(
+        uniforms.waveEnabled,
+        CONFIG.waveEnabled &&
+        !prefersReducedMotion.matches
+          ? 1
+          : 0
+      );
+
+      gl.uniform1f(
+        uniforms.edgeFade,
+        CONFIG.edgeFade
       );
 
       gl.uniform2f(
@@ -1205,64 +964,37 @@
 
 
       /* ======================================================
-         21 / COMPLETE INITIALIZATION
+         20 / FINALIZE
          ====================================================== */
 
       fitArt();
+
+      /*
+       * Hide the DOM image only after the WebGL composite
+       * has successfully initialized.
+       *
+       * If WebGL fails, the original image remains visible.
+       */
+
+      art.classList.add("topo-webgl-ready");
 
       ready = true;
 
       current = CONFIG.initialElevation;
       target = CONFIG.initialElevation;
 
-      startRendering();
+      resizeCanvas();
 
       console.log(
-        "[topography] Interactive topography v4 initialized."
+        "[topography] Unified image and elevation shader initialized."
       );
 
+      startRendering();
     }
 
 
     /* ========================================================
-       22 / RENDERING CONTROL
-       ======================================================== */
-
-    function startRendering() {
-
-      if (
-        ready &&
-        inView &&
-        !document.hidden &&
-        rafId === 0
-      ) {
-
-        lastFrame = performance.now();
-
-        rafId = requestAnimationFrame(
-          render
-        );
-
-      }
-
-    }
-
-
-    function stopRendering() {
-
-      if (rafId !== 0) {
-
-        cancelAnimationFrame(rafId);
-
-        rafId = 0;
-
-      }
-
-    }
-
-
-    /* ========================================================
-       23 / IDLE ELEVATION ANIMATION
+       21 / IDLE ELEVATION
        ======================================================== */
 
     function updateIdleElevation(now) {
@@ -1281,7 +1013,6 @@
           idleOrigin = target;
 
           idleStart = now;
-
         }
 
         target = clamp(
@@ -1292,90 +1023,44 @@
             CONFIG.idleSpeed
           )
         );
-
       }
-
     }
 
 
     /* ========================================================
-       24 / CINEMATIC FLYOVER
+       22 / RENDER CONTROL
        ======================================================== */
 
-    function updateFlyover(now, deltaMs) {
+    function startRendering() {
 
-      if (!CONFIG.flyoverEnabled) return;
-
-      const idleTime =
-        now - lastInteraction;
-
-      const idleTarget = (
-        !prefersReducedMotion.matches &&
-        idleTime > CONFIG.idleDelayMs &&
-        activePointerId === null
-      ) ? 1 : 0;
-
-
-      /* Smoothly enter and leave idle movement */
-
-      const blend =
-        1 - Math.pow(
-          1 - CONFIG.flyoverSmoothing,
-          deltaMs / 16.67
-        );
-
-      idleMix +=
-        (idleTarget - idleMix) * blend;
-
-      if (idleMix < 0.0005) {
-        idleMix = 0;
+      if (
+        !ready ||
+        !inView ||
+        document.hidden ||
+        rafId !== 0
+      ) {
+        return;
       }
 
-      if (idleMix > 0.9995) {
-        idleMix = 1;
+      lastFrame = performance.now();
+
+      rafId = requestAnimationFrame(render);
+    }
+
+
+    function stopRendering() {
+
+      if (rafId !== 0) {
+
+        cancelAnimationFrame(rafId);
+
+        rafId = 0;
       }
-
-
-      const phase =
-        prefersReducedMotion.matches
-          ? 0
-          : now * CONFIG.flyoverSpeed;
-
-
-      const x =
-        Math.sin(phase) *
-        CONFIG.flyoverPanX *
-        idleMix *
-        lastArtWidth;
-
-      const y =
-        Math.cos(phase * 0.72) *
-        CONFIG.flyoverPanY *
-        idleMix *
-        lastArtHeight;
-
-      const zoom =
-        1 +
-        CONFIG.flyoverZoom *
-        idleMix *
-        (
-          0.5 +
-          0.5 * Math.sin(phase * 0.55)
-        );
-
-
-      /*
-       * Image and overlay remain a single transformed unit.
-       */
-
-      art.style.transform =
-        `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-
     }
 
 
     /* ========================================================
-       25 / RENDER LOOP
+       23 / MAIN RENDER LOOP
        ======================================================== */
 
     function render(now) {
@@ -1401,7 +1086,7 @@
       lastFrame = now;
 
 
-      /* Automatic elevation */
+      /* Idle elevation sweep */
 
       updateIdleElevation(now);
 
@@ -1419,12 +1104,7 @@
         (target - current) * blend;
 
 
-      /* Gentle cinematic movement */
-
-      updateFlyover(now, deltaMs);
-
-
-      /* Draw transparent orange contour overlay */
+      /* Shader inputs */
 
       gl.useProgram(program);
 
@@ -1433,16 +1113,26 @@
         current
       );
 
-      gl.clearColor(
-        0,
-        0,
-        0,
-        0
+      gl.uniform1f(
+        uniforms.time,
+        prefersReducedMotion.matches
+          ? 0
+          : now * 0.001
       );
 
-      gl.clear(
-        gl.COLOR_BUFFER_BIT
+      gl.uniform1f(
+        uniforms.waveEnabled,
+        prefersReducedMotion.matches
+          ? 0
+          : CONFIG.waveEnabled ? 1 : 0
       );
+
+
+      /* Draw composite */
+
+      gl.clearColor(0, 0, 0, 1);
+
+      gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.drawArrays(
         gl.TRIANGLE_STRIP,
@@ -1451,39 +1141,33 @@
       );
 
 
+      /*
+       * Continuous rendering is required for the
+       * ambient wave and idle elevation animation.
+       */
+
       if (!prefersReducedMotion.matches) {
-
         rafId = requestAnimationFrame(render);
-
       }
-
     }
 
 
     /* ========================================================
-       26 / VISIBILITY OBSERVER
+       24 / VISIBILITY
        ======================================================== */
-
-    let observer = null;
 
     if ("IntersectionObserver" in window) {
 
-      observer = new IntersectionObserver(
+      const observer = new IntersectionObserver(
         entries => {
 
-          inView =
-            entries[0].isIntersecting;
+          inView = entries[0].isIntersecting;
 
           if (inView) {
-
             startRendering();
-
           } else {
-
             stopRendering();
-
           }
-
         },
         {
           root: document.querySelector(".snap"),
@@ -1492,12 +1176,11 @@
       );
 
       observer.observe(root);
-
     }
 
 
     /* ========================================================
-       27 / PAGE VISIBILITY
+       25 / PAGE VISIBILITY
        ======================================================== */
 
     document.addEventListener(
@@ -1505,21 +1188,16 @@
       () => {
 
         if (document.hidden) {
-
           stopRendering();
-
         } else {
-
           startRendering();
-
         }
-
       }
     );
 
 
     /* ========================================================
-       28 / REDUCED MOTION
+       26 / REDUCED MOTION
        ======================================================== */
 
     prefersReducedMotion.addEventListener(
@@ -1530,16 +1208,9 @@
 
           isIdling = false;
 
-          idleMix = 0;
-
-          art.style.transform =
-            "translate3d(0, 0, 0) scale(1)";
-
-          art.style.filter = "none";
+          target = current;
 
           stopRendering();
-
-          current = target;
 
           if (ready && inView) {
             startRendering();
@@ -1547,34 +1218,25 @@
 
         } else {
 
-          /*
-           * Re-enable the subtle wave effect.
-           */
-
-          waveFilter = createWaveFilter();
-
-          applyWaveFilter();
-
           lastInteraction = performance.now();
 
           startRendering();
-
         }
-
       }
     );
 
 
     /* ========================================================
-       29 / RESIZE
+       27 / RESPONSIVE LAYOUT
        ======================================================== */
 
     if ("ResizeObserver" in window) {
 
-      const resizeObserver =
-        new ResizeObserver(fitArt);
+      const observer = new ResizeObserver(() => {
+        fitArt();
+      });
 
-      resizeObserver.observe(viewport);
+      observer.observe(viewport);
 
     } else {
 
@@ -1583,67 +1245,99 @@
         fitArt,
         { passive: true }
       );
-
     }
 
 
     /* ========================================================
-       30 / INITIAL LAYOUT
+       28 / LOAD BOTH SOURCE IMAGES
        ======================================================== */
 
-    fitArt();
+    let loadedCount = 0;
 
+    let artworkImage = null;
+    let maskImage = null;
 
-    /* ========================================================
-       31 / LOAD ELEVATION MASK
-       ======================================================== */
+    function checkLoaded() {
 
-    const image = new Image();
+      loadedCount++;
 
-    image.onload = () => {
+      if (loadedCount !== 2) return;
 
       try {
 
         if (
-          image.width !== CONFIG.imageWidth ||
-          image.height !== CONFIG.imageHeight
+          artworkImage.width !== CONFIG.imageWidth ||
+          artworkImage.height !== CONFIG.imageHeight
         ) {
-
           throw new Error(
-            `Mask dimensions ${image.width} × ${image.height} do not match expected ${CONFIG.imageWidth} × ${CONFIG.imageHeight}.`
+            "contours.jpg must be 2048 × 1365."
           );
-
         }
 
-        initializeRenderer(image);
+        if (
+          maskImage.width !== CONFIG.imageWidth ||
+          maskImage.height !== CONFIG.imageHeight
+        ) {
+          throw new Error(
+            "elevation-map.png must be 2048 × 1365."
+          );
+        }
+
+        initializeRenderer(
+          artworkImage,
+          maskImage
+        );
 
       } catch (error) {
 
         console.error(
-          "[topography] WebGL initialization failed:",
+          "[topography] Initialization failed:",
           error
         );
-
       }
+    }
 
-    };
 
+    /* Source artwork */
 
-    image.onerror = () => {
+    artworkImage = new Image();
 
+    artworkImage.onload = checkLoaded;
+
+    artworkImage.onerror = () => {
       console.error(
-        "[topography] Cannot load assets/images/elevation-map.png."
+        "[topography] Could not load contours.jpg."
       );
-
     };
 
-    image.src = CONFIG.mapUrl;
+    artworkImage.src =
+      artwork.currentSrc ||
+      artwork.getAttribute("src");
 
+
+    /* Elevation mask */
+
+    maskImage = new Image();
+
+    maskImage.onload = checkLoaded;
+
+    maskImage.onerror = () => {
+      console.error(
+        "[topography] Could not load elevation-map.png."
+      );
+    };
+
+    maskImage.src = CONFIG.mapUrl;
+
+
+    /* Initial sizing */
+
+    fitArt();
   }
 
 
   /* ==========================================================
-     32 / INITIALIZE INSTANCES
+     29 / INITIALIZE ALL TOPOGRAPHIC INSTANCES
      ========================================================== */
 
   function init() {
@@ -1655,13 +1349,7 @@
   }
 
 
-  /* ==========================================================
-     33 / DOCUMENT READY
-     ========================================================== */
-
-  if (
-    document.readyState === "loading"
-  ) {
+  if (document.readyState === "loading") {
 
     document.addEventListener(
       "DOMContentLoaded",
