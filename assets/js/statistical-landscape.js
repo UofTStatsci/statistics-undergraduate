@@ -5,36 +5,34 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   CINEMATIC INTERACTIVE TOPOGRAPHIC CONTOURS
+   DRAMATIC INTERACTIVE TOPOGRAPHIC LANDSCAPE
 
    File: assets/js/statistical-landscape.js
-   Version: 6.0
+   Version: 7.0
 
    Features:
-   - Fixed mathematical terrain
-   - True elevation contours
-   - Thicker, luminous contour lines
+   - Dramatic asymmetric mountains and valleys
+   - Sharp ridges and irregular formations
+   - Low-angle cinematic perspective
+   - Crisp, thick elevation contours
+   - No motion blur or trailing lines
    - Orange elevation highlighting
-   - Mouse/touch elevation selection
-   - Slow cinematic camera flyover
-   - Sharp foreground contours
-   - Soft distant contour trails
+   - Slow camera flyover
+   - Stationary terrain geometry
    - Responsive rendering
    - Reduced-motion support
-   - Pause when off-screen
 
-   Three.js 0.160.1
-   GitHub Pages compatible
+   Requires Three.js 0.160.1 and import map.
    ========================================================== */
 
 import * as THREE from
   "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js";
 
-import { Line2 } from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/Line2.js";
+import { LineSegments2 } from
+  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineSegments2.js";
 
-import { LineGeometry } from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineGeometry.js";
+import { LineSegmentsGeometry } from
+  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineSegmentsGeometry.js";
 
 import { LineMaterial } from
   "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineMaterial.js";
@@ -69,60 +67,52 @@ function initializeLandscape() {
 
     background: 0x0180a5,
 
-    worldWidth: 24,
-    worldDepth: 15,
+    /* Terrain dimensions */
 
-    desktopResolution: 150,
-    tabletResolution: 110,
-    mobileResolution: 75,
+    worldWidth: 34,
+    worldDepth: 24,
 
-    desktopContours: 28,
-    tabletContours: 21,
-    mobileContours: 15,
+    /* Sampling resolution */
+
+    desktopResolution: 190,
+    tabletResolution: 135,
+    mobileResolution: 90,
+
+    /* Number of elevation levels */
+
+    desktopContours: 38,
+    tabletContours: 28,
+    mobileContours: 19,
+
+    /* Vertical exaggeration */
+
+    verticalScale: 1.45,
+
+    /* Contour appearance */
+
+    lineWidth: 2.5,
+    mobileLineWidth: 1.8,
 
     contourOffset: 0.035,
 
-    /*
-     * Line appearance.
-     *
-     * LineMaterial linewidth is measured in pixels
-     * when worldUnits is false.
-     */
-
-    foregroundLineWidth: 2.6,
-    backgroundLineWidth: 1.5,
-
-    glowLineWidth: 7.0,
-    trailLineWidth: 5.0,
+    /* Orange elevation highlight */
 
     highlightColor: 0xff9345,
+    highlightWidth: 0.8,
+    highlightResponse: 0.15,
 
-    highlightWidth: 0.85,
-    highlightResponse: 0.13,
+    /* Camera movement */
 
-    /*
-     * Camera movement.
-     *
-     * Units per second.
-     */
+    flyoverSpeed: 0.13,
+    flyoverDistance: 1.25,
 
-    flyoverSpeed: 0.16,
-    flyoverDistance: 1.6,
+    cameraSway: 0.35,
+    cameraSwaySpeed: 0.11,
 
-    cameraSway: 0.18,
-    cameraSwaySpeed: 0.16,
-
-    /*
-     * Depth treatment.
-     */
-
-    nearOpacity: 0.95,
-    farOpacity: 0.28,
-
-    glowOpacity: 0.12,
-    trailOpacity: 0.075,
+    /* Rendering */
 
     maxPixelRatio: 2
+
   };
 
 
@@ -148,8 +138,14 @@ function initializeLandscape() {
 
   let contourLines = [];
 
-  let targetElevation = 0.5;
-  let currentElevation = 0.5;
+  let targetElevation = 0.48;
+  let currentElevation = 0.48;
+
+  let resolution = 0;
+  let contourCount = 0;
+
+  let viewportWidth = 1;
+  let viewportHeight = 1;
 
   let animationFrame = null;
   let lastFrameTime = null;
@@ -158,11 +154,7 @@ function initializeLandscape() {
 
   let isSectionVisible = true;
 
-  let resolution = 0;
-  let contourCount = 0;
-
-  let viewportWidth = 1;
-  let viewportHeight = 1;
+  let currentDimensions = "";
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -174,28 +166,40 @@ function initializeLandscape() {
      ======================================================== */
 
   const scene = new THREE.Scene();
+
   scene.background = null;
 
 
   /* ========================================================
      07 / CAMERA
+
+     A low viewpoint creates a stronger sense of scale.
+
+     The camera looks across the landscape rather than
+     down at it from above.
      ======================================================== */
 
   const camera = new THREE.PerspectiveCamera(
-    38,
+    43,
     1,
     0.1,
-    120
+    150
   );
 
   const cameraBase = new THREE.Vector3(
     0,
-    8,
-    18
+    5.4,
+    17
+  );
+
+  const cameraTarget = new THREE.Vector3(
+    0,
+    2.3,
+    -3.5
   );
 
   camera.position.copy(cameraBase);
-  camera.lookAt(0, 0.7, 0);
+  camera.lookAt(cameraTarget);
 
 
   /* ========================================================
@@ -205,16 +209,20 @@ function initializeLandscape() {
   let renderer;
 
   try {
+
     renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
       powerPreference: "default"
     });
+
   } catch (error) {
+
     console.error(
-      "Topographic contours: WebGL unavailable.",
+      "Topographic landscape: WebGL unavailable.",
       error
     );
+
     return;
   }
 
@@ -235,57 +243,300 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     09 / TERRAIN HEIGHT FUNCTION
+     09 / MATHEMATICAL TERRAIN HELPERS
      ======================================================== */
 
-  function terrainHeight(x, z) {
+  function gaussian(
+    x,
+    z,
+    centerX,
+    centerZ,
+    widthX,
+    widthZ,
+    height
+  ) {
 
-    const hill1 =
-      2.7 * Math.exp(
-        -(
-          ((x + 6.2) ** 2) / 16 +
-          ((z + 1.5) ** 2) / 7
-        )
-      );
+    const dx = (x - centerX) / widthX;
+    const dz = (z - centerZ) / widthZ;
 
-    const hill2 =
-      3.8 * Math.exp(
-        -(
-          ((x - 1.2) ** 2) / 14 +
-          ((z - 2.2) ** 2) / 10
-        )
-      );
+    return height * Math.exp(
+      -(dx * dx + dz * dz)
+    );
+  }
 
-    const hill3 =
-      2.9 * Math.exp(
-        -(
-          ((x - 7.4) ** 2) / 11 +
-          ((z + 2.8) ** 2) / 7
-        )
-      );
 
-    const hill4 =
-      1.7 * Math.exp(
-        -(
-          ((x + 0.5) ** 2) / 9 +
-          ((z + 4.2) ** 2) / 5
-        )
-      );
+  /*
+   * Rotated, elongated ridge.
+   *
+   * Unlike a circular Gaussian hill, this produces
+   * directional formations resembling mountain ridges.
+   */
 
-    const rolling =
-      0.16 *
-      Math.sin(x * 0.7 + z * 0.4) *
-      Math.cos(z * 0.9);
+  function ridge(
+    x,
+    z,
+    centerX,
+    centerZ,
+    angle,
+    length,
+    width,
+    height
+  ) {
 
-    return Math.max(
-      0,
-      hill1 + hill2 + hill3 + hill4 + rolling
+    const dx = x - centerX;
+    const dz = z - centerZ;
+
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+
+    const along =
+      dx * cosine + dz * sine;
+
+    const across =
+      -dx * sine + dz * cosine;
+
+    return height * Math.exp(
+      -(
+        (along * along) / (length * length) +
+        (across * across) / (width * width)
+      )
     );
   }
 
 
   /* ========================================================
-     10 / RESPONSIVE DIMENSIONS
+     10 / DRAMATIC ASYMMETRIC TERRAIN
+
+     This surface combines:
+
+     - Large elongated mountain ridges
+     - Sharp secondary peaks
+     - Narrow valleys
+     - Coordinate warping
+     - Smaller irregular formations
+
+     The result is intentionally not symmetrical.
+     ======================================================== */
+
+  function terrainHeight(x, z) {
+
+    /* ------------------------------------------------------
+       Coordinate warping
+
+       Warping prevents formations from appearing like
+       perfectly symmetrical mathematical domes.
+       ------------------------------------------------------ */
+
+    const warpedX =
+      x +
+      1.35 * Math.sin(z * 0.43 + x * 0.12) +
+      0.55 * Math.sin(z * 1.1);
+
+    const warpedZ =
+      z +
+      1.15 * Math.cos(x * 0.31) +
+      0.45 * Math.sin(x * 0.9 + z * 0.2);
+
+
+    /* ------------------------------------------------------
+       Major mountain formations
+       ------------------------------------------------------ */
+
+    const mountainOne = ridge(
+      warpedX,
+      warpedZ,
+      -10,
+      -3,
+      0.45,
+      7.2,
+      1.8,
+      5.8
+    );
+
+    const mountainTwo = ridge(
+      warpedX,
+      warpedZ,
+      -3,
+      -7,
+      -0.35,
+      5.5,
+      1.4,
+      7.4
+    );
+
+    const mountainThree = ridge(
+      warpedX,
+      warpedZ,
+      5,
+      -1.5,
+      0.85,
+      6.8,
+      1.65,
+      8.6
+    );
+
+    const mountainFour = ridge(
+      warpedX,
+      warpedZ,
+      12,
+      -5,
+      -0.55,
+      4.6,
+      1.25,
+      6.9
+    );
+
+
+    /* ------------------------------------------------------
+       Smaller sharp peaks
+       ------------------------------------------------------ */
+
+    const peakOne = gaussian(
+      warpedX,
+      warpedZ,
+      -13,
+      4,
+      2.2,
+      1.8,
+      4.1
+    );
+
+    const peakTwo = gaussian(
+      warpedX,
+      warpedZ,
+      -5,
+      3,
+      1.7,
+      2.1,
+      5.4
+    );
+
+    const peakThree = gaussian(
+      warpedX,
+      warpedZ,
+      1,
+      -9,
+      1.5,
+      1.8,
+      4.9
+    );
+
+    const peakFour = gaussian(
+      warpedX,
+      warpedZ,
+      10,
+      5,
+      2.1,
+      1.6,
+      5.6
+    );
+
+    const peakFive = gaussian(
+      warpedX,
+      warpedZ,
+      15,
+      1,
+      1.5,
+      2.2,
+      4.4
+    );
+
+
+    /* ------------------------------------------------------
+       Deep valleys
+
+       Negative formations carve channels between peaks.
+       ------------------------------------------------------ */
+
+    const valleyOne = ridge(
+      warpedX,
+      warpedZ,
+      -7,
+      -1,
+      -0.4,
+      8,
+      0.85,
+      -3.8
+    );
+
+    const valleyTwo = ridge(
+      warpedX,
+      warpedZ,
+      3,
+      4,
+      0.65,
+      7,
+      1.1,
+      -4.6
+    );
+
+    const valleyThree = ridge(
+      warpedX,
+      warpedZ,
+      11,
+      -1,
+      -0.8,
+      5,
+      0.75,
+      -3.5
+    );
+
+
+    /* ------------------------------------------------------
+       Fine topographic variation
+
+       Creates irregular slopes and smaller ridges.
+       ------------------------------------------------------ */
+
+    const fineVariation =
+      0.35 * Math.sin(
+        warpedX * 0.85 +
+        warpedZ * 0.48
+      ) +
+
+      0.24 * Math.cos(
+        warpedX * 1.35 -
+        warpedZ * 0.72
+      ) +
+
+      0.15 * Math.sin(
+        warpedX * 2.1 +
+        warpedZ * 1.4
+      );
+
+
+    /* ------------------------------------------------------
+       Combine formations
+       ------------------------------------------------------ */
+
+    const elevation =
+      mountainOne +
+      mountainTwo +
+      mountainThree +
+      mountainFour +
+
+      peakOne +
+      peakTwo +
+      peakThree +
+      peakFour +
+      peakFive +
+
+      valleyOne +
+      valleyTwo +
+      valleyThree +
+
+      fineVariation;
+
+
+    return Math.max(
+      0,
+      elevation * SETTINGS.verticalScale
+    );
+  }
+
+
+  /* ========================================================
+     11 / RESPONSIVE DIMENSIONS
      ======================================================== */
 
   function getDimensions() {
@@ -293,6 +544,7 @@ function initializeLandscape() {
     const viewport = window.innerWidth;
 
     if (viewport <= 800) {
+
       return [
         SETTINGS.mobileResolution,
         SETTINGS.mobileContours
@@ -300,6 +552,7 @@ function initializeLandscape() {
     }
 
     if (viewport <= 1200) {
+
       return [
         SETTINGS.tabletResolution,
         SETTINGS.tabletContours
@@ -314,7 +567,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     11 / SAMPLE TERRAIN
+     12 / SAMPLE TERRAIN
      ======================================================== */
 
   function sampleTerrain() {
@@ -344,12 +597,20 @@ function initializeLandscape() {
           -SETTINGS.worldWidth / 2 +
           col * stepX;
 
-        const height = terrainHeight(x, z);
+        const height =
+          terrainHeight(x, z);
 
         values.push(height);
 
-        minimum = Math.min(minimum, height);
-        maximum = Math.max(maximum, height);
+        minimum = Math.min(
+          minimum,
+          height
+        );
+
+        maximum = Math.max(
+          maximum,
+          height
+        );
       }
 
       heights.push(values);
@@ -366,19 +627,38 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     12 / MARCHING SQUARES
+     13 / MARCHING SQUARES
+
+     Extracts fixed elevation contours from the terrain.
+
+     Saddle cases use a centre-value decision to avoid
+     arbitrary crossings.
      ======================================================== */
 
-  function extractContourSegments(terrain, elevation) {
+  function extractContourSegments(
+    terrain,
+    elevation
+  ) {
 
     const segments = [];
 
-    const { heights, stepX, stepZ } = terrain;
+    const {
+      heights,
+      stepX,
+      stepZ
+    } = terrain;
 
-    const halfWidth = SETTINGS.worldWidth / 2;
-    const halfDepth = SETTINGS.worldDepth / 2;
+    const halfWidth =
+      SETTINGS.worldWidth / 2;
 
-    function interpolate(x1, z1, h1, x2, z2, h2) {
+    const halfDepth =
+      SETTINGS.worldDepth / 2;
+
+
+    function interpolate(
+      x1, z1, h1,
+      x2, z2, h2
+    ) {
 
       const difference = h2 - h1;
 
@@ -396,14 +676,19 @@ function initializeLandscape() {
       ];
     }
 
+
     for (let row = 0; row < resolution - 1; row++) {
 
       for (let col = 0; col < resolution - 1; col++) {
 
-        const x0 = -halfWidth + col * stepX;
+        const x0 =
+          -halfWidth + col * stepX;
+
         const x1 = x0 + stepX;
 
-        const z0 = -halfDepth + row * stepZ;
+        const z0 =
+          -halfDepth + row * stepZ;
+
         const z1 = z0 + stepZ;
 
         const A = heights[row][col];
@@ -411,46 +696,82 @@ function initializeLandscape() {
         const C = heights[row + 1][col + 1];
         const D = heights[row + 1][col];
 
-        const intersections = [];
+        const edges = [];
 
         if ((A < elevation) !== (B < elevation)) {
-          intersections.push(
-            interpolate(x0, z0, A, x1, z0, B)
-          );
+
+          edges.push({
+            edge: 0,
+            point: interpolate(
+              x0, z0, A,
+              x1, z0, B
+            )
+          });
         }
 
         if ((B < elevation) !== (C < elevation)) {
-          intersections.push(
-            interpolate(x1, z0, B, x1, z1, C)
-          );
+
+          edges.push({
+            edge: 1,
+            point: interpolate(
+              x1, z0, B,
+              x1, z1, C
+            )
+          });
         }
 
         if ((C < elevation) !== (D < elevation)) {
-          intersections.push(
-            interpolate(x1, z1, C, x0, z1, D)
-          );
+
+          edges.push({
+            edge: 2,
+            point: interpolate(
+              x1, z1, C,
+              x0, z1, D
+            )
+          });
         }
 
         if ((D < elevation) !== (A < elevation)) {
-          intersections.push(
-            interpolate(x0, z1, D, x0, z0, A)
-          );
+
+          edges.push({
+            edge: 3,
+            point: interpolate(
+              x0, z1, D,
+              x0, z0, A
+            )
+          });
         }
 
-        if (intersections.length === 2) {
+        if (edges.length === 2) {
+
           segments.push([
-            intersections[0],
-            intersections[1]
+            edges[0].point,
+            edges[1].point
           ]);
-        } else if (intersections.length === 4) {
-          segments.push([
-            intersections[0],
-            intersections[1]
-          ]);
-          segments.push([
-            intersections[2],
-            intersections[3]
-          ]);
+
+        } else if (edges.length === 4) {
+
+          const center =
+            (A + B + C + D) / 4;
+
+          const byEdge = new Map(
+            edges.map(item => [
+              item.edge,
+              item.point
+            ])
+          );
+
+          const pairs = center >= elevation
+            ? [[0, 1], [2, 3]]
+            : [[0, 3], [1, 2]];
+
+          for (const pair of pairs) {
+
+            segments.push([
+              byEdge.get(pair[0]),
+              byEdge.get(pair[1])
+            ]);
+          }
         }
       }
     }
@@ -460,13 +781,14 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     13 / COLOURS
+     14 / COLOURS
      ======================================================== */
 
   const baseColors = [
     new THREE.Color(0xffffff),
-    new THREE.Color(0xc8f4ff),
-    new THREE.Color(0x69d7ed)
+    new THREE.Color(0xd4f5ff),
+    new THREE.Color(0x86e3f5),
+    new THREE.Color(0x56cde8)
   ];
 
   const orange = new THREE.Color(
@@ -475,22 +797,37 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     14 / LINE MATERIAL HELPER
+     15 / LINE MATERIAL
+
+     Uses true screen-space line width.
+
+     No glow or duplicate motion trails.
      ======================================================== */
 
   function createLineMaterial(
     color,
-    width,
     opacity
   ) {
 
+    const isMobile =
+      window.innerWidth <= 800;
+
     return new LineMaterial({
+
       color,
-      linewidth: width,
+
+      linewidth: isMobile
+        ? SETTINGS.mobileLineWidth
+        : SETTINGS.lineWidth,
+
       worldUnits: false,
+
       transparent: true,
+
       opacity,
+
       depthWrite: false,
+
       resolution: new THREE.Vector2(
         viewportWidth,
         viewportHeight
@@ -500,18 +837,17 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     15 / CLEAR CONTOURS
+     16 / CLEAR CONTOURS
      ======================================================== */
 
   function clearContours() {
 
     for (const contour of contourLines) {
 
-      for (const object of contour.objects) {
-        scene.remove(object);
-        object.geometry.dispose();
-        object.material.dispose();
-      }
+      scene.remove(contour.line);
+
+      contour.line.geometry.dispose();
+      contour.material.dispose();
     }
 
     contourLines = [];
@@ -519,7 +855,12 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     16 / BUILD CONTOURS
+     17 / BUILD CONTOURS
+
+     One LineSegments2 object per elevation level.
+
+     This avoids creating thousands of individual
+     Three.js objects.
      ======================================================== */
 
   function buildContours() {
@@ -530,11 +871,11 @@ function initializeLandscape() {
 
     const minimum =
       terrain.minimum +
-      (terrain.maximum - terrain.minimum) * 0.035;
+      (terrain.maximum - terrain.minimum) * 0.025;
 
     const maximum =
       terrain.minimum +
-      (terrain.maximum - terrain.minimum) * 0.96;
+      (terrain.maximum - terrain.minimum) * 0.965;
 
 
     for (let i = 0; i < contourCount; i++) {
@@ -555,25 +896,14 @@ function initializeLandscape() {
           elevation
         );
 
-      /*
-       * Line2 expects connected paths, not a flat
-       * list of unrelated marching-squares segments.
-
-       * For this initial implementation, each segment
-       * is constructed independently.
-       */
-
-      const objects = [];
-
-      const baseColor =
-        baseColors[i % baseColors.length].clone();
-
+      const positions = [];
 
       for (const segment of segments) {
 
         const [start, end] = segment;
 
-        const positions = [
+        positions.push(
+
           start[0],
           elevation + SETTINGS.contourOffset,
           start[1],
@@ -581,98 +911,50 @@ function initializeLandscape() {
           end[0],
           elevation + SETTINGS.contourOffset,
           end[1]
-        ];
 
-
-        /* ----------------------------------------------------
-           Main contour
-           ---------------------------------------------------- */
-
-        const mainGeometry = new LineGeometry();
-        mainGeometry.setPositions(positions);
-
-        const mainMaterial = createLineMaterial(
-          baseColor,
-          SETTINGS.foregroundLineWidth,
-          SETTINGS.nearOpacity
         );
-
-        const mainLine = new Line2(
-          mainGeometry,
-          mainMaterial
-        );
-
-        mainLine.frustumCulled = false;
-
-        scene.add(mainLine);
-        objects.push(mainLine);
-
-
-        /* ----------------------------------------------------
-           Glow layer
-           ---------------------------------------------------- */
-
-        const glowGeometry = new LineGeometry();
-        glowGeometry.setPositions(positions);
-
-        const glowMaterial = createLineMaterial(
-          baseColor,
-          SETTINGS.glowLineWidth,
-          SETTINGS.glowOpacity
-        );
-
-        const glowLine = new Line2(
-          glowGeometry,
-          glowMaterial
-        );
-
-        glowLine.frustumCulled = false;
-
-        scene.add(glowLine);
-        objects.push(glowLine);
-
-
-        /* ----------------------------------------------------
-           Distant motion trail
-
-           Slightly offset in world depth and elevation.
-           ---------------------------------------------------- */
-
-        const trailPositions = [
-          start[0],
-          elevation + SETTINGS.contourOffset - 0.035,
-          start[1] - 0.08,
-
-          end[0],
-          elevation + SETTINGS.contourOffset - 0.035,
-          end[1] - 0.08
-        ];
-
-        const trailGeometry = new LineGeometry();
-        trailGeometry.setPositions(trailPositions);
-
-        const trailMaterial = createLineMaterial(
-          baseColor,
-          SETTINGS.trailLineWidth,
-          SETTINGS.trailOpacity
-        );
-
-        const trailLine = new Line2(
-          trailGeometry,
-          trailMaterial
-        );
-
-        trailLine.frustumCulled = false;
-
-        scene.add(trailLine);
-        objects.push(trailLine);
       }
 
+      if (!positions.length) {
+        continue;
+      }
+
+      const geometry =
+        new LineSegmentsGeometry();
+
+      geometry.setPositions(
+        positions
+      );
+
+      const baseColor =
+        baseColors[
+          i % baseColors.length
+        ].clone();
+
+      const material =
+        createLineMaterial(
+          baseColor,
+          0.85
+        );
+
+      const line =
+        new LineSegments2(
+          geometry,
+          material
+        );
+
+      line.frustumCulled = false;
+
+      scene.add(line);
+
       contourLines.push({
-        objects,
+
+        line,
+        material,
         baseColor,
         normalized,
         elevation
+
       });
     }
 
@@ -681,10 +963,16 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     17 / HIGHLIGHT ELEVATION
+     18 / ORANGE ELEVATION HIGHLIGHT
+
+     Only colour changes.
+
+     Terrain and contour geometry remain stationary.
      ======================================================== */
 
-  function updateHighlight(immediate = false) {
+  function updateHighlight(
+    immediate = false
+  ) {
 
     if (immediate) {
       currentElevation = targetElevation;
@@ -698,53 +986,36 @@ function initializeLandscape() {
 
       const distance =
         Math.abs(
-          contour.normalized - currentElevation
+          contour.normalized -
+          currentElevation
         );
 
-      const influence = Math.exp(
-        -(distance * distance) /
-        (2 * width * width)
-      );
+      const influence =
+        Math.exp(
+          -(distance * distance) /
+          (2 * width * width)
+        );
 
-      const activeColor =
-        contour.baseColor.clone().lerp(
+      contour.material.color
+        .copy(contour.baseColor)
+        .lerp(
           orange,
           influence
         );
 
-      for (let i = 0; i < contour.objects.length; i++) {
-
-        const object = contour.objects[i];
-
-        object.material.color.copy(activeColor);
-
-        if (i % 3 === 0) {
-
-          object.material.opacity =
-            THREE.MathUtils.lerp(
-              SETTINGS.nearOpacity,
-              1,
-              influence
-            );
-
-        } else if (i % 3 === 1) {
-
-          object.material.opacity =
-            SETTINGS.glowOpacity +
-            influence * 0.12;
-
-        } else {
-
-          object.material.opacity =
-            SETTINGS.trailOpacity;
-        }
-      }
+      contour.material.opacity =
+        0.82 + influence * 0.18;
     }
   }
 
 
   /* ========================================================
-     18 / POINTER INTERACTION
+     19 / POINTER INTERACTION
+
+     Mouse height selects elevation.
+
+     Top = higher contours.
+     Bottom = lower contours.
      ======================================================== */
 
   function handlePointer(event) {
@@ -764,6 +1035,12 @@ function initializeLandscape() {
         0,
         1
       );
+
+    if (reducedMotion.matches) {
+
+      updateHighlight(true);
+      renderer.render(scene, camera);
+    }
   }
 
 
@@ -780,32 +1057,32 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     19 / CAMERA FLYOVER
+     20 / CINEMATIC CAMERA FLYOVER
+
+     Gentle camera travel.
+
+     No terrain animation or deformation.
      ======================================================== */
 
-  function updateCamera(deltaSeconds) {
+  function updateCamera(
+    deltaSeconds
+  ) {
 
     if (reducedMotion.matches) return;
 
     elapsedTime += deltaSeconds;
 
-    /*
-     * Slowly travel forward and backward across
-     * the topographic surface.
-
-     * A bounded path avoids the camera eventually
-     * leaving the terrain.
-     */
-
     const forward =
       Math.sin(
-        elapsedTime * SETTINGS.flyoverSpeed
+        elapsedTime *
+        SETTINGS.flyoverSpeed
       ) *
       SETTINGS.flyoverDistance;
 
     const sway =
       Math.sin(
-        elapsedTime * SETTINGS.cameraSwaySpeed
+        elapsedTime *
+        SETTINGS.cameraSwaySpeed
       ) *
       SETTINGS.cameraSway;
 
@@ -816,26 +1093,27 @@ function initializeLandscape() {
     );
 
     camera.lookAt(
-      sway * 0.3,
-      0.7,
-      -forward * 0.3
+      cameraTarget.x + sway * 0.25,
+      cameraTarget.y,
+      cameraTarget.z - forward * 0.2
     );
   }
 
 
   /* ========================================================
-     20 / RESIZE
+     21 / RESIZE
      ======================================================== */
-
-  let currentDimensions = "";
 
   function resize() {
 
     const rect =
       container.getBoundingClientRect();
 
-    viewportWidth = Math.max(1, rect.width);
-    viewportHeight = Math.max(1, rect.height);
+    viewportWidth =
+      Math.max(1, rect.width);
+
+    viewportHeight =
+      Math.max(1, rect.height);
 
     camera.aspect =
       viewportWidth / viewportHeight;
@@ -843,17 +1121,63 @@ function initializeLandscape() {
     const aspect =
       viewportWidth / viewportHeight;
 
+
+    /* ------------------------------------------------------
+       Responsive camera positions
+       ------------------------------------------------------ */
+
     if (aspect < 0.8) {
-      cameraBase.set(0, 11, 25);
+
+      cameraBase.set(
+        0,
+        8.5,
+        24
+      );
+
+      cameraTarget.set(
+        0,
+        2,
+        -2
+      );
+
     } else if (aspect < 1.4) {
-      cameraBase.set(0, 9.5, 21);
+
+      cameraBase.set(
+        0,
+        6.8,
+        20
+      );
+
+      cameraTarget.set(
+        0,
+        2.2,
+        -3
+      );
+
     } else {
-      cameraBase.set(0, 8, 18);
+
+      cameraBase.set(
+        0,
+        5.4,
+        17
+      );
+
+      cameraTarget.set(
+        0,
+        2.3,
+        -3.5
+      );
     }
 
     camera.position.copy(cameraBase);
-    camera.lookAt(0, 0.7, 0);
+    camera.lookAt(cameraTarget);
+
     camera.updateProjectionMatrix();
+
+
+    /* ------------------------------------------------------
+       Renderer
+       ------------------------------------------------------ */
 
     renderer.setPixelRatio(
       Math.min(
@@ -867,6 +1191,11 @@ function initializeLandscape() {
       viewportHeight,
       false
     );
+
+
+    /* ------------------------------------------------------
+       Responsive contour density
+       ------------------------------------------------------ */
 
     const dimensions =
       getDimensions();
@@ -884,19 +1213,17 @@ function initializeLandscape() {
       buildContours();
     }
 
-    /*
-     * Update LineMaterial resolutions after resize.
-     */
+
+    /* ------------------------------------------------------
+       Update line resolution
+       ------------------------------------------------------ */
 
     for (const contour of contourLines) {
 
-      for (const object of contour.objects) {
-
-        object.material.resolution.set(
-          viewportWidth,
-          viewportHeight
-        );
-      }
+      contour.material.resolution.set(
+        viewportWidth,
+        viewportHeight
+      );
     }
 
     renderer.render(scene, camera);
@@ -904,7 +1231,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     21 / ANIMATION
+     22 / ANIMATION
      ======================================================== */
 
   function animate(timestamp) {
@@ -933,9 +1260,10 @@ function initializeLandscape() {
 
     lastFrameTime = timestamp;
 
-    /*
-     * Smooth highlight transitions.
-     */
+
+    /* ------------------------------------------------------
+       Smooth orange highlighting
+       ------------------------------------------------------ */
 
     if (reducedMotion.matches) {
 
@@ -956,20 +1284,29 @@ function initializeLandscape() {
 
     updateHighlight();
 
-    /*
-     * Cinematic camera movement.
-     */
 
-    updateCamera(deltaSeconds);
+    /* ------------------------------------------------------
+       Camera flyover
+       ------------------------------------------------------ */
 
-    renderer.render(scene, camera);
+    updateCamera(
+      deltaSeconds
+    );
 
-    animationFrame = requestAnimationFrame(animate);
+    renderer.render(
+      scene,
+      camera
+    );
+
+    animationFrame =
+      requestAnimationFrame(
+        animate
+      );
   }
 
 
   /* ========================================================
-     22 / ANIMATION CONTROL
+     23 / ANIMATION CONTROL
      ======================================================== */
 
   function startAnimation() {
@@ -984,14 +1321,21 @@ function initializeLandscape() {
 
     lastFrameTime = null;
 
-    animationFrame = requestAnimationFrame(animate);
+    animationFrame =
+      requestAnimationFrame(
+        animate
+      );
   }
 
 
   function stopAnimation() {
 
     if (animationFrame !== null) {
-      cancelAnimationFrame(animationFrame);
+
+      cancelAnimationFrame(
+        animationFrame
+      );
+
       animationFrame = null;
     }
 
@@ -1000,33 +1344,36 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     23 / VISIBILITY OBSERVER
+     24 / VISIBILITY OBSERVER
      ======================================================== */
 
-  const visibilityObserver =
-    new IntersectionObserver(
-      entries => {
+  if ("IntersectionObserver" in window) {
 
-        isSectionVisible =
-          entries[0].isIntersecting;
+    const observer =
+      new IntersectionObserver(
+        entries => {
 
-        if (isSectionVisible) {
-          startAnimation();
-        } else {
-          stopAnimation();
+          isSectionVisible =
+            entries[0].isIntersecting;
+
+          if (isSectionVisible) {
+            startAnimation();
+          } else {
+            stopAnimation();
+          }
+        },
+        {
+          root: document.querySelector(".snap"),
+          threshold: 0.05
         }
-      },
-      {
-        root: document.querySelector(".snap"),
-        threshold: 0.05
-      }
-    );
+      );
 
-  visibilityObserver.observe(cover);
+    observer.observe(cover);
+  }
 
 
   /* ========================================================
-     24 / REDUCED MOTION
+     25 / REDUCED MOTION
      ======================================================== */
 
   reducedMotion.addEventListener(
@@ -1035,22 +1382,27 @@ function initializeLandscape() {
 
       if (reducedMotion.matches) {
 
-        elapsedTime = 0;
+        camera.position.copy(
+          cameraBase
+        );
 
-        camera.position.copy(cameraBase);
-        camera.lookAt(0, 0.7, 0);
-
-        currentElevation = targetElevation;
+        camera.lookAt(
+          cameraTarget
+        );
 
         updateHighlight(true);
-        renderer.render(scene, camera);
+
+        renderer.render(
+          scene,
+          camera
+        );
       }
     }
   );
 
 
   /* ========================================================
-     25 / PAGE VISIBILITY
+     26 / PAGE VISIBILITY
      ======================================================== */
 
   document.addEventListener(
@@ -1067,7 +1419,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     26 / RESIZE OBSERVER
+     27 / RESIZE OBSERVER
      ======================================================== */
 
   if ("ResizeObserver" in window) {
@@ -1075,7 +1427,9 @@ function initializeLandscape() {
     const observer =
       new ResizeObserver(resize);
 
-    observer.observe(container);
+    observer.observe(
+      container
+    );
 
   } else {
 
@@ -1088,13 +1442,21 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     27 / INITIALIZE
+     28 / INITIALIZE
      ======================================================== */
 
   resize();
+
+  updateHighlight(true);
+
+  renderer.render(
+    scene,
+    camera
+  );
+
   startAnimation();
 
   console.log(
-    `Cinematic topographic landscape initialized: ${contourCount} contour levels.`
+    `Dramatic topographic landscape initialized: ${contourLines.length} contour levels.`
   );
 }
