@@ -5,21 +5,26 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   INTERACTIVE TOPOGRAPHIC FLOW FIELD
+   INTERACTIVE TOPOGRAPHIC ELEVATION CONTOURS
 
    File: assets/js/statistical-landscape.js
-   Version: 4.0
+   Version: 5.0
 
-   Visual direction:
-   - Inspired by flowing topographic contour artwork
-   - Continuously evolving mathematical landscape
-   - Layered luminous contours
-   - Strong three-dimensional perspective
-   - Cursor pushes and parts the surface
-   - Fast response, heavily damped recovery
-   - No elastic bouncing or excessive recoil
-   - Full-cover visualization
-   - Responsive and reduced-motion aware
+   Features:
+   - Fixed three-dimensional topographic landscape
+   - True elevation contour lines
+   - White and cyan base contours
+   - Orange elevation highlighting
+   - Mouse position controls highlighted elevation
+   - Touch dragging controls highlighted elevation
+   - Smooth colour transitions
+   - No terrain deformation
+   - No spring physics
+   - No continuous animation
+   - Responsive rendering
+   - Reduced-motion support
+
+   Requires Three.js ES module.
    ========================================================== */
 
 import * as THREE from
@@ -55,46 +60,36 @@ function initializeLandscape() {
 
     background: 0x0180a5,
 
-    desktopLines: 54,
-    tabletLines: 38,
-    mobileLines: 24,
-
-    desktopSamples: 200,
-    tabletSamples: 150,
-    mobileSamples: 100,
-
     worldWidth: 24,
     worldDepth: 15,
 
-    terrainHeight: 2.8,
+    desktopResolution: 145,
+    tabletResolution: 105,
+    mobileResolution: 70,
+
+    desktopContours: 24,
+    tabletContours: 18,
+    mobileContours: 13,
+
+    contourOffset: 0.025,
+
+    highlightColor: 0xff9345,
 
     /*
-     * Continuous landscape evolution.
+     * Highlighting range, measured in contour levels.
+
+     * A narrow range produces a crisp orange contour.
      */
 
-    flowSpeed: 0.42,
-    terrainVariation: 0.65,
+    highlightWidth: 0.8,
 
     /*
-     * Cursor interaction.
-     *
-     * Lower responseSmoothness = slower response.
-     * Higher recoverySmoothness = faster recovery.
+     * Speed of colour interpolation.
+
+     * Higher values = faster colour transitions.
      */
 
-    cursorRadius: 2.6,
-    cursorStrength: 1.65,
-
-    responseSmoothness: 0.18,
-    recoverySmoothness: 0.11,
-
-    /*
-     * Visual treatment.
-     */
-
-    primaryOpacity: 0.88,
-    secondaryOpacity: 0.48,
-    accentOpacity: 0.72,
+    highlightResponse: 0.16,
 
     maxPixelRatio: 2
   };
@@ -120,26 +115,19 @@ function initializeLandscape() {
      05 / STATE
      ======================================================== */
 
-  let lineCount = 0;
-  let sampleCount = 0;
+  let contourLevels = [];
+  let contourLines = [];
 
-  let lines = [];
-  let glowLines = [];
-
-  let points = [];
-
-  let simulationTime = 0;
+  let targetElevation = 0.5;
+  let currentElevation = 0.5;
 
   let animationFrame = null;
   let lastFrameTime = null;
 
   let isSectionVisible = true;
 
-  let cursorActive = false;
-  let cursorX = 0;
-  let cursorZ = 0;
-
-  let cursorInfluence = 0;
+  let resolution = 0;
+  let contourCount = 0;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -147,7 +135,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     06 / THREE.JS SCENE
+     06 / SCENE
      ======================================================== */
 
   const scene = new THREE.Scene();
@@ -165,8 +153,8 @@ function initializeLandscape() {
     120
   );
 
-  camera.position.set(0, 7.5, 18);
-  camera.lookAt(0, 0.5, 0);
+  camera.position.set(0, 8, 18);
+  camera.lookAt(0, 0.7, 0);
 
 
   /* ========================================================
@@ -183,7 +171,7 @@ function initializeLandscape() {
     });
   } catch (error) {
     console.error(
-      "Topographic flow field: WebGL unavailable.",
+      "Topographic contours: WebGL unavailable.",
       error
     );
     return;
@@ -206,43 +194,64 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     09 / LINE MATERIALS
+     09 / TERRAIN HEIGHT FUNCTION
+
+     Fixed mathematical landscape.
+
+     Several Gaussian hills create an irregular
+     topographic surface.
+
+     The terrain does not change over time.
      ======================================================== */
 
-  const materials = [
+  function terrainHeight(x, z) {
 
-    new THREE.LineBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: SETTINGS.primaryOpacity,
-      depthWrite: false
-    }),
+    const hill1 =
+      2.7 * Math.exp(
+        -(
+          ((x + 6.2) ** 2) / 16 +
+          ((z + 1.5) ** 2) / 7
+        )
+      );
 
-    new THREE.LineBasicMaterial({
-      color: 0xc8f4ff,
-      transparent: true,
-      opacity: SETTINGS.secondaryOpacity,
-      depthWrite: false
-    }),
+    const hill2 =
+      3.8 * Math.exp(
+        -(
+          ((x - 1.2) ** 2) / 14 +
+          ((z - 2.2) ** 2) / 10
+        )
+      );
 
-    new THREE.LineBasicMaterial({
-      color: 0x6de4f5,
-      transparent: true,
-      opacity: 0.68,
-      depthWrite: false
-    }),
+    const hill3 =
+      2.9 * Math.exp(
+        -(
+          ((x - 7.4) ** 2) / 11 +
+          ((z + 2.8) ** 2) / 7
+        )
+      );
 
-    new THREE.LineBasicMaterial({
-      color: 0xffa15a,
-      transparent: true,
-      opacity: SETTINGS.accentOpacity,
-      depthWrite: false
-    })
-  ];
+    const hill4 =
+      1.7 * Math.exp(
+        -(
+          ((x + 0.5) ** 2) / 9 +
+          ((z + 4.2) ** 2) / 5
+        )
+      );
+
+    const rolling =
+      0.16 *
+      Math.sin(x * 0.7 + z * 0.4) *
+      Math.cos(z * 0.9);
+
+    return Math.max(
+      0,
+      hill1 + hill2 + hill3 + hill4 + rolling
+    );
+  }
 
 
   /* ========================================================
-     10 / RESPONSIVE DIMENSIONS
+     10 / RESPONSIVE SETTINGS
      ======================================================== */
 
   function getDimensions() {
@@ -251,508 +260,512 @@ function initializeLandscape() {
 
     if (viewport <= 800) {
       return [
-        SETTINGS.mobileLines,
-        SETTINGS.mobileSamples
+        SETTINGS.mobileResolution,
+        SETTINGS.mobileContours
       ];
     }
 
     if (viewport <= 1200) {
       return [
-        SETTINGS.tabletLines,
-        SETTINGS.tabletSamples
+        SETTINGS.tabletResolution,
+        SETTINGS.tabletContours
       ];
     }
 
     return [
-      SETTINGS.desktopLines,
-      SETTINGS.desktopSamples
+      SETTINGS.desktopResolution,
+      SETTINGS.desktopContours
     ];
   }
 
 
   /* ========================================================
-     11 / CONTINUOUS TOPOGRAPHIC SURFACE
-
-     Several moving Gaussian peaks combine with
-     low-frequency wave functions.
-
-     The result evolves continuously without using
-     spring oscillation.
+     11 / SAMPLE TERRAIN
      ======================================================== */
 
-  function terrainHeight(x, z, t) {
+  function sampleTerrain() {
 
-    /*
-     * Slowly drifting centres.
-     */
+    const heights = [];
 
-    const peak1X =
-      -6 + Math.sin(t * 0.21) * 1.6;
+    let minimum = Infinity;
+    let maximum = -Infinity;
 
-    const peak1Z =
-      -1 + Math.cos(t * 0.17) * 1.1;
+    const stepX =
+      SETTINGS.worldWidth / (resolution - 1);
 
-    const peak2X =
-      1.8 + Math.cos(t * 0.16) * 1.8;
+    const stepZ =
+      SETTINGS.worldDepth / (resolution - 1);
 
-    const peak2Z =
-      2.4 + Math.sin(t * 0.19) * 1.4;
-
-    const peak3X =
-      7 + Math.sin(t * 0.13 + 1.2) * 1.5;
-
-    const peak3Z =
-      -2.8 + Math.cos(t * 0.15) * 1.3;
-
-
-    /*
-     * Gaussian hills.
-     */
-
-    const hill1 =
-      2.4 * Math.exp(
-        -(
-          ((x - peak1X) ** 2) / 15 +
-          ((z - peak1Z) ** 2) / 8
-        )
-      );
-
-    const hill2 =
-      3.6 * Math.exp(
-        -(
-          ((x - peak2X) ** 2) / 12 +
-          ((z - peak2Z) ** 2) / 9
-        )
-      );
-
-    const hill3 =
-      2.2 * Math.exp(
-        -(
-          ((x - peak3X) ** 2) / 13 +
-          ((z - peak3Z) ** 2) / 7
-        )
-      );
-
-
-    /*
-     * Flowing undulations.
-     */
-
-    const flow1 =
-      Math.sin(
-        x * 0.55 +
-        z * 0.42 +
-        t * 0.55
-      ) * 0.32;
-
-    const flow2 =
-      Math.cos(
-        x * 0.34 -
-        z * 0.7 -
-        t * 0.38
-      ) * 0.25;
-
-    const flow3 =
-      Math.sin(
-        x * 0.18 +
-        z * 1.1 +
-        t * 0.24
-      ) * 0.18;
-
-
-    return (
-      hill1 +
-      hill2 +
-      hill3 +
-      (flow1 + flow2 + flow3) *
-      SETTINGS.terrainVariation
-    ) * SETTINGS.terrainHeight * 0.42;
-  }
-
-
-  /* ========================================================
-     12 / CLEAR LINES
-     ======================================================== */
-
-  function clearLines() {
-
-    for (const line of lines) {
-      scene.remove(line);
-      line.geometry.dispose();
-    }
-
-    for (const line of glowLines) {
-      scene.remove(line);
-      line.geometry.dispose();
-    }
-
-    lines = [];
-    glowLines = [];
-    points = [];
-  }
-
-
-  /* ========================================================
-     13 / BUILD FLOW FIELD
-     ======================================================== */
-
-  function buildField() {
-
-    clearLines();
-
-    const dimensions = getDimensions();
-
-    lineCount = dimensions[0];
-    sampleCount = dimensions[1];
-
-    const spacingX =
-      SETTINGS.worldWidth / (sampleCount - 1);
-
-    const spacingZ =
-      SETTINGS.worldDepth / (lineCount - 1);
-
-
-    for (let row = 0; row < lineCount; row++) {
-
-      const rowPoints = [];
+    for (let row = 0; row < resolution; row++) {
 
       const z =
         -SETTINGS.worldDepth / 2 +
-        row * spacingZ;
+        row * stepZ;
 
-      for (let col = 0; col < sampleCount; col++) {
+      const values = [];
+
+      for (let col = 0; col < resolution; col++) {
 
         const x =
           -SETTINGS.worldWidth / 2 +
-          col * spacingX;
+          col * stepX;
 
-        rowPoints.push({
-          x,
-          z,
+        const height = terrainHeight(x, z);
 
-          currentY: 0,
-          cursorOffset: 0
-        });
+        values.push(height);
+
+        minimum = Math.min(minimum, height);
+        maximum = Math.max(maximum, height);
       }
 
-      points.push(rowPoints);
-
-
-      /*
-       * Main contour.
-       */
-
-      const geometry = new THREE.BufferGeometry();
-
-      geometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(
-          new Float32Array(sampleCount * 3),
-          3
-        )
-      );
-
-      let materialIndex = row % 3;
-
-      if (row % 17 === 0) {
-        materialIndex = 3;
-      }
-
-      const line = new THREE.Line(
-        geometry,
-        materials[materialIndex]
-      );
-
-      line.frustumCulled = false;
-
-      lines.push(line);
-      scene.add(line);
-
-
-      /*
-       * Secondary translucent contour for depth.
-       */
-
-      if (row % 3 === 0) {
-
-        const glowGeometry =
-          new THREE.BufferGeometry();
-
-        glowGeometry.setAttribute(
-          "position",
-          new THREE.BufferAttribute(
-            new Float32Array(sampleCount * 3),
-            3
-          )
-        );
-
-        const glowMaterial =
-          new THREE.LineBasicMaterial({
-            color: 0xb8efff,
-            transparent: true,
-            opacity: 0.14,
-            depthWrite: false
-          });
-
-        const glowLine = new THREE.Line(
-          glowGeometry,
-          glowMaterial
-        );
-
-        glowLine.userData.sourceRow = row;
-        glowLine.frustumCulled = false;
-
-        glowLines.push(glowLine);
-        scene.add(glowLine);
-      }
+      heights.push(values);
     }
 
-    updateGeometry(0);
+    return {
+      heights,
+      minimum,
+      maximum,
+      stepX,
+      stepZ
+    };
   }
 
 
   /* ========================================================
-     14 / UPDATE GEOMETRY
+     12 / MARCHING SQUARES
 
-     Smooth, non-oscillating movement.
+     Extract line segments where the terrain crosses
+     a particular elevation.
 
-     No springs or velocity integration are used.
+     These segments form the topographic contours.
      ======================================================== */
 
-  function updateGeometry(deltaSeconds) {
+  function extractContourSegments(
+    terrain,
+    elevation
+  ) {
 
-    const frameFactor =
-      Math.min(
-        3,
-        deltaSeconds * 60
-      );
+    const segments = [];
 
-    const response =
-      1 - Math.pow(
-        1 - SETTINGS.responseSmoothness,
-        frameFactor
-      );
+    const {
+      heights,
+      stepX,
+      stepZ
+    } = terrain;
 
-    const recovery =
-      1 - Math.pow(
-        1 - SETTINGS.recoverySmoothness,
-        frameFactor
-      );
+    const halfWidth =
+      SETTINGS.worldWidth / 2;
 
-
-    /*
-     * Cursor influence fades in/out smoothly.
-     */
-
-    const targetInfluence =
-      cursorActive ? 1 : 0;
-
-    cursorInfluence +=
-      (targetInfluence - cursorInfluence) *
-      response;
+    const halfDepth =
+      SETTINGS.worldDepth / 2;
 
 
-    for (let row = 0; row < lineCount; row++) {
+    function interpolate(
+      x1, z1, h1,
+      x2, z2, h2
+    ) {
 
-      const positions =
-        lines[row].geometry.attributes.position;
+      const difference = h2 - h1;
 
-      for (let col = 0; col < sampleCount; col++) {
-
-        const point = points[row][col];
-
-        const baseY =
-          terrainHeight(
-            point.x,
-            point.z,
-            simulationTime
+      const t = Math.abs(difference) < 0.000001
+        ? 0.5
+        : THREE.MathUtils.clamp(
+            (elevation - h1) / difference,
+            0,
+            1
           );
+
+      return [
+        x1 + (x2 - x1) * t,
+        z1 + (z2 - z1) * t
+      ];
+    }
+
+
+    for (let row = 0; row < resolution - 1; row++) {
+
+      for (let col = 0; col < resolution - 1; col++) {
+
+        const x0 =
+          -halfWidth + col * stepX;
+
+        const x1 =
+          x0 + stepX;
+
+        const z0 =
+          -halfDepth + row * stepZ;
+
+        const z1 =
+          z0 + stepZ;
 
 
         /*
-         * Cursor displacement.
+         * Cell corners:
          *
-         * Smooth Gaussian influence with no recoil.
+         * A ---- B
+         * |      |
+         * D ---- C
          */
 
-        let targetOffset = 0;
+        const A = heights[row][col];
+        const B = heights[row][col + 1];
+        const C = heights[row + 1][col + 1];
+        const D = heights[row + 1][col];
 
-        if (cursorInfluence > 0.001) {
+        const intersections = [];
 
-          const dx =
-            point.x - cursorX;
 
-          const dz =
-            point.z - cursorZ;
+        /* Top edge */
 
-          const distanceSquared =
-            dx * dx + dz * dz;
+        if ((A < elevation) !== (B < elevation)) {
+          intersections.push(
+            interpolate(
+              x0, z0, A,
+              x1, z0, B
+            )
+          );
+        }
 
-          targetOffset =
-            SETTINGS.cursorStrength *
-            Math.exp(
-              -distanceSquared /
-              (SETTINGS.cursorRadius ** 2)
-            ) *
-            cursorInfluence;
+
+        /* Right edge */
+
+        if ((B < elevation) !== (C < elevation)) {
+          intersections.push(
+            interpolate(
+              x1, z0, B,
+              x1, z1, C
+            )
+          );
+        }
+
+
+        /* Bottom edge */
+
+        if ((C < elevation) !== (D < elevation)) {
+          intersections.push(
+            interpolate(
+              x1, z1, C,
+              x0, z1, D
+            )
+          );
+        }
+
+
+        /* Left edge */
+
+        if ((D < elevation) !== (A < elevation)) {
+          intersections.push(
+            interpolate(
+              x0, z1, D,
+              x0, z0, A
+            )
+          );
         }
 
 
         /*
-         * Critically damped-style interpolation.
+         * Most cells have two intersections.
          *
-         * This is intentionally monotonic:
-         * it approaches the target without overshooting.
+         * Ambiguous saddle cells can have four.
+         * Pair intersections consistently.
          */
 
-        point.cursorOffset +=
-          (targetOffset - point.cursorOffset) *
-          (cursorActive ? response : recovery);
+        if (intersections.length === 2) {
 
+          segments.push([
+            intersections[0],
+            intersections[1]
+          ]);
 
-        const targetY =
-          baseY + point.cursorOffset;
+        } else if (intersections.length === 4) {
 
-        point.currentY +=
-          (targetY - point.currentY) *
-          response;
+          segments.push([
+            intersections[0],
+            intersections[1]
+          ]);
 
-
-        positions.setXYZ(
-          col,
-          point.x,
-          point.currentY,
-          point.z
-        );
+          segments.push([
+            intersections[2],
+            intersections[3]
+          ]);
+        }
       }
-
-      positions.needsUpdate = true;
     }
 
+    return segments;
+  }
+
+
+  /* ========================================================
+     13 / MATERIALS
+     ======================================================== */
+
+  const baseColors = [
+    new THREE.Color(0xffffff),
+    new THREE.Color(0xc8f4ff),
+    new THREE.Color(0x69d7ed)
+  ];
+
+  const orange = new THREE.Color(
+    SETTINGS.highlightColor
+  );
+
+
+  /* ========================================================
+     14 / CLEAR CONTOURS
+     ======================================================== */
+
+  function clearContours() {
+
+    for (const contour of contourLines) {
+
+      scene.remove(contour.line);
+
+      contour.line.geometry.dispose();
+      contour.line.material.dispose();
+    }
+
+    contourLines = [];
+    contourLevels = [];
+  }
+
+
+  /* ========================================================
+     15 / BUILD CONTOURS
+     ======================================================== */
+
+  function buildContours() {
+
+    clearContours();
+
+    const terrain = sampleTerrain();
 
     /*
-     * Update secondary glow contours.
+     * Exclude the extreme minimum and maximum,
+     * where contours become very small or unstable.
      */
 
-    for (const glowLine of glowLines) {
+    const minimum =
+      terrain.minimum +
+      (terrain.maximum - terrain.minimum) * 0.035;
 
-      const row =
-        glowLine.userData.sourceRow;
+    const maximum =
+      terrain.minimum +
+      (terrain.maximum - terrain.minimum) * 0.96;
 
-      const source =
-        lines[row].geometry.attributes.position;
 
-      const target =
-        glowLine.geometry.attributes.position;
+    for (let i = 0; i < contourCount; i++) {
 
-      for (let col = 0; col < sampleCount; col++) {
+      const normalized =
+        (i + 1) / (contourCount + 1);
 
-        target.setXYZ(
-          col,
-          source.getX(col),
-          source.getY(col) + 0.035,
-          source.getZ(col) + 0.02
+      const elevation =
+        THREE.MathUtils.lerp(
+          minimum,
+          maximum,
+          normalized
+        );
+
+      contourLevels.push(elevation);
+
+      const segments =
+        extractContourSegments(
+          terrain,
+          elevation
+        );
+
+      const positions = [];
+
+      for (const segment of segments) {
+
+        const [start, end] = segment;
+
+        positions.push(
+          start[0],
+          elevation + SETTINGS.contourOffset,
+          start[1],
+
+          end[0],
+          elevation + SETTINGS.contourOffset,
+          end[1]
         );
       }
 
-      target.needsUpdate = true;
+      const geometry =
+        new THREE.BufferGeometry();
+
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(
+          positions,
+          3
+        )
+      );
+
+      const baseColor =
+        baseColors[i % baseColors.length].clone();
+
+      const material =
+        new THREE.LineBasicMaterial({
+          color: baseColor,
+          transparent: true,
+          opacity: 0.76,
+          depthWrite: false
+        });
+
+      const line =
+        new THREE.LineSegments(
+          geometry,
+          material
+        );
+
+      line.frustumCulled = false;
+
+      scene.add(line);
+
+      contourLines.push({
+        line,
+        material,
+        baseColor,
+        normalized,
+        elevation
+      });
+    }
+
+    updateHighlight(true);
+  }
+
+
+  /* ========================================================
+     16 / HIGHLIGHT ELEVATION
+
+     Geometry stays fixed.
+
+     Only material colours and opacity change.
+     ======================================================== */
+
+  function updateHighlight(immediate = false) {
+
+    if (immediate) {
+      currentElevation = targetElevation;
+    }
+
+    for (const contour of contourLines) {
+
+      const distance =
+        Math.abs(
+          contour.normalized - currentElevation
+        );
+
+      /*
+       * Highlight width expressed as a fraction
+       * of the number of contour levels.
+       */
+
+      const width =
+        SETTINGS.highlightWidth /
+        Math.max(1, contourCount);
+
+      const influence = Math.exp(
+        -(distance * distance) /
+        (2 * width * width)
+      );
+
+      /*
+       * Full orange at the selected level.
+       * Neighbouring contours receive a softer tint.
+       */
+
+      contour.material.color
+        .copy(contour.baseColor)
+        .lerp(orange, influence);
+
+      contour.material.opacity =
+        0.60 + influence * 0.40;
     }
   }
 
 
   /* ========================================================
-     15 / POINTER INTERACTION
+     17 / POINTER INTERACTION
+
+     Vertical position selects elevation.
+
+     Top of screen = high elevation.
+     Bottom of screen = low elevation.
      ======================================================== */
 
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
+  function handlePointer(event) {
 
-  const interactionPlane = new THREE.Plane(
-    new THREE.Vector3(0, 1, 0),
-    -0.8
-  );
+    const rect =
+      container.getBoundingClientRect();
 
-  const intersection = new THREE.Vector3();
+    if (rect.height <= 0) return;
 
+    const normalizedY =
+      (event.clientY - rect.top) /
+      rect.height;
 
-  function handlePointerMove(event) {
+    targetElevation =
+      THREE.MathUtils.clamp(
+        1 - normalizedY,
+        0,
+        1
+      );
 
-    if (reducedMotion.matches) return;
-
-    const rect = container.getBoundingClientRect();
-
-    pointer.x =
-      ((event.clientX - rect.left) / rect.width) * 2 - 1;
-
-    pointer.y =
-      -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(pointer, camera);
-
-    const hit = raycaster.ray.intersectPlane(
-      interactionPlane,
-      intersection
-    );
-
-    if (!hit) return;
-
-    cursorX = intersection.x;
-    cursorZ = intersection.z;
-
-    cursorActive =
-      Math.abs(cursorX) < SETTINGS.worldWidth / 2 &&
-      Math.abs(cursorZ) < SETTINGS.worldDepth / 2;
-  }
-
-
-  function handlePointerLeave() {
-    cursorActive = false;
+    if (reducedMotion.matches) {
+      updateHighlight(true);
+      renderer.render(scene, camera);
+    } else {
+      startAnimation();
+    }
   }
 
 
   container.addEventListener(
     "pointermove",
-    handlePointerMove,
+    handlePointer,
     { passive: true }
   );
 
   container.addEventListener(
     "pointerdown",
-    handlePointerMove
-  );
-
-  container.addEventListener(
-    "pointerleave",
-    handlePointerLeave
+    handlePointer
   );
 
 
   /* ========================================================
-     16 / RESIZE
+     18 / RESIZE
      ======================================================== */
 
   let currentDimensions = "";
 
   function resize() {
 
-    const rect = container.getBoundingClientRect();
+    const rect =
+      container.getBoundingClientRect();
 
-    const width = Math.max(1, rect.width);
-    const height = Math.max(1, rect.height);
+    const width =
+      Math.max(1, rect.width);
 
-    camera.aspect = width / height;
+    const height =
+      Math.max(1, rect.height);
 
-    const aspect = width / height;
+    camera.aspect =
+      width / height;
+
+    const aspect =
+      width / height;
 
     if (aspect < 0.8) {
-      camera.position.set(0, 10, 24);
+      camera.position.set(0, 11, 25);
     } else if (aspect < 1.4) {
-      camera.position.set(0, 8.5, 20);
+      camera.position.set(0, 9.5, 21);
     } else {
-      camera.position.set(0, 7.5, 18);
+      camera.position.set(0, 8, 18);
     }
 
-    camera.lookAt(0, 0.5, 0);
+    camera.lookAt(0, 0.7, 0);
     camera.updateProjectionMatrix();
 
     renderer.setPixelRatio(
@@ -768,11 +781,20 @@ function initializeLandscape() {
       false
     );
 
-    const dimensions = getDimensions().join("x");
+    const dimensions =
+      getDimensions();
 
-    if (dimensions !== currentDimensions) {
-      currentDimensions = dimensions;
-      buildField();
+    const key =
+      dimensions.join("x");
+
+    if (key !== currentDimensions) {
+
+      currentDimensions = key;
+
+      resolution = dimensions[0];
+      contourCount = dimensions[1];
+
+      buildContours();
     }
 
     renderer.render(scene, camera);
@@ -780,7 +802,11 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     17 / ANIMATION
+     19 / ANIMATION
+
+     Only the highlight value is interpolated.
+
+     The terrain and contour geometry never move.
      ======================================================== */
 
   function animate(timestamp) {
@@ -789,7 +815,6 @@ function initializeLandscape() {
 
     if (
       !isSectionVisible ||
-      reducedMotion.matches ||
       document.hidden
     ) {
       return;
@@ -799,7 +824,7 @@ function initializeLandscape() {
       lastFrameTime = timestamp;
     }
 
-    const deltaSeconds =
+    const delta =
       Math.min(
         0.05,
         Math.max(
@@ -810,35 +835,58 @@ function initializeLandscape() {
 
     lastFrameTime = timestamp;
 
-    simulationTime +=
-      deltaSeconds * SETTINGS.flowSpeed;
+    const response =
+      1 - Math.pow(
+        1 - SETTINGS.highlightResponse,
+        delta * 60
+      );
 
-    updateGeometry(deltaSeconds);
+    currentElevation +=
+      (targetElevation - currentElevation) *
+      response;
+
+    if (
+      Math.abs(
+        targetElevation - currentElevation
+      ) < 0.0005
+    ) {
+      currentElevation = targetElevation;
+    }
+
+    updateHighlight();
 
     renderer.render(scene, camera);
 
-    animationFrame = requestAnimationFrame(animate);
+    if (
+      currentElevation !== targetElevation
+    ) {
+      animationFrame = requestAnimationFrame(
+        animate
+      );
+    }
   }
 
 
   /* ========================================================
-     18 / ANIMATION CONTROL
+     20 / ANIMATION CONTROL
      ======================================================== */
 
   function startAnimation() {
 
     if (
       animationFrame !== null ||
-      reducedMotion.matches ||
       !isSectionVisible ||
-      document.hidden
+      document.hidden ||
+      reducedMotion.matches
     ) {
       return;
     }
 
     lastFrameTime = null;
 
-    animationFrame = requestAnimationFrame(animate);
+    animationFrame = requestAnimationFrame(
+      animate
+    );
   }
 
 
@@ -854,31 +902,34 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     19 / VISIBILITY OBSERVER
+     21 / VISIBILITY OBSERVER
      ======================================================== */
 
-  const visibilityObserver = new IntersectionObserver(
-    entries => {
+  const visibilityObserver =
+    new IntersectionObserver(
+      entries => {
 
-      isSectionVisible = entries[0].isIntersecting;
+        isSectionVisible =
+          entries[0].isIntersecting;
 
-      if (isSectionVisible) {
-        startAnimation();
-      } else {
-        stopAnimation();
+        if (!isSectionVisible) {
+          stopAnimation();
+        } else {
+          updateHighlight(true);
+          renderer.render(scene, camera);
+        }
+      },
+      {
+        root: document.querySelector(".snap"),
+        threshold: 0.05
       }
-    },
-    {
-      root: document.querySelector(".snap"),
-      threshold: 0.05
-    }
-  );
+    );
 
   visibilityObserver.observe(cover);
 
 
   /* ========================================================
-     20 / REDUCED MOTION
+     22 / REDUCED MOTION
      ======================================================== */
 
   reducedMotion.addEventListener(
@@ -887,22 +938,15 @@ function initializeLandscape() {
 
       if (reducedMotion.matches) {
         stopAnimation();
-
-        cursorActive = false;
-        cursorInfluence = 0;
-
-        updateGeometry(1);
+        updateHighlight(true);
         renderer.render(scene, camera);
-
-      } else {
-        startAnimation();
       }
     }
   );
 
 
   /* ========================================================
-     21 / PAGE VISIBILITY
+     23 / PAGE VISIBILITY
      ======================================================== */
 
   document.addEventListener(
@@ -912,19 +956,22 @@ function initializeLandscape() {
       if (document.hidden) {
         stopAnimation();
       } else {
-        startAnimation();
+        updateHighlight(true);
+        renderer.render(scene, camera);
       }
     }
   );
 
 
   /* ========================================================
-     22 / RESIZE OBSERVER
+     24 / RESIZE OBSERVER
      ======================================================== */
 
   if ("ResizeObserver" in window) {
 
-    const observer = new ResizeObserver(resize);
+    const observer =
+      new ResizeObserver(resize);
+
     observer.observe(container);
 
   } else {
@@ -938,22 +985,16 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     23 / INITIALIZE
+     25 / INITIALIZE
      ======================================================== */
 
   resize();
 
-  /*
-   * Pre-render the initial landscape.
-   */
-
-  updateGeometry(1);
+  updateHighlight(true);
 
   renderer.render(scene, camera);
 
-  startAnimation();
-
   console.log(
-    `Topographic flow field initialized: ${lineCount} lines.`
+    `Interactive topographic contours initialized: ${contourCount} elevation levels.`
   );
 }
