@@ -5,13 +5,13 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
    File: assets/css/main.css
-   Version: 2.0
+   Version: 3.0
 
-   Design:
-   - U of T blue, black, white and pale grey
+   Design system:
    - Editorial full-page layouts
-   - Interactive correlation scatterplot
+   - Interactive 3D statistical landscape
    - Interactive alumni globe
+   - U of T blue, black, white and pale grey
    - Responsive desktop, tablet and mobile
    ========================================================== */
 
@@ -266,10 +266,12 @@ img {
 
 
 /* ==========================================================
-   07 / COVER
+   07 / COVER — BASE
    ========================================================== */
 
 .cover {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -286,33 +288,7 @@ img {
 
 
 /* ----------------------------------------------------------
-   Correlation scatterplot canvas
-
-   The visualization occupies the middle-right area,
-   leaving space for the title and program labels.
-   ---------------------------------------------------------- */
-
-.cover #collision-canvas {
-  position: absolute;
-
-  top: 30%;
-  left: 36%;
-
-  z-index: 1;
-
-  display: block;
-
-  width: 58%;
-  height: 48%;
-
-  max-width: none;
-
-  touch-action: none;
-}
-
-
-/* ----------------------------------------------------------
-   Foreground layers
+   Cover foreground
    ---------------------------------------------------------- */
 
 .cover-top,
@@ -346,21 +322,21 @@ img {
 
 
 /* ----------------------------------------------------------
-   Main title
+   Cover title
 
-   Reduced from the original 10.5vw / 11rem maximum.
+   Controlled scale on large desktop screens.
    ---------------------------------------------------------- */
 
 .cover h1 {
   margin: 0.3em 0 0;
 
-  font-size: clamp(3.5rem, 7vw, 8rem);
+  max-width: 100%;
+
+  font-size: clamp(3.5rem, 6.6vw, 7.5rem);
   font-weight: 900;
 
   line-height: 0.9;
   letter-spacing: -0.065em;
-
-  max-width: 100%;
 }
 
 
@@ -413,7 +389,58 @@ img {
 
 
 /* ==========================================================
-   08 / WHY STUDY STATISTICS
+   08 / COVER — 3D STATISTICAL LANDSCAPE
+   ========================================================== */
+
+/*
+ * Three.js will insert a canvas into this container.
+ *
+ * Desktop:
+ * - Visualization positioned centre-right.
+ * - Does not cover the title or bottom program labels.
+ *
+ * The container must have an explicit width and height
+ * for the WebGL renderer to initialize correctly.
+ */
+
+.statistical-landscape {
+  position: absolute;
+
+  top: 24%;
+  right: 3%;
+
+  z-index: 1;
+
+  width: 55%;
+  height: 59%;
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
+
+  cursor: grab;
+  touch-action: none;
+}
+
+.statistical-landscape:active {
+  cursor: grabbing;
+}
+
+.statistical-landscape canvas {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  max-width: none;
+
+  outline: none;
+}
+
+
+/* ==========================================================
+   09 / WHY STUDY STATISTICS
    ========================================================== */
 
 .why-panel {
@@ -453,7 +480,7 @@ img {
 
 
 /* ==========================================================
-   09 / UNDERGRADUATE PROGRAM OVERVIEW
+   10 / UNDERGRADUATE PROGRAM OVERVIEW
    ========================================================== */
 
 .programs-panel {
@@ -541,7 +568,7 @@ img {
 
 
 /* ==========================================================
-   10 / PROGRAM DETAIL SECTIONS
+   11 / PROGRAM DETAIL SECTIONS
    ========================================================== */
 
 .program-detail {
@@ -605,7 +632,7 @@ img {
 
 
 /* ==========================================================
-   11 / RESEARCH RANKINGS
+   12 / RESEARCH RANKINGS
    ========================================================== */
 
 .metrics {
@@ -662,7 +689,7 @@ img {
 
 
 /* ==========================================================
-   12 / CAREERS
+   13 / CAREERS
    ========================================================== */
 
 .careers-panel {
@@ -709,7 +736,7 @@ img {
 
 
 /* ==========================================================
-   13 / ALUMNI — INTERACTIVE GLOBE
+   14 / ALUMNI — INTERACTIVE GLOBE
    ========================================================== */
 
 .globe-panel {
@@ -827,7 +854,7 @@ img {
 
 
 /* ==========================================================
-   14 / EXPERIENCE AND OPPORTUNITY
+   15 / EXPERIENCE AND OPPORTUNITY
    ========================================================== */
 
 .experience-panel {
@@ -879,7 +906,7 @@ img {
 
 
 /* ==========================================================
-   15 / ADMISSIONS
+   16 / ADMISSIONS
    ========================================================== */
 
 .admissions-panel {
@@ -926,7 +953,7 @@ img {
 
 
 /* ==========================================================
-   16 / EXPLORE AND APPLY
+   17 / EXPLORE AND APPLY
    ========================================================== */
 
 .apply-panel {
@@ -1000,7 +1027,7 @@ img {
 
 
 /* ==========================================================
-   17 / FOOTER
+   18 / FOOTER
    ========================================================== */
 
 .footer {
@@ -1031,47 +1058,27 @@ img {
 
 
 /* ==========================================================
-   18 / LARGE DESKTOP
+   19 / LARGE DESKTOP
    ========================================================== */
 
-@media (min-width: 1200px) {
+@media (min-width: 1400px) {
 
   .cover h1 {
-    font-size: clamp(5rem, 6.5vw, 8rem);
+    font-size: clamp(5rem, 6.2vw, 7.5rem);
   }
 
-  .cover #collision-canvas {
-    top: 30%;
-    left: 36%;
+  .statistical-landscape {
+    top: 22%;
+    right: 3%;
 
-    width: 58%;
-    height: 48%;
+    width: 56%;
+    height: 62%;
   }
 }
 
 
 /* ==========================================================
-   19 / TABLET AND SMALL LAPTOP
-   ========================================================== */
-
-@media (min-width: 801px) and (max-width: 1199px) {
-
-  .cover h1 {
-    font-size: clamp(4rem, 7vw, 6.5rem);
-  }
-
-  .cover #collision-canvas {
-    top: 31%;
-    left: 30%;
-
-    width: 64%;
-    height: 46%;
-  }
-}
-
-
-/* ==========================================================
-   20 / TABLET AND SMALL LAPTOP LAYOUTS
+   20 / TABLET AND SMALL LAPTOP
    ========================================================== */
 
 @media (max-width: 1100px) {
@@ -1090,6 +1097,14 @@ img {
 
   .programs-panel {
     justify-content: flex-start;
+  }
+
+  .statistical-landscape {
+    top: 30%;
+    right: 1%;
+
+    width: 65%;
+    height: 52%;
   }
 
   .globe-panel {
@@ -1151,15 +1166,16 @@ img {
   }
 
   .cover h1 {
-    font-size: clamp(3rem, 11vw, 5.5rem);
+    font-size: clamp(3rem, 10.5vw, 5.5rem);
   }
 
-  .cover #collision-canvas {
+  .statistical-landscape {
     top: 32%;
-    left: 10%;
+    left: 8%;
+    right: auto;
 
-    width: 80%;
-    height: 42%;
+    width: 84%;
+    height: 43%;
   }
 
   .cover-bottom {
@@ -1351,15 +1367,15 @@ img {
 @media (max-width: 520px) {
 
   .cover h1 {
-    font-size: 11vw;
+    font-size: 10.5vw;
   }
 
-  .cover #collision-canvas {
-    top: 35%;
-    left: 5%;
+  .statistical-landscape {
+    top: 34%;
+    left: 4%;
 
-    width: 90%;
-    height: 38%;
+    width: 92%;
+    height: 40%;
   }
 
   .cover-bottom div {
