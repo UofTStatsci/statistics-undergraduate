@@ -5,28 +5,27 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   INTERACTIVE TOPOGRAPHIC ELEVATION HIGHLIGHT
+   IMAGE-LOCKED INTERACTIVE TOPOGRAPHY
 
    File: assets/js/topography.js
-   Version: 1.0
-
-   Adapted from the supplied working implementation.
+   Version: 2.0
 
    Features:
-   - Fixed original topographic artwork
-   - WebGL orange elevation overlay
-   - Elevation-mask-based contour highlighting
+   - Original fixed topographic artwork
+   - Pixel-aligned elevation mask
+   - Smooth orange contour highlighting
    - Mouse-controlled elevation
    - Touch and drag interaction
-   - Keyboard accessibility
-   - Manual elevation slider
    - Automatic idle elevation sweep
-   - Smooth transitions
+   - 4.2-second idle delay
+   - Smooth transitions without recoil
+   - No visible elevation controls
+   - No readouts or percentage labels
+   - Responsive image fitting
    - Full-page scrolling compatibility
-   - Responsive artwork sizing
    - Reduced-motion support
 
-   Required image assets:
+   Required assets:
    assets/images/contours.jpg
    assets/images/elevation-map.png
 
@@ -44,67 +43,44 @@
 
   const CONFIG = {
 
-    /*
-     * Elevation mask path, relative to index.html.
-     */
+    /* Elevation mask relative to index.html */
 
     mapUrl: "assets/images/elevation-map.png",
 
-    /*
-     * Original artwork dimensions.
-     */
+    /* Original artwork dimensions */
 
     imageWidth: 2048,
     imageHeight: 1365,
 
-    /*
-     * Starting elevation.
-     */
+    /* Initial highlighted elevation */
 
     initialElevation: 0.50,
 
-    /*
-     * Selection band width.
-     * Smaller values produce thinner orange contours.
-     */
+    /* Width of the highlighted elevation band */
 
     bandWidth: 0.040,
 
-    /*
-     * Maximum orange overlay opacity.
-     */
+    /* Orange overlay opacity */
 
     highlightOpacity: 0.98,
 
-    /*
-     * Automatically animate elevation when idle.
-     */
+    /* Automatic idle movement */
 
     idleAnimation: true,
 
-    /*
-     * Begin automatic movement after 4.2 seconds.
-     */
-
     idleDelayMs: 4200,
-
-    /*
-     * Speed of the idle elevation sweep.
-     */
 
     idleSpeed: 0.00018,
 
-    /*
-     * Distance travelled from the last user-selected level.
-     */
-
     idleRange: 0.25,
 
-    /*
-     * Colour transition smoothness.
-     */
+    /* Smoothness of elevation transitions */
 
-    smoothing: 0.095
+    smoothing: 0.095,
+
+    /* Rendering */
+
+    maxPixelRatio: 2
 
   };
 
@@ -115,11 +91,11 @@
 
   const clamp = (
     value,
-    low = 0,
-    high = 1
+    minimum = 0,
+    maximum = 1
   ) => Math.max(
-    low,
-    Math.min(high, value)
+    minimum,
+    Math.min(maximum, value)
   );
 
 
@@ -129,7 +105,7 @@
 
 
   /* ==========================================================
-     03 / INITIALIZE EACH TOPOGRAPHIC EXPERIENCE
+     03 / INITIALIZE TOPOGRAPHY
      ========================================================== */
 
   function initTopography(root) {
@@ -146,34 +122,15 @@
       "[data-topo-canvas]"
     );
 
-    const label = root.querySelector(
-      "[data-topo-label]"
-    );
-
-    const percent = root.querySelector(
-      "[data-topo-percent]"
-    );
-
-    const slider = root.querySelector(
-      "[data-topo-slider]"
-    );
-
-    const output = root.querySelector(
-      "[data-topo-output]"
-    );
-
 
     if (
       !viewport ||
       !art ||
-      !canvas ||
-      !label ||
-      !percent ||
-      !slider ||
-      !output
+      !canvas
     ) {
+
       console.warn(
-        "[topography] Required HTML elements not found."
+        "[topography] Required artwork elements not found."
       );
 
       return;
@@ -181,7 +138,25 @@
 
 
     /* ========================================================
-       04 / STATE
+       04 / REMOVE OBSOLETE CONTROLS
+
+       The elevation slider and readout are no longer
+       required in the approved design.
+
+       Remove any leftovers from the previous HTML.
+       ======================================================== */
+
+    root.querySelector(
+      ".topo-readout"
+    )?.remove();
+
+    root.querySelector(
+      ".topo-footer"
+    )?.remove();
+
+
+    /* ========================================================
+       05 / STATE
        ======================================================== */
 
     let target = CONFIG.initialElevation;
@@ -191,8 +166,6 @@
     let lastInteraction = performance.now();
 
     let lastFrame = performance.now();
-
-    let displayPercent = -1;
 
     let activePointerId = null;
 
@@ -214,36 +187,11 @@
 
     let uniforms = null;
 
+    let texture = null;
 
-    /* ========================================================
-       05 / ELEVATION READOUT
-       ======================================================== */
+    let vertexBuffer = null;
 
-    function updateReadout(level) {
-
-      const value = Math.round(
-        clamp(level) * 100
-      );
-
-      if (value === displayPercent) {
-        return;
-      }
-
-      displayPercent = value;
-
-      label.textContent =
-        value < 34
-          ? "Lower elevation"
-          : value < 67
-            ? "Mid elevation"
-            : "Higher elevation";
-
-      percent.textContent = `${value}%`;
-
-      output.textContent = `${value}%`;
-
-      slider.value = String(value);
-    }
+    let observer = null;
 
 
     /* ========================================================
@@ -256,9 +204,11 @@
 
       lastInteraction = performance.now();
 
-      isIdling = false;
+      /*
+       * Every new interaction interrupts idle movement.
+       */
 
-      updateReadout(target);
+      isIdling = false;
 
       startRendering();
     }
@@ -272,20 +222,18 @@
 
       const box = art.getBoundingClientRect();
 
-      if (!box.height) {
-        return;
-      }
+      if (!box.height) return;
 
       /*
-       * Upper part of artwork = higher elevation.
-       * Lower part of artwork = lower elevation.
+       * Upper edge = higher elevation.
+       * Lower edge = lower elevation.
        */
 
+      const normalizedY =
+        (event.clientY - box.top) / box.height;
+
       setElevation(
-        1 - (
-          (event.clientY - box.top) /
-          box.height
-        )
+        1 - normalizedY
       );
     }
 
@@ -314,7 +262,9 @@
           );
 
         } catch (_) {
+
           /* Pointer capture is optional. */
+
         }
 
         elevationFromPointer(event);
@@ -340,7 +290,8 @@
 
         }
 
-      }
+      },
+      { passive: true }
     );
 
 
@@ -350,11 +301,16 @@
 
     function finishPointer(event) {
 
-      if (activePointerId === event.pointerId) {
+      if (
+        activePointerId === event.pointerId
+      ) {
 
         activePointerId = null;
 
+        lastInteraction = performance.now();
+
       }
+
     }
 
 
@@ -379,11 +335,8 @@
        ======================================================== */
 
     /*
-     * Prevent touch gestures inside the artwork from being
-     * interpreted as fullpage.js section navigation.
-
-     * Normal page navigation remains available outside
-     * the artwork.
+     * Prevent touch interaction within the artwork
+     * from triggering section navigation.
      */
 
     for (const type of [
@@ -402,43 +355,8 @@
     }
 
 
-    /*
-     * The elevation slider must also remain usable
-     * without triggering page navigation.
-     */
-
-    for (const type of [
-      "touchstart",
-      "touchmove"
-    ]) {
-
-      slider.addEventListener(
-        type,
-        event => event.stopPropagation(),
-        { passive: true }
-      );
-
-    }
-
-
     /* ========================================================
-       12 / SLIDER INTERACTION
-       ======================================================== */
-
-    slider.addEventListener(
-      "input",
-      () => {
-
-        setElevation(
-          Number(slider.value) / 100
-        );
-
-      }
-    );
-
-
-    /* ========================================================
-       13 / KEYBOARD ACCESSIBILITY
+       12 / KEYBOARD ACCESSIBILITY
        ======================================================== */
 
     art.addEventListener(
@@ -463,11 +381,15 @@
 
           setElevation(target - step);
 
-        } else if (event.key === "Home") {
+        } else if (
+          event.key === "Home"
+        ) {
 
           setElevation(0);
 
-        } else if (event.key === "End") {
+        } else if (
+          event.key === "End"
+        ) {
 
           setElevation(1);
 
@@ -485,12 +407,18 @@
 
 
     /* ========================================================
-       14 / FIT ORIGINAL ARTWORK
+       13 / FIT ARTWORK
+
+       Both the image and transparent canvas occupy
+       exactly the same dimensions.
+
+       This prevents overlay misalignment.
        ======================================================== */
 
     function fitArt() {
 
-      const box = viewport.getBoundingClientRect();
+      const box =
+        viewport.getBoundingClientRect();
 
       if (
         box.width < 1 ||
@@ -500,22 +428,22 @@
       }
 
       const ratio =
-        CONFIG.imageWidth / CONFIG.imageHeight;
-
-      /*
-       * Preserve the original image aspect ratio.
-       */
+        CONFIG.imageWidth /
+        CONFIG.imageHeight;
 
       const width = Math.min(
         box.width,
         box.height * ratio
       );
 
-      const height = width / ratio;
+      const height =
+        width / ratio;
 
-      art.style.width = `${width}px`;
+      art.style.width =
+        `${width}px`;
 
-      art.style.height = `${height}px`;
+      art.style.height =
+        `${height}px`;
 
       if (gl) {
         resizeCanvas();
@@ -525,12 +453,13 @@
 
 
     /* ========================================================
-       15 / RESIZE WEBGL CANVAS
+       14 / RESIZE WEBGL CANVAS
        ======================================================== */
 
     function resizeCanvas() {
 
-      const box = art.getBoundingClientRect();
+      const box =
+        art.getBoundingClientRect();
 
       if (
         !gl ||
@@ -540,16 +469,17 @@
         return;
       }
 
-      const maxSize = gl.getParameter(
-        gl.MAX_RENDERBUFFER_SIZE
-      );
+      const maxSize =
+        gl.getParameter(
+          gl.MAX_RENDERBUFFER_SIZE
+        );
 
       const dpr = Math.min(
         window.devicePixelRatio || 1,
-        2
+        CONFIG.maxPixelRatio
       );
 
-      canvas.width = Math.max(
+      const canvasWidth = Math.max(
         1,
         Math.min(
           maxSize,
@@ -557,13 +487,23 @@
         )
       );
 
-      canvas.height = Math.max(
+      const canvasHeight = Math.max(
         1,
         Math.min(
           maxSize,
           Math.round(box.height * dpr)
         )
       );
+
+      if (
+        canvas.width !== canvasWidth ||
+        canvas.height !== canvasHeight
+      ) {
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+      }
 
       gl.viewport(
         0,
@@ -580,40 +520,45 @@
 
 
     /* ========================================================
-       16 / COMPILE SHADER
+       15 / SHADER COMPILATION
        ======================================================== */
 
-    function shader(type, source) {
+    function createShader(type, source) {
 
-      const instance = gl.createShader(type);
+      const shader =
+        gl.createShader(type);
 
       gl.shaderSource(
-        instance,
+        shader,
         source
       );
 
-      gl.compileShader(instance);
+      gl.compileShader(shader);
 
       if (
         !gl.getShaderParameter(
-          instance,
+          shader,
           gl.COMPILE_STATUS
         )
       ) {
 
+        const message =
+          gl.getShaderInfoLog(shader);
+
+        gl.deleteShader(shader);
+
         throw new Error(
-          gl.getShaderInfoLog(instance) ||
-          "Shader compilation failed"
+          message || "Shader compilation failed."
         );
 
       }
 
-      return instance;
+      return shader;
     }
 
 
     /* ========================================================
-       17 / INITIALIZE WEBGL RENDERER
+       16 / WEBGL RENDERER
        ======================================================== */
 
     function initializeRenderer(image) {
@@ -625,14 +570,17 @@
           premultipliedAlpha: false,
           antialias: false,
           depth: false,
-          stencil: false
+          stencil: false,
+          powerPreference: "low-power"
         }
       );
 
       if (!gl) {
+
         throw new Error(
           "WebGL is not available."
         );
+
       }
 
 
@@ -640,7 +588,7 @@
          Vertex shader
          ------------------------------------------------------ */
 
-      const vertex = shader(
+      const vertex = createShader(
         gl.VERTEX_SHADER,
         `
           attribute vec2 aPosition;
@@ -665,24 +613,26 @@
       /* ------------------------------------------------------
          Fragment shader
 
-         Red channel:
-         Normalized elevation.
+         RED:
+         Estimated normalized elevation.
 
-         Green channel:
-         Original contour-stroke coverage.
+         GREEN:
+         Coverage of original contour strokes.
 
-         Orange overlay is calculated from both channels.
+         Only existing contour pixels can turn orange.
          ------------------------------------------------------ */
 
-      const fragment = shader(
+      const fragment = createShader(
         gl.FRAGMENT_SHADER,
         `
           precision highp float;
 
           uniform sampler2D uMap;
+
           uniform float uElevation;
           uniform float uBandWidth;
           uniform float uOpacity;
+
           uniform vec2 uTexel;
 
           varying vec2 vUv;
@@ -705,13 +655,13 @@
               distanceFromLevel
             );
 
-            float lineCoverage = smoothstep(
+            float coverage = smoothstep(
               0.14,
               0.85,
               mask.g
             );
 
-            return band * lineCoverage;
+            return band * coverage;
           }
 
 
@@ -720,6 +670,11 @@
             float line = strokeAt(vUv);
 
             vec2 d = 3.0 * uTexel;
+
+            /*
+             * A restrained glow around the selected
+             * contour. This does not redraw the image.
+             */
 
             float softGlow = (
 
@@ -770,14 +725,20 @@
 
 
       /* ======================================================
-         18 / LINK SHADERS
+         17 / LINK PROGRAM
          ====================================================== */
 
       program = gl.createProgram();
 
-      gl.attachShader(program, vertex);
+      gl.attachShader(
+        program,
+        vertex
+      );
 
-      gl.attachShader(program, fragment);
+      gl.attachShader(
+        program,
+        fragment
+      );
 
       gl.linkProgram(program);
 
@@ -788,9 +749,11 @@
         )
       ) {
 
+        const message =
+          gl.getProgramInfoLog(program);
+
         throw new Error(
-          gl.getProgramInfoLog(program) ||
-          "Shader linking failed"
+          message || "Shader linking failed."
         );
 
       }
@@ -799,14 +762,14 @@
 
 
       /* ======================================================
-         19 / FULL-SCREEN QUAD
+         18 / FULL-SCREEN QUAD
          ====================================================== */
 
-      const vertices = gl.createBuffer();
+      vertexBuffer = gl.createBuffer();
 
       gl.bindBuffer(
         gl.ARRAY_BUFFER,
-        vertices
+        vertexBuffer
       );
 
       gl.bufferData(
@@ -820,12 +783,15 @@
         gl.STATIC_DRAW
       );
 
-      const position = gl.getAttribLocation(
-        program,
-        "aPosition"
-      );
+      const position =
+        gl.getAttribLocation(
+          program,
+          "aPosition"
+        );
 
-      gl.enableVertexAttribArray(position);
+      gl.enableVertexAttribArray(
+        position
+      );
 
       gl.vertexAttribPointer(
         position,
@@ -838,10 +804,10 @@
 
 
       /* ======================================================
-         20 / ELEVATION TEXTURE
+         19 / ELEVATION MASK TEXTURE
          ====================================================== */
 
-      const texture = gl.createTexture();
+      texture = gl.createTexture();
 
       gl.activeTexture(gl.TEXTURE0);
 
@@ -880,8 +846,8 @@
       );
 
       /*
-       * The elevation mask must contain the original
-       * elevation data in its red and green channels.
+       * Upload the mask without converting its channels
+       * into colour space.
        */
 
       gl.texImage2D(
@@ -895,7 +861,7 @@
 
 
       /* ======================================================
-         21 / SHADER UNIFORMS
+         20 / UNIFORMS
          ====================================================== */
 
       uniforms = {
@@ -949,22 +915,27 @@
 
 
       /* ======================================================
-         22 / COMPLETE INITIALIZATION
+         21 / COMPLETE INITIALIZATION
          ====================================================== */
 
       fitArt();
 
       ready = true;
 
-      updateReadout(target);
+      current = CONFIG.initialElevation;
+      target = CONFIG.initialElevation;
 
       startRendering();
+
+      console.log(
+        "[topography] WebGL elevation highlighting initialized."
+      );
 
     }
 
 
     /* ========================================================
-       23 / START RENDERING
+       22 / RENDERING CONTROL
        ======================================================== */
 
     function startRendering() {
@@ -978,7 +949,22 @@
 
         lastFrame = performance.now();
 
-        rafId = requestAnimationFrame(render);
+        rafId = requestAnimationFrame(
+          render
+        );
+
+      }
+
+    }
+
+
+    function stopRendering() {
+
+      if (rafId !== 0) {
+
+        cancelAnimationFrame(rafId);
+
+        rafId = 0;
 
       }
 
@@ -986,7 +972,7 @@
 
 
     /* ========================================================
-       24 / RENDER LOOP
+       23 / RENDER LOOP
        ======================================================== */
 
     function render(now) {
@@ -1013,12 +999,12 @@
 
 
       /* ------------------------------------------------------
-         Automatic idle animation
+         Idle animation
 
-         After 4.2 seconds without user interaction,
-         elevation slowly moves through a defined range.
+         Begins 4.2 seconds after the last user interaction.
 
-         Any new interaction immediately takes control.
+         The orange contour gently sweeps through the
+         elevation levels without moving the artwork.
          ------------------------------------------------------ */
 
       if (
@@ -1047,13 +1033,13 @@
           )
         );
 
-        updateReadout(target);
-
       }
 
 
       /* ------------------------------------------------------
-         Smooth elevation transition
+         Smooth interpolation
+
+         Retains the original implementation's easing.
          ------------------------------------------------------ */
 
       const blend = prefersReducedMotion.matches
@@ -1068,7 +1054,7 @@
 
 
       /* ------------------------------------------------------
-         Render transparent orange overlay
+         Draw transparent overlay
          ------------------------------------------------------ */
 
       gl.useProgram(program);
@@ -1096,29 +1082,35 @@
       );
 
 
-      /* Continue rendering while the section is visible. */
-
-      rafId = requestAnimationFrame(render);
+      rafId = requestAnimationFrame(
+        render
+      );
 
     }
 
 
     /* ========================================================
-       25 / VISIBILITY OBSERVER
+       24 / VISIBILITY OBSERVER
        ======================================================== */
 
     if (
       "IntersectionObserver" in window
     ) {
 
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         entries => {
 
           inView =
             entries[0].isIntersecting;
 
           if (inView) {
+
             startRendering();
+
+          } else {
+
+            stopRendering();
+
           }
 
         },
@@ -1134,24 +1126,63 @@
 
 
     /* ========================================================
-       26 / PAGE VISIBILITY
+       25 / PAGE VISIBILITY
        ======================================================== */
 
     document.addEventListener(
       "visibilitychange",
-      startRendering
+      () => {
+
+        if (document.hidden) {
+
+          stopRendering();
+
+        } else {
+
+          startRendering();
+
+        }
+
+      }
     );
 
 
     /* ========================================================
-       27 / RESIZE OBSERVER
+       26 / REDUCED MOTION
+       ======================================================== */
+
+    prefersReducedMotion.addEventListener(
+      "change",
+      () => {
+
+        if (prefersReducedMotion.matches) {
+
+          target = current;
+
+          isIdling = false;
+
+        } else {
+
+          lastInteraction = performance.now();
+
+          startRendering();
+
+        }
+
+      }
+    );
+
+
+    /* ========================================================
+       27 / RESIZE
        ======================================================== */
 
     if ("ResizeObserver" in window) {
 
-      new ResizeObserver(
-        fitArt
-      ).observe(viewport);
+      const resizeObserver =
+        new ResizeObserver(fitArt);
+
+      resizeObserver.observe(viewport);
 
     } else {
 
@@ -1170,8 +1201,6 @@
 
     fitArt();
 
-    updateReadout(target);
-
 
     /* ========================================================
        29 / LOAD ELEVATION MASK
@@ -1183,12 +1212,27 @@
 
       try {
 
+        /*
+         * Validate the mask dimensions before upload.
+         */
+
+        if (
+          image.width !== CONFIG.imageWidth ||
+          image.height !== CONFIG.imageHeight
+        ) {
+
+          throw new Error(
+            `Elevation mask dimensions are ${image.width} × ${image.height}; expected ${CONFIG.imageWidth} × ${CONFIG.imageHeight}.`
+          );
+
+        }
+
         initializeRenderer(image);
 
       } catch (error) {
 
         console.error(
-          "[topography] Orange elevation overlay failed:",
+          "[topography] Elevation overlay failed:",
           error
         );
 
@@ -1200,12 +1244,10 @@
     image.onerror = () => {
 
       console.error(
-        "[topography] Cannot load elevation-map.png. " +
-        "Check that it exists in assets/images/."
+        "[topography] Cannot load assets/images/elevation-map.png. Check the repository asset path."
       );
 
     };
-
 
     image.src = CONFIG.mapUrl;
 
@@ -1213,7 +1255,7 @@
 
 
   /* ==========================================================
-     30 / INITIALIZE ALL TOPOGRAPHY INSTANCES
+     30 / INITIALIZE TOPOGRAPHY INSTANCES
      ========================================================== */
 
   function init() {
