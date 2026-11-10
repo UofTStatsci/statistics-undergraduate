@@ -8,21 +8,18 @@
    INTERACTIVE TOPOGRAPHIC FLOW FIELD
 
    File: assets/js/statistical-landscape.js
-   Version: 3.0
+   Version: 4.0
 
-   Features:
-   - Flowing 3D topographic lines
-   - Full-cover transparent visualization
-   - Mouse-generated displacement waves
-   - Spring physics and neighbour propagation
-   - Subtle ambient motion
-   - White, cyan and occasional orange lines
-   - Responsive geometry
-   - Touch interaction
-   - Reduced-motion support
-   - Pauses when off-screen
-
-   Requires Three.js ES module.
+   Visual direction:
+   - Inspired by flowing topographic contour artwork
+   - Continuously evolving mathematical landscape
+   - Layered luminous contours
+   - Strong three-dimensional perspective
+   - Cursor pushes and parts the surface
+   - Fast response, heavily damped recovery
+   - No elastic bouncing or excessive recoil
+   - Full-cover visualization
+   - Responsive and reduced-motion aware
    ========================================================== */
 
 import * as THREE from
@@ -55,32 +52,49 @@ function initializeLandscape() {
      ======================================================== */
 
   const SETTINGS = {
+
     background: 0x0180a5,
 
-    desktopLines: 48,
-    tabletLines: 34,
-    mobileLines: 22,
+    desktopLines: 54,
+    tabletLines: 38,
+    mobileLines: 24,
 
-    desktopSamples: 160,
-    tabletSamples: 120,
-    mobileSamples: 80,
+    desktopSamples: 200,
+    tabletSamples: 150,
+    mobileSamples: 100,
 
-    worldWidth: 22,
-    worldDepth: 13,
+    worldWidth: 24,
+    worldDepth: 15,
 
-    terrainHeight: 2.4,
+    terrainHeight: 2.8,
 
-    springStrength: 0.065,
-    neighbourStrength: 0.22,
-    damping: 0.91,
+    /*
+     * Continuous landscape evolution.
+     */
 
-    waveStrength: 0.28,
-    waveRadius: 1.9,
+    flowSpeed: 0.42,
+    terrainVariation: 0.65,
 
-    ambientAmplitude: 0.12,
-    ambientSpeed: 0.42,
+    /*
+     * Cursor interaction.
+     *
+     * Lower responseSmoothness = slower response.
+     * Higher recoverySmoothness = faster recovery.
+     */
 
-    maxVelocity: 0.38,
+    cursorRadius: 2.6,
+    cursorStrength: 1.65,
+
+    responseSmoothness: 0.18,
+    recoverySmoothness: 0.11,
+
+    /*
+     * Visual treatment.
+     */
+
+    primaryOpacity: 0.88,
+    secondaryOpacity: 0.48,
+    accentOpacity: 0.72,
 
     maxPixelRatio: 2
   };
@@ -109,23 +123,23 @@ function initializeLandscape() {
   let lineCount = 0;
   let sampleCount = 0;
 
-  let points = [];
   let lines = [];
+  let glowLines = [];
 
-  let spacingX = 0;
-  let spacingZ = 0;
+  let points = [];
 
   let simulationTime = 0;
 
   let animationFrame = null;
   let lastFrameTime = null;
-  let accumulator = 0;
 
   let isSectionVisible = true;
 
-  let lastWaveTime = 0;
-  let lastWaveX = null;
-  let lastWaveZ = null;
+  let cursorActive = false;
+  let cursorX = 0;
+  let cursorZ = 0;
+
+  let cursorInfluence = 0;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -137,7 +151,6 @@ function initializeLandscape() {
      ======================================================== */
 
   const scene = new THREE.Scene();
-
   scene.background = null;
 
 
@@ -146,14 +159,14 @@ function initializeLandscape() {
      ======================================================== */
 
   const camera = new THREE.PerspectiveCamera(
-    42,
+    38,
     1,
     0.1,
-    100
+    120
   );
 
-  camera.position.set(0, 8.5, 17);
-  camera.lookAt(0, 0.8, 0);
+  camera.position.set(0, 7.5, 18);
+  camera.lookAt(0, 0.5, 0);
 
 
   /* ========================================================
@@ -193,35 +206,36 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     09 / GEOMETRY
+     09 / LINE MATERIALS
      ======================================================== */
 
-  const lineMaterials = [
+  const materials = [
+
     new THREE.LineBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.75,
+      opacity: SETTINGS.primaryOpacity,
       depthWrite: false
     }),
 
     new THREE.LineBasicMaterial({
-      color: 0xb6efff,
+      color: 0xc8f4ff,
       transparent: true,
-      opacity: 0.65,
+      opacity: SETTINGS.secondaryOpacity,
       depthWrite: false
     }),
 
     new THREE.LineBasicMaterial({
-      color: 0x66d9f0,
+      color: 0x6de4f5,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.68,
       depthWrite: false
     }),
 
     new THREE.LineBasicMaterial({
       color: 0xffa15a,
       transparent: true,
-      opacity: 0.65,
+      opacity: SETTINGS.accentOpacity,
       depthWrite: false
     })
   ];
@@ -232,6 +246,7 @@ function initializeLandscape() {
      ======================================================== */
 
   function getDimensions() {
+
     const viewport = window.innerWidth;
 
     if (viewport <= 800) {
@@ -256,50 +271,107 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     11 / TOPOGRAPHIC HEIGHT FUNCTION
+     11 / CONTINUOUS TOPOGRAPHIC SURFACE
+
+     Several moving Gaussian peaks combine with
+     low-frequency wave functions.
+
+     The result evolves continuously without using
+     spring oscillation.
      ======================================================== */
 
-  function terrainHeight(x, z) {
+  function terrainHeight(x, z, t) {
 
-    const hillOne =
-      2.3 * Math.exp(
+    /*
+     * Slowly drifting centres.
+     */
+
+    const peak1X =
+      -6 + Math.sin(t * 0.21) * 1.6;
+
+    const peak1Z =
+      -1 + Math.cos(t * 0.17) * 1.1;
+
+    const peak2X =
+      1.8 + Math.cos(t * 0.16) * 1.8;
+
+    const peak2Z =
+      2.4 + Math.sin(t * 0.19) * 1.4;
+
+    const peak3X =
+      7 + Math.sin(t * 0.13 + 1.2) * 1.5;
+
+    const peak3Z =
+      -2.8 + Math.cos(t * 0.15) * 1.3;
+
+
+    /*
+     * Gaussian hills.
+     */
+
+    const hill1 =
+      2.4 * Math.exp(
         -(
-          ((x + 5.2) ** 2) / 17 +
-          ((z + 1.3) ** 2) / 7
+          ((x - peak1X) ** 2) / 15 +
+          ((z - peak1Z) ** 2) / 8
         )
       );
 
-    const hillTwo =
-      3.1 * Math.exp(
+    const hill2 =
+      3.6 * Math.exp(
         -(
-          ((x - 2.5) ** 2) / 13 +
-          ((z - 2.2) ** 2) / 9
+          ((x - peak2X) ** 2) / 12 +
+          ((z - peak2Z) ** 2) / 9
         )
       );
 
-    const hillThree =
-      1.8 * Math.exp(
+    const hill3 =
+      2.2 * Math.exp(
         -(
-          ((x - 7.1) ** 2) / 10 +
-          ((z + 2.8) ** 2) / 6
+          ((x - peak3X) ** 2) / 13 +
+          ((z - peak3Z) ** 2) / 7
         )
       );
 
-    const rolling =
-      0.32 *
-      Math.sin(x * 0.7 + z * 0.4) *
-      Math.cos(z * 0.9);
+
+    /*
+     * Flowing undulations.
+     */
+
+    const flow1 =
+      Math.sin(
+        x * 0.55 +
+        z * 0.42 +
+        t * 0.55
+      ) * 0.32;
+
+    const flow2 =
+      Math.cos(
+        x * 0.34 -
+        z * 0.7 -
+        t * 0.38
+      ) * 0.25;
+
+    const flow3 =
+      Math.sin(
+        x * 0.18 +
+        z * 1.1 +
+        t * 0.24
+      ) * 0.18;
+
 
     return (
-      (hillOne + hillTwo + hillThree + rolling) *
-      SETTINGS.terrainHeight *
-      0.42
-    );
+      hill1 +
+      hill2 +
+      hill3 +
+      (flow1 + flow2 + flow3) *
+      SETTINGS.terrainVariation
+    ) * SETTINGS.terrainHeight * 0.42;
   }
 
 
   /* ========================================================
-     12 / CLEAR EXISTING LINES
+     12 / CLEAR LINES
      ======================================================== */
 
   function clearLines() {
@@ -309,7 +381,13 @@ function initializeLandscape() {
       line.geometry.dispose();
     }
 
+    for (const line of glowLines) {
+      scene.remove(line);
+      line.geometry.dispose();
+    }
+
     lines = [];
+    glowLines = [];
     points = [];
   }
 
@@ -327,11 +405,12 @@ function initializeLandscape() {
     lineCount = dimensions[0];
     sampleCount = dimensions[1];
 
-    spacingX =
+    const spacingX =
       SETTINGS.worldWidth / (sampleCount - 1);
 
-    spacingZ =
+    const spacingZ =
       SETTINGS.worldDepth / (lineCount - 1);
+
 
     for (let row = 0; row < lineCount; row++) {
 
@@ -351,33 +430,27 @@ function initializeLandscape() {
           x,
           z,
 
-          baseHeight: terrainHeight(x, z),
-
-          displacement: 0,
-          velocity: 0
+          currentY: 0,
+          cursorOffset: 0
         });
       }
 
       points.push(rowPoints);
 
-      const positions = new Float32Array(
-        sampleCount * 3
-      );
+
+      /*
+       * Main contour.
+       */
 
       const geometry = new THREE.BufferGeometry();
 
       geometry.setAttribute(
         "position",
         new THREE.BufferAttribute(
-          positions,
+          new Float32Array(sampleCount * 3),
           3
         )
       );
-
-      /*
-       * Most lines are white or cyan.
-       * Every 17th line receives a warm accent.
-       */
 
       let materialIndex = row % 3;
 
@@ -387,24 +460,97 @@ function initializeLandscape() {
 
       const line = new THREE.Line(
         geometry,
-        lineMaterials[materialIndex]
+        materials[materialIndex]
       );
 
       line.frustumCulled = false;
 
       lines.push(line);
       scene.add(line);
+
+
+      /*
+       * Secondary translucent contour for depth.
+       */
+
+      if (row % 3 === 0) {
+
+        const glowGeometry =
+          new THREE.BufferGeometry();
+
+        glowGeometry.setAttribute(
+          "position",
+          new THREE.BufferAttribute(
+            new Float32Array(sampleCount * 3),
+            3
+          )
+        );
+
+        const glowMaterial =
+          new THREE.LineBasicMaterial({
+            color: 0xb8efff,
+            transparent: true,
+            opacity: 0.14,
+            depthWrite: false
+          });
+
+        const glowLine = new THREE.Line(
+          glowGeometry,
+          glowMaterial
+        );
+
+        glowLine.userData.sourceRow = row;
+        glowLine.frustumCulled = false;
+
+        glowLines.push(glowLine);
+        scene.add(glowLine);
+      }
     }
 
-    updateGeometry();
+    updateGeometry(0);
   }
 
 
   /* ========================================================
-     14 / UPDATE LINE GEOMETRY
+     14 / UPDATE GEOMETRY
+
+     Smooth, non-oscillating movement.
+
+     No springs or velocity integration are used.
      ======================================================== */
 
-  function updateGeometry() {
+  function updateGeometry(deltaSeconds) {
+
+    const frameFactor =
+      Math.min(
+        3,
+        deltaSeconds * 60
+      );
+
+    const response =
+      1 - Math.pow(
+        1 - SETTINGS.responseSmoothness,
+        frameFactor
+      );
+
+    const recovery =
+      1 - Math.pow(
+        1 - SETTINGS.recoverySmoothness,
+        frameFactor
+      );
+
+
+    /*
+     * Cursor influence fades in/out smoothly.
+     */
+
+    const targetInfluence =
+      cursorActive ? 1 : 0;
+
+    cursorInfluence +=
+      (targetInfluence - cursorInfluence) *
+      response;
+
 
     for (let row = 0; row < lineCount; row++) {
 
@@ -415,162 +561,107 @@ function initializeLandscape() {
 
         const point = points[row][col];
 
-        const ambient = reducedMotion.matches
-          ? 0
-          : SETTINGS.ambientAmplitude *
-            Math.sin(
-              point.x * 0.52 +
-              point.z * 0.64 +
-              simulationTime * SETTINGS.ambientSpeed
-            );
+        const baseY =
+          terrainHeight(
+            point.x,
+            point.z,
+            simulationTime
+          );
 
-        const y =
-          point.baseHeight +
-          point.displacement +
-          ambient;
+
+        /*
+         * Cursor displacement.
+         *
+         * Smooth Gaussian influence with no recoil.
+         */
+
+        let targetOffset = 0;
+
+        if (cursorInfluence > 0.001) {
+
+          const dx =
+            point.x - cursorX;
+
+          const dz =
+            point.z - cursorZ;
+
+          const distanceSquared =
+            dx * dx + dz * dz;
+
+          targetOffset =
+            SETTINGS.cursorStrength *
+            Math.exp(
+              -distanceSquared /
+              (SETTINGS.cursorRadius ** 2)
+            ) *
+            cursorInfluence;
+        }
+
+
+        /*
+         * Critically damped-style interpolation.
+         *
+         * This is intentionally monotonic:
+         * it approaches the target without overshooting.
+         */
+
+        point.cursorOffset +=
+          (targetOffset - point.cursorOffset) *
+          (cursorActive ? response : recovery);
+
+
+        const targetY =
+          baseY + point.cursorOffset;
+
+        point.currentY +=
+          (targetY - point.currentY) *
+          response;
+
 
         positions.setXYZ(
           col,
           point.x,
-          y,
+          point.currentY,
           point.z
         );
       }
 
       positions.needsUpdate = true;
     }
-  }
 
 
-  /* ========================================================
-     15 / SPRING AND WAVE PHYSICS
-     ======================================================== */
+    /*
+     * Update secondary glow contours.
+     */
 
-  function updatePhysics() {
+    for (const glowLine of glowLines) {
 
-    const accelerations = Array.from(
-      { length: lineCount },
-      () => new Float32Array(sampleCount)
-    );
+      const row =
+        glowLine.userData.sourceRow;
 
-    for (let row = 0; row < lineCount; row++) {
+      const source =
+        lines[row].geometry.attributes.position;
 
-      for (let col = 0; col < sampleCount; col++) {
-
-        const point = points[row][col];
-
-        let neighbourSum = 0;
-        let neighbourCount = 0;
-
-        if (col > 0) {
-          neighbourSum += points[row][col - 1].displacement;
-          neighbourCount++;
-        }
-
-        if (col < sampleCount - 1) {
-          neighbourSum += points[row][col + 1].displacement;
-          neighbourCount++;
-        }
-
-        if (row > 0) {
-          neighbourSum += points[row - 1][col].displacement;
-          neighbourCount++;
-        }
-
-        if (row < lineCount - 1) {
-          neighbourSum += points[row + 1][col].displacement;
-          neighbourCount++;
-        }
-
-        const average = neighbourCount
-          ? neighbourSum / neighbourCount
-          : 0;
-
-        const spring =
-          -point.displacement *
-          SETTINGS.springStrength;
-
-        const propagation =
-          (average - point.displacement) *
-          SETTINGS.neighbourStrength;
-
-        accelerations[row][col] =
-          spring + propagation;
-      }
-    }
-
-    for (let row = 0; row < lineCount; row++) {
+      const target =
+        glowLine.geometry.attributes.position;
 
       for (let col = 0; col < sampleCount; col++) {
 
-        const point = points[row][col];
-
-        point.velocity +=
-          accelerations[row][col];
-
-        point.velocity = THREE.MathUtils.clamp(
-          point.velocity,
-          -SETTINGS.maxVelocity,
-          SETTINGS.maxVelocity
+        target.setXYZ(
+          col,
+          source.getX(col),
+          source.getY(col) + 0.035,
+          source.getZ(col) + 0.02
         );
-
-        point.velocity *= SETTINGS.damping;
-
-        point.displacement += point.velocity;
       }
+
+      target.needsUpdate = true;
     }
   }
 
 
   /* ========================================================
-     16 / CREATE CURSOR WAVE
-     ======================================================== */
-
-  function createWave(x, z, strength = 1) {
-
-    if (reducedMotion.matches) return;
-
-    const radiusSquared =
-      SETTINGS.waveRadius ** 2;
-
-    for (let row = 0; row < lineCount; row++) {
-
-      for (let col = 0; col < sampleCount; col++) {
-
-        const point = points[row][col];
-
-        const dx = point.x - x;
-        const dz = point.z - z;
-
-        const distanceSquared =
-          dx * dx + dz * dz;
-
-        if (distanceSquared > radiusSquared * 5) {
-          continue;
-        }
-
-        const influence = Math.exp(
-          -distanceSquared /
-          (radiusSquared * 0.75)
-        );
-
-        point.velocity +=
-          SETTINGS.waveStrength *
-          influence *
-          strength;
-
-        point.velocity = THREE.MathUtils.clamp(
-          point.velocity,
-          -SETTINGS.maxVelocity,
-          SETTINGS.maxVelocity
-        );
-      }
-    }
-  }
-
-
-  /* ========================================================
-     17 / POINTER RAYCASTING
+     15 / POINTER INTERACTION
      ======================================================== */
 
   const raycaster = new THREE.Raycaster();
@@ -578,7 +669,7 @@ function initializeLandscape() {
 
   const interactionPlane = new THREE.Plane(
     new THREE.Vector3(0, 1, 0),
-    -0.7
+    -0.8
   );
 
   const intersection = new THREE.Vector3();
@@ -605,52 +696,19 @@ function initializeLandscape() {
 
     if (!hit) return;
 
-    const x = intersection.x;
-    const z = intersection.z;
+    cursorX = intersection.x;
+    cursorZ = intersection.z;
 
-    if (
-      Math.abs(x) > SETTINGS.worldWidth / 2 ||
-      Math.abs(z) > SETTINGS.worldDepth / 2
-    ) {
-      return;
-    }
-
-    const now = performance.now();
-
-    if (now - lastWaveTime < 25) {
-      return;
-    }
-
-    let strength = 1;
-
-    if (
-      lastWaveX !== null &&
-      lastWaveZ !== null
-    ) {
-
-      const movement = Math.hypot(
-        x - lastWaveX,
-        z - lastWaveZ
-      );
-
-      strength = THREE.MathUtils.clamp(
-        movement * 1.7,
-        0.3,
-        1.6
-      );
-    }
-
-    createWave(x, z, strength);
-
-    lastWaveX = x;
-    lastWaveZ = z;
-    lastWaveTime = now;
+    cursorActive =
+      Math.abs(cursorX) < SETTINGS.worldWidth / 2 &&
+      Math.abs(cursorZ) < SETTINGS.worldDepth / 2;
   }
 
 
-  /* ========================================================
-     18 / POINTER EVENTS
-     ======================================================== */
+  function handlePointerLeave() {
+    cursorActive = false;
+  }
+
 
   container.addEventListener(
     "pointermove",
@@ -660,25 +718,17 @@ function initializeLandscape() {
 
   container.addEventListener(
     "pointerdown",
-    event => {
-      lastWaveX = null;
-      lastWaveZ = null;
-
-      handlePointerMove(event);
-    }
+    handlePointerMove
   );
 
   container.addEventListener(
     "pointerleave",
-    () => {
-      lastWaveX = null;
-      lastWaveZ = null;
-    }
+    handlePointerLeave
   );
 
 
   /* ========================================================
-     19 / RESIZE
+     16 / RESIZE
      ======================================================== */
 
   let currentDimensions = "";
@@ -695,14 +745,14 @@ function initializeLandscape() {
     const aspect = width / height;
 
     if (aspect < 0.8) {
-      camera.position.set(0, 11, 23);
+      camera.position.set(0, 10, 24);
     } else if (aspect < 1.4) {
-      camera.position.set(0, 9.5, 19);
+      camera.position.set(0, 8.5, 20);
     } else {
-      camera.position.set(0, 8.5, 17);
+      camera.position.set(0, 7.5, 18);
     }
 
-    camera.lookAt(0, 0.8, 0);
+    camera.lookAt(0, 0.5, 0);
     camera.updateProjectionMatrix();
 
     renderer.setPixelRatio(
@@ -730,10 +780,8 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     20 / ANIMATION
+     17 / ANIMATION
      ======================================================== */
-
-  const FIXED_STEP = 1000 / 60;
 
   function animate(timestamp) {
 
@@ -751,29 +799,22 @@ function initializeLandscape() {
       lastFrameTime = timestamp;
     }
 
-    const delta = Math.min(
-      50,
-      Math.max(0, timestamp - lastFrameTime)
-    );
+    const deltaSeconds =
+      Math.min(
+        0.05,
+        Math.max(
+          0,
+          (timestamp - lastFrameTime) / 1000
+        )
+      );
 
     lastFrameTime = timestamp;
-    accumulator += delta;
 
-    let steps = 0;
+    simulationTime +=
+      deltaSeconds * SETTINGS.flowSpeed;
 
-    while (
-      accumulator >= FIXED_STEP &&
-      steps < 3
-    ) {
-      updatePhysics();
+    updateGeometry(deltaSeconds);
 
-      simulationTime += FIXED_STEP / 1000;
-
-      accumulator -= FIXED_STEP;
-      steps++;
-    }
-
-    updateGeometry();
     renderer.render(scene, camera);
 
     animationFrame = requestAnimationFrame(animate);
@@ -781,7 +822,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     21 / ANIMATION CONTROL
+     18 / ANIMATION CONTROL
      ======================================================== */
 
   function startAnimation() {
@@ -796,7 +837,6 @@ function initializeLandscape() {
     }
 
     lastFrameTime = null;
-    accumulator = 0;
 
     animationFrame = requestAnimationFrame(animate);
   }
@@ -810,12 +850,11 @@ function initializeLandscape() {
     }
 
     lastFrameTime = null;
-    accumulator = 0;
   }
 
 
   /* ========================================================
-     22 / VISIBILITY
+     19 / VISIBILITY OBSERVER
      ======================================================== */
 
   const visibilityObserver = new IntersectionObserver(
@@ -839,7 +878,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     23 / REDUCED MOTION
+     20 / REDUCED MOTION
      ======================================================== */
 
   reducedMotion.addEventListener(
@@ -849,14 +888,10 @@ function initializeLandscape() {
       if (reducedMotion.matches) {
         stopAnimation();
 
-        for (const row of points) {
-          for (const point of row) {
-            point.displacement = 0;
-            point.velocity = 0;
-          }
-        }
+        cursorActive = false;
+        cursorInfluence = 0;
 
-        updateGeometry();
+        updateGeometry(1);
         renderer.render(scene, camera);
 
       } else {
@@ -867,7 +902,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     24 / PAGE VISIBILITY
+     21 / PAGE VISIBILITY
      ======================================================== */
 
   document.addEventListener(
@@ -884,7 +919,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     25 / RESIZE OBSERVER
+     22 / RESIZE OBSERVER
      ======================================================== */
 
   if ("ResizeObserver" in window) {
@@ -903,10 +938,19 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     26 / INITIALIZE
+     23 / INITIALIZE
      ======================================================== */
 
   resize();
+
+  /*
+   * Pre-render the initial landscape.
+   */
+
+  updateGeometry(1);
+
+  renderer.render(scene, camera);
+
   startAnimation();
 
   console.log(
