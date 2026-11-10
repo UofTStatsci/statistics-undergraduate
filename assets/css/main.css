@@ -1,10 +1,18 @@
 
 /* ==========================================================
-   U OF T STATISTICAL SCIENCES
-   UNDERGRADUATE DIGITAL BROCHURE
+   UNIVERSITY OF TORONTO
+   DEPARTMENT OF STATISTICAL SCIENCES
 
+   UNDERGRADUATE DIGITAL BROCHURE
    File: assets/css/main.css
-   Version: 1.0
+   Version: 2.0
+
+   Design:
+   - U of T blue, black, white and pale grey
+   - Editorial full-page layouts
+   - Interactive correlation scatterplot
+   - Interactive alumni globe
+   - Responsive desktop, tablet and mobile
    ========================================================== */
 
 
@@ -155,7 +163,6 @@ img {
 
 .crest {
   padding: 5px;
-
   border: 1px solid currentColor;
 }
 
@@ -172,6 +179,11 @@ img {
 
 .nav nav a {
   transition: opacity var(--transition);
+}
+
+.nav nav a[aria-current="location"] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
 }
 
 
@@ -204,7 +216,6 @@ img {
   overflow: hidden;
 
   scroll-snap-align: start;
-  scroll-snap-stop: normal;
 }
 
 
@@ -263,25 +274,36 @@ img {
   flex-direction: column;
   justify-content: space-between;
 
+  min-height: 100vh;
+  min-height: 100dvh;
+
   padding: 5vh 5vw;
 
   background: var(--blue);
+
+  isolation: isolate;
 }
 
 
 /* ----------------------------------------------------------
-   Interactive collision canvas
+   Correlation scatterplot canvas
+
+   The visualization occupies the middle-right area,
+   leaving space for the title and program labels.
    ---------------------------------------------------------- */
 
-.cover canvas {
+.cover #collision-canvas {
   position: absolute;
-  inset: 0;
-  z-index: 0;
+
+  top: 30%;
+  left: 36%;
+
+  z-index: 1;
 
   display: block;
 
-  width: 100%;
-  height: 100%;
+  width: 58%;
+  height: 48%;
 
   max-width: none;
 
@@ -324,17 +346,21 @@ img {
 
 
 /* ----------------------------------------------------------
-   Cover title
+   Main title
+
+   Reduced from the original 10.5vw / 11rem maximum.
    ---------------------------------------------------------- */
 
 .cover h1 {
-  margin: 0.25em 0 0;
+  margin: 0.3em 0 0;
 
-  font-size: clamp(4.5rem, 10.5vw, 11rem);
+  font-size: clamp(3.5rem, 7vw, 8rem);
   font-weight: 900;
 
-  line-height: 0.88;
+  line-height: 0.9;
   letter-spacing: -0.065em;
+
+  max-width: 100%;
 }
 
 
@@ -1005,7 +1031,47 @@ img {
 
 
 /* ==========================================================
-   18 / TABLET AND SMALL LAPTOP
+   18 / LARGE DESKTOP
+   ========================================================== */
+
+@media (min-width: 1200px) {
+
+  .cover h1 {
+    font-size: clamp(5rem, 6.5vw, 8rem);
+  }
+
+  .cover #collision-canvas {
+    top: 30%;
+    left: 36%;
+
+    width: 58%;
+    height: 48%;
+  }
+}
+
+
+/* ==========================================================
+   19 / TABLET AND SMALL LAPTOP
+   ========================================================== */
+
+@media (min-width: 801px) and (max-width: 1199px) {
+
+  .cover h1 {
+    font-size: clamp(4rem, 7vw, 6.5rem);
+  }
+
+  .cover #collision-canvas {
+    top: 31%;
+    left: 30%;
+
+    width: 64%;
+    height: 46%;
+  }
+}
+
+
+/* ==========================================================
+   20 / TABLET AND SMALL LAPTOP LAYOUTS
    ========================================================== */
 
 @media (max-width: 1100px) {
@@ -1048,7 +1114,7 @@ img {
 
 
 /* ==========================================================
-   19 / MOBILE
+   21 / MOBILE
    ========================================================== */
 
 @media (max-width: 800px) {
@@ -1085,7 +1151,15 @@ img {
   }
 
   .cover h1 {
-    font-size: clamp(3.1rem, 13.5vw, 6rem);
+    font-size: clamp(3rem, 11vw, 5.5rem);
+  }
+
+  .cover #collision-canvas {
+    top: 32%;
+    left: 10%;
+
+    width: 80%;
+    height: 42%;
   }
 
   .cover-bottom {
@@ -1271,21 +1345,25 @@ img {
 
 
 /* ==========================================================
-   20 / SMALL MOBILE
+   22 / SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
 
   .cover h1 {
-    font-size: 13vw;
+    font-size: 11vw;
+  }
+
+  .cover #collision-canvas {
+    top: 35%;
+    left: 5%;
+
+    width: 90%;
+    height: 38%;
   }
 
   .cover-bottom div {
     font-size: 0.78rem;
-  }
-
-  .program-grid {
-    grid-template-columns: 1fr;
   }
 
   .metric-grid {
@@ -1333,7 +1411,7 @@ img {
 
 
 /* ==========================================================
-   21 / SHORT SCREENS AND CONTENT OVERFLOW
+   23 / SHORT SCREENS AND CONTENT OVERFLOW
    ========================================================== */
 
 @media (max-height: 750px) {
@@ -1352,7 +1430,7 @@ img {
 
 
 /* ==========================================================
-   22 / REDUCED MOTION
+   24 / REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
