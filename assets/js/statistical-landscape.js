@@ -5,25 +5,24 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   INTERACTIVE 3D TOPOGRAPHIC PARTICLE FIELD
+   INTERACTIVE TOPOGRAPHIC FLOW FIELD
 
    File: assets/js/statistical-landscape.js
-   Version: 2.0
+   Version: 3.0
 
    Features:
-   - Full-width three-dimensional particle landscape
-   - White spheres on U of T blue
-   - Rolling topographic hills and valleys
-   - Mouse-generated travelling waves
-   - Spring physics and damping
-   - Neighbour-to-neighbour wave propagation
-   - Subtle ambient surface movement
-   - Responsive particle counts
+   - Flowing 3D topographic lines
+   - Full-cover transparent visualization
+   - Mouse-generated displacement waves
+   - Spring physics and neighbour propagation
+   - Subtle ambient motion
+   - White, cyan and occasional orange lines
+   - Responsive geometry
    - Touch interaction
    - Reduced-motion support
    - Pauses when off-screen
 
-   Three.js CDN, no build system required.
+   Requires Three.js ES module.
    ========================================================== */
 
 import * as THREE from
@@ -31,91 +30,73 @@ import * as THREE from
 
 
 /* ==========================================================
-   01 / ELEMENT
+   01 / ELEMENTS
    ========================================================== */
 
 const container = document.getElementById(
   "statistical-landscape"
 );
 
-if (container) {
+const cover = document.getElementById("cover");
+
+if (container && cover) {
   initializeLandscape();
 }
 
 
 /* ==========================================================
-   02 / MAIN
+   02 / INITIALIZE
    ========================================================== */
 
 function initializeLandscape() {
 
-  const cover = document.getElementById("cover");
-
-  if (!cover) return;
-
-
   /* ========================================================
      03 / SETTINGS
-
-     These are the main controls for the experience.
      ======================================================== */
 
   const SETTINGS = {
+    background: 0x0180a5,
 
-    color: 0xffffff,
+    desktopLines: 48,
+    tabletLines: 34,
+    mobileLines: 22,
 
-    desktopColumns: 42,
-    desktopRows: 24,
+    desktopSamples: 160,
+    tabletSamples: 120,
+    mobileSamples: 80,
 
-    tabletColumns: 32,
-    tabletRows: 20,
+    worldWidth: 22,
+    worldDepth: 13,
 
-    mobileColumns: 22,
-    mobileRows: 16,
+    terrainHeight: 2.4,
 
-    pointRadius: 0.065,
-
-    terrainHeight: 1.45,
-
-    waveStrength: 2.8,
-    waveRadius: 1.65,
-
-    springStrength: 0.075,
-    neighbourStrength: 0.16,
+    springStrength: 0.065,
+    neighbourStrength: 0.22,
     damping: 0.91,
 
-    ambientAmplitude: 0.065,
-    ambientSpeed: 0.65,
+    waveStrength: 0.28,
+    waveRadius: 1.9,
+
+    ambientAmplitude: 0.12,
+    ambientSpeed: 0.42,
 
     maxVelocity: 0.38,
 
     maxPixelRatio: 2
-
   };
 
 
   /* ========================================================
-     04 / FULL-WIDTH COVER POSITIONING
-
-     Override the previous centre-right chart placement.
-
-     The visualization occupies the full cover but remains
-     beneath the heading and program labels.
-
-     No CSS changes are required for this initial test.
+     04 / FULL-COVER POSITIONING
      ======================================================== */
 
   Object.assign(container.style, {
     position: "absolute",
     inset: "0",
-    top: "0",
-    left: "0",
-    right: "0",
-    bottom: "0",
     width: "100%",
     height: "100%",
-    overflow: "hidden",
     zIndex: "1",
+    overflow: "hidden",
     cursor: "crosshair",
     touchAction: "pan-y"
   });
@@ -125,26 +106,26 @@ function initializeLandscape() {
      05 / STATE
      ======================================================== */
 
-  let columns = 0;
-  let rows = 0;
+  let lineCount = 0;
+  let sampleCount = 0;
 
   let points = [];
-  let spheres = null;
-  let gridLines = null;
-
-  let gridWidth = 0;
-  let gridDepth = 0;
+  let lines = [];
 
   let spacingX = 0;
   let spacingZ = 0;
 
+  let simulationTime = 0;
+
   let animationFrame = null;
   let lastFrameTime = null;
+  let accumulator = 0;
 
   let isSectionVisible = true;
-  let pointerDown = false;
 
-  let simulationTime = 0;
+  let lastWaveTime = 0;
+  let lastWaveX = null;
+  let lastWaveZ = null;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -152,7 +133,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     06 / SCENE
+     06 / THREE.JS SCENE
      ======================================================== */
 
   const scene = new THREE.Scene();
@@ -162,30 +143,17 @@ function initializeLandscape() {
 
   /* ========================================================
      07 / CAMERA
-
-     Perspective view looking across the landscape.
-
-     The camera is stationary. The data points move.
      ======================================================== */
 
   const camera = new THREE.PerspectiveCamera(
-    38,
+    42,
     1,
     0.1,
     100
   );
 
-  camera.position.set(
-    0,
-    9.5,
-    15.5
-  );
-
-  camera.lookAt(
-    0,
-    0,
-    0
-  );
+  camera.position.set(0, 8.5, 17);
+  camera.lookAt(0, 0.8, 0);
 
 
   /* ========================================================
@@ -195,25 +163,21 @@ function initializeLandscape() {
   let renderer;
 
   try {
-
     renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
       powerPreference: "default"
     });
-
   } catch (error) {
-
     console.error(
-      "Unable to initialize 3D landscape:",
+      "Topographic flow field: WebGL unavailable.",
       error
     );
-
     return;
   }
 
   renderer.setClearColor(
-    0x0180a5,
+    SETTINGS.background,
     0
   );
 
@@ -225,540 +189,402 @@ function initializeLandscape() {
   renderer.domElement.style.height = "100%";
   renderer.domElement.style.touchAction = "pan-y";
 
-  container.appendChild(
-    renderer.domElement
-  );
+  container.appendChild(renderer.domElement);
 
 
   /* ========================================================
-     09 / LIGHTING
+     09 / GEOMETRY
      ======================================================== */
 
-  scene.add(
-    new THREE.AmbientLight(
-      0xffffff,
-      2.2
-    )
-  );
+  const lineMaterials = [
+    new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false
+    }),
 
-  const light = new THREE.DirectionalLight(
-    0xffffff,
-    2.4
-  );
+    new THREE.LineBasicMaterial({
+      color: 0xb6efff,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false
+    }),
 
-  light.position.set(
-    -5,
-    12,
-    8
-  );
+    new THREE.LineBasicMaterial({
+      color: 0x66d9f0,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false
+    }),
 
-  scene.add(light);
+    new THREE.LineBasicMaterial({
+      color: 0xffa15a,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false
+    })
+  ];
 
 
   /* ========================================================
-     10 / GEOMETRY GROUP
+     10 / RESPONSIVE DIMENSIONS
      ======================================================== */
 
-  const landscape = new THREE.Group();
-
-  scene.add(landscape);
-
-  const sphereGeometry = new THREE.SphereGeometry(
-    SETTINGS.pointRadius,
-    8,
-    6
-  );
-
-  const sphereMaterial = new THREE.MeshStandardMaterial({
-    color: SETTINGS.color,
-    roughness: 0.48,
-    metalness: 0
-  });
-
-  const dummy = new THREE.Object3D();
-
-
-  /* ========================================================
-     11 / RESPONSIVE GRID
-     ======================================================== */
-
-  function getGridDimensions() {
-
+  function getDimensions() {
     const viewport = window.innerWidth;
 
     if (viewport <= 800) {
       return [
-        SETTINGS.mobileColumns,
-        SETTINGS.mobileRows
+        SETTINGS.mobileLines,
+        SETTINGS.mobileSamples
       ];
     }
 
     if (viewport <= 1200) {
       return [
-        SETTINGS.tabletColumns,
-        SETTINGS.tabletRows
+        SETTINGS.tabletLines,
+        SETTINGS.tabletSamples
       ];
     }
 
     return [
-      SETTINGS.desktopColumns,
-      SETTINGS.desktopRows
+      SETTINGS.desktopLines,
+      SETTINGS.desktopSamples
     ];
   }
 
 
   /* ========================================================
-     12 / TOPOGRAPHIC HEIGHT FUNCTION
-
-     Three overlapping Gaussian hills create a smooth,
-     irregular statistical landscape.
-
-     This is an illustrative mathematical surface.
+     11 / TOPOGRAPHIC HEIGHT FUNCTION
      ======================================================== */
 
   function terrainHeight(x, z) {
 
     const hillOne =
-      1.55 * Math.exp(
+      2.3 * Math.exp(
         -(
-          ((x + 3.4) ** 2) / 13 +
-          ((z + 0.5) ** 2) / 8
+          ((x + 5.2) ** 2) / 17 +
+          ((z + 1.3) ** 2) / 7
         )
       );
 
     const hillTwo =
-      2.1 * Math.exp(
+      3.1 * Math.exp(
         -(
-          ((x - 2.2) ** 2) / 8 +
-          ((z - 1.2) ** 2) / 10
+          ((x - 2.5) ** 2) / 13 +
+          ((z - 2.2) ** 2) / 9
         )
       );
 
     const hillThree =
-      1.15 * Math.exp(
+      1.8 * Math.exp(
         -(
-          ((x - 0.5) ** 2) / 16 +
-          ((z + 3.1) ** 2) / 5
+          ((x - 7.1) ** 2) / 10 +
+          ((z + 2.8) ** 2) / 6
         )
       );
 
     const rolling =
-      0.22 *
-      Math.sin(x * 0.75) *
+      0.32 *
+      Math.sin(x * 0.7 + z * 0.4) *
       Math.cos(z * 0.9);
 
     return (
       (hillOne + hillTwo + hillThree + rolling) *
       SETTINGS.terrainHeight *
-      0.65
+      0.42
     );
   }
 
 
   /* ========================================================
-     13 / CLEAN UP OLD GRID
+     12 / CLEAR EXISTING LINES
      ======================================================== */
 
-  function clearGrid() {
+  function clearLines() {
 
-    if (spheres) {
-      landscape.remove(spheres);
-      spheres.dispose();
-      spheres = null;
+    for (const line of lines) {
+      scene.remove(line);
+      line.geometry.dispose();
     }
 
-    if (gridLines) {
-      landscape.remove(gridLines);
-      gridLines.geometry.dispose();
-      gridLines.material.dispose();
-      gridLines = null;
-    }
-
+    lines = [];
     points = [];
   }
 
 
   /* ========================================================
-     14 / CREATE PARTICLE FIELD
+     13 / BUILD FLOW FIELD
      ======================================================== */
 
-  function createGrid() {
+  function buildField() {
 
-    clearGrid();
+    clearLines();
 
-    const dimensions = getGridDimensions();
+    const dimensions = getDimensions();
 
-    columns = dimensions[0];
-    rows = dimensions[1];
+    lineCount = dimensions[0];
+    sampleCount = dimensions[1];
 
-    /*
-     * Wide landscape, extending across the cover.
-     */
+    spacingX =
+      SETTINGS.worldWidth / (sampleCount - 1);
 
-    gridWidth = 16;
-    gridDepth = 10;
+    spacingZ =
+      SETTINGS.worldDepth / (lineCount - 1);
 
-    spacingX = gridWidth / (columns - 1);
-    spacingZ = gridDepth / (rows - 1);
+    for (let row = 0; row < lineCount; row++) {
 
-    const count = columns * rows;
+      const rowPoints = [];
 
-    spheres = new THREE.InstancedMesh(
-      sphereGeometry,
-      sphereMaterial,
-      count
-    );
+      const z =
+        -SETTINGS.worldDepth / 2 +
+        row * spacingZ;
 
-    spheres.instanceMatrix.setUsage(
-      THREE.DynamicDrawUsage
-    );
-
-    spheres.frustumCulled = false;
-
-    let index = 0;
-
-    for (let row = 0; row < rows; row++) {
-
-      for (let col = 0; col < columns; col++) {
+      for (let col = 0; col < sampleCount; col++) {
 
         const x =
-          -gridWidth / 2 +
+          -SETTINGS.worldWidth / 2 +
           col * spacingX;
 
-        const z =
-          -gridDepth / 2 +
-          row * spacingZ;
-
-        const baseHeight = terrainHeight(x, z);
-
-        points.push({
-
+        rowPoints.push({
           x,
           z,
 
-          row,
-          col,
-
-          baseHeight,
+          baseHeight: terrainHeight(x, z),
 
           displacement: 0,
-          velocity: 0,
-
-          index
-
+          velocity: 0
         });
-
-        index++;
       }
+
+      points.push(rowPoints);
+
+      const positions = new Float32Array(
+        sampleCount * 3
+      );
+
+      const geometry = new THREE.BufferGeometry();
+
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(
+          positions,
+          3
+        )
+      );
+
+      /*
+       * Most lines are white or cyan.
+       * Every 17th line receives a warm accent.
+       */
+
+      let materialIndex = row % 3;
+
+      if (row % 17 === 0) {
+        materialIndex = 3;
+      }
+
+      const line = new THREE.Line(
+        geometry,
+        lineMaterials[materialIndex]
+      );
+
+      line.frustumCulled = false;
+
+      lines.push(line);
+      scene.add(line);
     }
-
-    landscape.add(spheres);
-
-    createGridLines();
 
     updateGeometry();
   }
 
 
   /* ========================================================
-     15 / SUBTLE TOPOGRAPHIC GRID
-
-     A faint wireframe beneath the particle surface.
-     ======================================================== */
-
-  function createGridLines() {
-
-    const positions = [];
-
-    for (let row = 0; row < rows; row++) {
-
-      for (let col = 0; col < columns; col++) {
-
-        const index = row * columns + col;
-        const point = points[index];
-
-        if (col < columns - 1) {
-
-          const next = points[index + 1];
-
-          positions.push(
-            point.x, -0.28, point.z,
-            next.x, -0.28, next.z
-          );
-        }
-
-        if (row < rows - 1) {
-
-          const next = points[index + columns];
-
-          positions.push(
-            point.x, -0.28, point.z,
-            next.x, -0.28, next.z
-          );
-        }
-      }
-    }
-
-    const geometry = new THREE.BufferGeometry();
-
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(
-        positions,
-        3
-      )
-    );
-
-    const material = new THREE.LineBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.13,
-      depthWrite: false
-    });
-
-    gridLines = new THREE.LineSegments(
-      geometry,
-      material
-    );
-
-    landscape.add(gridLines);
-  }
-
-
-  /* ========================================================
-     16 / UPDATE PARTICLE POSITIONS
+     14 / UPDATE LINE GEOMETRY
      ======================================================== */
 
   function updateGeometry() {
 
-    if (!spheres) return;
+    for (let row = 0; row < lineCount; row++) {
 
-    for (const point of points) {
+      const positions =
+        lines[row].geometry.attributes.position;
 
-      const ambient =
-        reducedMotion.matches
+      for (let col = 0; col < sampleCount; col++) {
+
+        const point = points[row][col];
+
+        const ambient = reducedMotion.matches
           ? 0
           : SETTINGS.ambientAmplitude *
             Math.sin(
-              point.x * 0.85 +
-              point.z * 0.55 +
+              point.x * 0.52 +
+              point.z * 0.64 +
               simulationTime * SETTINGS.ambientSpeed
             );
 
-      const height =
-        point.baseHeight +
-        point.displacement +
-        ambient;
+        const y =
+          point.baseHeight +
+          point.displacement +
+          ambient;
 
-      dummy.position.set(
-        point.x,
-        height,
-        point.z
-      );
-
-      /*
-       * Slightly vary sphere size by elevation
-       * to reinforce the landscape's depth.
-       */
-
-      const scale =
-        THREE.MathUtils.clamp(
-          0.85 + height * 0.065,
-          0.8,
-          1.25
+        positions.setXYZ(
+          col,
+          point.x,
+          y,
+          point.z
         );
+      }
 
-      dummy.scale.setScalar(scale);
-
-      dummy.updateMatrix();
-
-      spheres.setMatrixAt(
-        point.index,
-        dummy.matrix
-      );
+      positions.needsUpdate = true;
     }
-
-    spheres.instanceMatrix.needsUpdate = true;
   }
 
 
   /* ========================================================
-     17 / WAVE PHYSICS
-
-     Every particle is connected to neighbouring particles
-     through a virtual spring system.
-
-     A disturbance at one point propagates across the field.
+     15 / SPRING AND WAVE PHYSICS
      ======================================================== */
 
-  function updatePhysics(frameScale) {
+  function updatePhysics() {
 
-    const accelerations = new Float32Array(
-      points.length
+    const accelerations = Array.from(
+      { length: lineCount },
+      () => new Float32Array(sampleCount)
     );
 
-    for (let i = 0; i < points.length; i++) {
+    for (let row = 0; row < lineCount; row++) {
 
-      const point = points[i];
+      for (let col = 0; col < sampleCount; col++) {
 
-      let neighbourSum = 0;
-      let neighbourCount = 0;
+        const point = points[row][col];
 
-      if (point.col > 0) {
-        neighbourSum += points[i - 1].displacement;
-        neighbourCount++;
-      }
+        let neighbourSum = 0;
+        let neighbourCount = 0;
 
-      if (point.col < columns - 1) {
-        neighbourSum += points[i + 1].displacement;
-        neighbourCount++;
-      }
+        if (col > 0) {
+          neighbourSum += points[row][col - 1].displacement;
+          neighbourCount++;
+        }
 
-      if (point.row > 0) {
-        neighbourSum += points[i - columns].displacement;
-        neighbourCount++;
-      }
+        if (col < sampleCount - 1) {
+          neighbourSum += points[row][col + 1].displacement;
+          neighbourCount++;
+        }
 
-      if (point.row < rows - 1) {
-        neighbourSum += points[i + columns].displacement;
-        neighbourCount++;
-      }
+        if (row > 0) {
+          neighbourSum += points[row - 1][col].displacement;
+          neighbourCount++;
+        }
 
-      const neighbourAverage =
-        neighbourCount > 0
+        if (row < lineCount - 1) {
+          neighbourSum += points[row + 1][col].displacement;
+          neighbourCount++;
+        }
+
+        const average = neighbourCount
           ? neighbourSum / neighbourCount
           : 0;
 
-      /*
-       * Spring pulls the particle back to its
-       * original topographic height.
-       */
+        const spring =
+          -point.displacement *
+          SETTINGS.springStrength;
 
-      const springForce =
-        -point.displacement *
-        SETTINGS.springStrength;
+        const propagation =
+          (average - point.displacement) *
+          SETTINGS.neighbourStrength;
 
-      /*
-       * Neighbour coupling spreads the wave.
-       */
-
-      const waveForce =
-        (neighbourAverage - point.displacement) *
-        SETTINGS.neighbourStrength;
-
-      accelerations[i] =
-        springForce + waveForce;
+        accelerations[row][col] =
+          spring + propagation;
+      }
     }
 
-    /*
-     * Apply all accelerations after calculating them.
-     * This avoids updating neighbours out of sequence.
-     */
+    for (let row = 0; row < lineCount; row++) {
 
-    const step = Math.min(frameScale, 2);
+      for (let col = 0; col < sampleCount; col++) {
 
-    const damping = Math.pow(
-      SETTINGS.damping,
-      step
-    );
+        const point = points[row][col];
 
-    for (let i = 0; i < points.length; i++) {
+        point.velocity +=
+          accelerations[row][col];
 
-      const point = points[i];
+        point.velocity = THREE.MathUtils.clamp(
+          point.velocity,
+          -SETTINGS.maxVelocity,
+          SETTINGS.maxVelocity
+        );
 
-      point.velocity +=
-        accelerations[i] * step;
+        point.velocity *= SETTINGS.damping;
 
-      point.velocity = THREE.MathUtils.clamp(
-        point.velocity,
-        -SETTINGS.maxVelocity,
-        SETTINGS.maxVelocity
-      );
-
-      point.velocity *= damping;
-
-      point.displacement +=
-        point.velocity * step;
+        point.displacement += point.velocity;
+      }
     }
   }
 
 
   /* ========================================================
-     18 / GENERATE RADIAL WAVE
-
-     The cursor creates a localized impulse.
-
-     Nearby particles receive a stronger impulse,
-     while distant particles respond as the wave travels.
+     16 / CREATE CURSOR WAVE
      ======================================================== */
 
   function createWave(x, z, strength = 1) {
 
     if (reducedMotion.matches) return;
 
-    const radius = SETTINGS.waveRadius;
-    const radiusSquared = radius * radius;
+    const radiusSquared =
+      SETTINGS.waveRadius ** 2;
 
-    for (const point of points) {
+    for (let row = 0; row < lineCount; row++) {
 
-      const dx = point.x - x;
-      const dz = point.z - z;
+      for (let col = 0; col < sampleCount; col++) {
 
-      const distanceSquared =
-        dx * dx + dz * dz;
+        const point = points[row][col];
 
-      if (distanceSquared > radiusSquared * 5) {
-        continue;
+        const dx = point.x - x;
+        const dz = point.z - z;
+
+        const distanceSquared =
+          dx * dx + dz * dz;
+
+        if (distanceSquared > radiusSquared * 5) {
+          continue;
+        }
+
+        const influence = Math.exp(
+          -distanceSquared /
+          (radiusSquared * 0.75)
+        );
+
+        point.velocity +=
+          SETTINGS.waveStrength *
+          influence *
+          strength;
+
+        point.velocity = THREE.MathUtils.clamp(
+          point.velocity,
+          -SETTINGS.maxVelocity,
+          SETTINGS.maxVelocity
+        );
       }
-
-      /*
-       * Smooth Gaussian falloff.
-       */
-
-      const influence = Math.exp(
-        -distanceSquared /
-        (radiusSquared * 0.7)
-      );
-
-      point.velocity +=
-        SETTINGS.waveStrength *
-        influence *
-        strength *
-        0.11;
-
-      point.velocity = THREE.MathUtils.clamp(
-        point.velocity,
-        -SETTINGS.maxVelocity,
-        SETTINGS.maxVelocity
-      );
     }
   }
 
 
   /* ========================================================
-     19 / POINTER RAYCASTING
-
-     Convert the cursor's screen position into a point
-     on the 3D landscape's X/Z plane.
+     17 / POINTER RAYCASTING
      ======================================================== */
 
   const raycaster = new THREE.Raycaster();
-
   const pointer = new THREE.Vector2();
 
   const interactionPlane = new THREE.Plane(
     new THREE.Vector3(0, 1, 0),
-    -0.8
+    -0.7
   );
 
   const intersection = new THREE.Vector3();
 
-  let previousWaveX = null;
-  let previousWaveZ = null;
-  let previousWaveTime = 0;
 
-
-  function pointerMoved(event) {
+  function handlePointerMove(event) {
 
     if (reducedMotion.matches) return;
 
@@ -783,108 +609,79 @@ function initializeLandscape() {
     const z = intersection.z;
 
     if (
-      Math.abs(x) > gridWidth / 2 + 1 ||
-      Math.abs(z) > gridDepth / 2 + 1
+      Math.abs(x) > SETTINGS.worldWidth / 2 ||
+      Math.abs(z) > SETTINGS.worldDepth / 2
     ) {
       return;
     }
 
     const now = performance.now();
 
-    /*
-     * Prevent excessive impulses when the browser
-     * sends many pointer events per frame.
-     */
-
-    if (now - previousWaveTime < 28) {
+    if (now - lastWaveTime < 25) {
       return;
     }
 
-    let movement = 1;
+    let strength = 1;
 
     if (
-      previousWaveX !== null &&
-      previousWaveZ !== null
+      lastWaveX !== null &&
+      lastWaveZ !== null
     ) {
 
-      const distance = Math.hypot(
-        x - previousWaveX,
-        z - previousWaveZ
+      const movement = Math.hypot(
+        x - lastWaveX,
+        z - lastWaveZ
       );
 
-      movement = THREE.MathUtils.clamp(
-        distance * 2.2,
-        0.25,
-        1.5
+      strength = THREE.MathUtils.clamp(
+        movement * 1.7,
+        0.3,
+        1.6
       );
     }
 
-    createWave(
-      x,
-      z,
-      pointerDown ? movement * 1.4 : movement
-    );
+    createWave(x, z, strength);
 
-    previousWaveX = x;
-    previousWaveZ = z;
-    previousWaveTime = now;
+    lastWaveX = x;
+    lastWaveZ = z;
+    lastWaveTime = now;
   }
 
 
   /* ========================================================
-     20 / TOUCH AND POINTER EVENTS
+     18 / POINTER EVENTS
      ======================================================== */
 
   container.addEventListener(
     "pointermove",
-    pointerMoved,
+    handlePointerMove,
     { passive: true }
   );
 
   container.addEventListener(
     "pointerdown",
     event => {
+      lastWaveX = null;
+      lastWaveZ = null;
 
-      pointerDown = true;
-
-      previousWaveX = null;
-      previousWaveZ = null;
-
-      pointerMoved(event);
-
-    }
-  );
-
-  window.addEventListener(
-    "pointerup",
-    () => {
-      pointerDown = false;
-    }
-  );
-
-  window.addEventListener(
-    "pointercancel",
-    () => {
-      pointerDown = false;
+      handlePointerMove(event);
     }
   );
 
   container.addEventListener(
     "pointerleave",
     () => {
-
-      previousWaveX = null;
-      previousWaveZ = null;
-
+      lastWaveX = null;
+      lastWaveZ = null;
     }
   );
 
 
   /* ========================================================
-     21 / RESIZE
+     19 / RESIZE
      ======================================================== */
 
-  let currentGridKey = "";
+  let currentDimensions = "";
 
   function resize() {
 
@@ -895,44 +692,17 @@ function initializeLandscape() {
 
     camera.aspect = width / height;
 
-    /*
-     * Adjust camera distance to preserve a broad
-     * landscape on different aspect ratios.
-     */
-
     const aspect = width / height;
 
     if (aspect < 0.8) {
-
-      camera.position.set(
-        0,
-        12,
-        22
-      );
-
+      camera.position.set(0, 11, 23);
     } else if (aspect < 1.4) {
-
-      camera.position.set(
-        0,
-        10.5,
-        18
-      );
-
+      camera.position.set(0, 9.5, 19);
     } else {
-
-      camera.position.set(
-        0,
-        9.5,
-        15.5
-      );
+      camera.position.set(0, 8.5, 17);
     }
 
-    camera.lookAt(
-      0,
-      0.55,
-      0
-    );
-
+    camera.lookAt(0, 0.8, 0);
     camera.updateProjectionMatrix();
 
     renderer.setPixelRatio(
@@ -948,14 +718,11 @@ function initializeLandscape() {
       false
     );
 
-    const dimensions = getGridDimensions();
-    const gridKey = dimensions.join("x");
+    const dimensions = getDimensions().join("x");
 
-    if (gridKey !== currentGridKey) {
-
-      currentGridKey = gridKey;
-      createGrid();
-
+    if (dimensions !== currentDimensions) {
+      currentDimensions = dimensions;
+      buildField();
     }
 
     renderer.render(scene, camera);
@@ -963,15 +730,10 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     22 / ANIMATION
-
-     Physics runs at a fixed 60Hz step to keep the
-     surface response consistent across refresh rates.
+     20 / ANIMATION
      ======================================================== */
 
   const FIXED_STEP = 1000 / 60;
-
-  let accumulator = 0;
 
   function animate(timestamp) {
 
@@ -995,7 +757,6 @@ function initializeLandscape() {
     );
 
     lastFrameTime = timestamp;
-
     accumulator += delta;
 
     let steps = 0;
@@ -1004,31 +765,23 @@ function initializeLandscape() {
       accumulator >= FIXED_STEP &&
       steps < 3
     ) {
-
-      updatePhysics(1);
+      updatePhysics();
 
       simulationTime += FIXED_STEP / 1000;
 
       accumulator -= FIXED_STEP;
-
       steps++;
     }
 
     updateGeometry();
+    renderer.render(scene, camera);
 
-    renderer.render(
-      scene,
-      camera
-    );
-
-    animationFrame = requestAnimationFrame(
-      animate
-    );
+    animationFrame = requestAnimationFrame(animate);
   }
 
 
   /* ========================================================
-     23 / ANIMATION CONTROL
+     21 / ANIMATION CONTROL
      ======================================================== */
 
   function startAnimation() {
@@ -1045,20 +798,14 @@ function initializeLandscape() {
     lastFrameTime = null;
     accumulator = 0;
 
-    animationFrame = requestAnimationFrame(
-      animate
-    );
+    animationFrame = requestAnimationFrame(animate);
   }
 
 
   function stopAnimation() {
 
     if (animationFrame !== null) {
-
-      cancelAnimationFrame(
-        animationFrame
-      );
-
+      cancelAnimationFrame(animationFrame);
       animationFrame = null;
     }
 
@@ -1068,7 +815,7 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     24 / VISIBILITY OBSERVER
+     22 / VISIBILITY
      ======================================================== */
 
   const visibilityObserver = new IntersectionObserver(
@@ -1081,7 +828,6 @@ function initializeLandscape() {
       } else {
         stopAnimation();
       }
-
     },
     {
       root: document.querySelector(".snap"),
@@ -1093,37 +839,35 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     25 / REDUCED MOTION
+     23 / REDUCED MOTION
      ======================================================== */
-
-  function handleMotionChange() {
-
-    if (reducedMotion.matches) {
-
-      stopAnimation();
-
-      for (const point of points) {
-        point.displacement = 0;
-        point.velocity = 0;
-      }
-
-      updateGeometry();
-      renderer.render(scene, camera);
-
-    } else {
-
-      startAnimation();
-    }
-  }
 
   reducedMotion.addEventListener(
     "change",
-    handleMotionChange
+    () => {
+
+      if (reducedMotion.matches) {
+        stopAnimation();
+
+        for (const row of points) {
+          for (const point of row) {
+            point.displacement = 0;
+            point.velocity = 0;
+          }
+        }
+
+        updateGeometry();
+        renderer.render(scene, camera);
+
+      } else {
+        startAnimation();
+      }
+    }
   );
 
 
   /* ========================================================
-     26 / PAGE VISIBILITY
+     24 / PAGE VISIBILITY
      ======================================================== */
 
   document.addEventListener(
@@ -1135,21 +879,17 @@ function initializeLandscape() {
       } else {
         startAnimation();
       }
-
     }
   );
 
 
   /* ========================================================
-     27 / RESIZE OBSERVER
+     25 / RESIZE OBSERVER
      ======================================================== */
 
   if ("ResizeObserver" in window) {
 
-    const observer = new ResizeObserver(
-      resize
-    );
-
+    const observer = new ResizeObserver(resize);
     observer.observe(container);
 
   } else {
@@ -1163,18 +903,13 @@ function initializeLandscape() {
 
 
   /* ========================================================
-     28 / INITIALIZE
+     26 / INITIALIZE
      ======================================================== */
 
   resize();
-
-  updateGeometry();
-
-  renderer.render(scene, camera);
-
   startAnimation();
 
   console.log(
-    `3D topographic landscape initialized: ${points.length} particles.`
+    `Topographic flow field initialized: ${lineCount} lines.`
   );
 }
