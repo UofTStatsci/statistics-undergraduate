@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -10,7 +11,7 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <meta name="theme-color" content="#020b10">
+  <meta name="theme-color" content="#002A5C">
 
   <title>
     Undergraduate Programs | Statistical Sciences | University of Toronto
@@ -23,8 +24,9 @@
 
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=6"
+    href="assets/css/main.css?v=7"
   >
+
 </head>
 
 
@@ -46,15 +48,28 @@
   <header class="nav">
 
     <a class="wordmark" href="#cover">
-      <span class="crest">U of T</span>
-      <span>Statistical Sciences</span>
+
+      <span class="crest">
+        U of T
+      </span>
+
+      <span>
+        Statistical Sciences
+      </span>
+
     </a>
 
+
     <nav aria-label="Primary navigation">
+
       <a href="#programs">Programs</a>
+
       <a href="#why">Why Statistics</a>
+
       <a href="#experience">Experience</a>
+
       <a href="#admissions">Admissions</a>
+
     </nav>
 
   </header>
@@ -68,162 +83,88 @@
 
 
     <!-- ====================================================
-         01 / COVER — INTERACTIVE TOPOGRAPHY
+         01 / COVER — ORIGINAL COLLISION HERO
          ==================================================== -->
 
     <section
       id="cover"
-      class="panel cover topo-section"
+      class="panel cover"
       aria-labelledby="cover-title"
     >
 
-      <div class="topo-experience" data-topography>
+      <!--
+        ORIGINAL D3 COLLISION CANVAS
 
-        <!-- ARTWORK VIEWPORT -->
+        assets/js/collision.js controls this canvas.
 
-        <div class="topo-viewport" data-topo-viewport>
+        Do not add another canvas to this section.
+      -->
 
-          <div
-            class="topo-art"
-            data-topo-art
-            tabindex="0"
-            role="group"
-            aria-label="Interactive topographic contour artwork. Move the pointer upward to highlight higher elevations or downward for lower elevations. Use the arrow keys to adjust."
-          >
-
-            <!-- ORIGINAL TOPOGRAPHIC ARTWORK -->
-
-            <img
-              src="assets/images/contours.jpg"
-              width="2048"
-              height="1365"
-              alt="Dramatic blue and gold contour lines across a three-dimensional topographic landscape"
-              draggable="false"
-              fetchpriority="high"
-            >
-
-            <!-- ORANGE ELEVATION OVERLAY -->
-
-            <canvas
-              data-topo-canvas
-              aria-hidden="true"
-            ></canvas>
-
-          </div>
+      <canvas
+        id="collision-canvas"
+        aria-hidden="true"
+      ></canvas>
 
 
-          <!-- COVER FOREGROUND -->
+      <!-- COVER BRANDING -->
 
-          <div class="cover-top">
+      <div class="cover-top">
 
-            <div class="logo-lockup">
+        <div class="logo-lockup">
 
-              <span class="logo-mark">
-                U of T
-              </span>
+          <span class="logo-mark">
+            U of T
+          </span>
 
-              <span>
-                Department of Statistical Sciences
-                <br>
-                UNIVERSITY OF TORONTO
-              </span>
-
-            </div>
-
-            <h1 id="cover-title">
-              STATISTICAL
-              <br>
-              SCIENCES
-            </h1>
-
-          </div>
-
-
-          <!-- ELEVATION READOUT -->
-
-          <div
-            class="topo-readout"
-            aria-hidden="true"
-          >
-
-            <strong data-topo-label>
-              Mid elevation
-            </strong>
-
-            <span data-topo-percent>
-              50%
-            </span>
-
-          </div>
-
-
-          <!-- UNDERGRADUATE PROGRAM LABEL -->
-
-          <div class="cover-bottom">
-
-            <p>
-              UNDERGRADUATE PROGRAMS
-            </p>
-
-            <div>
-              SPECIALIST
-              <span>•</span>
-              MAJOR
-              <span>•</span>
-              MINOR
-            </div>
-
-          </div>
-
-
-          <!-- SCROLL INDICATOR -->
-
-          <a
-            class="down"
-            href="#why"
-            aria-label="Explore undergraduate programs"
-          >
-            ↓
-          </a>
-
-        </div>
-
-
-        <!-- ELEVATION CONTROLS -->
-
-        <div class="topo-footer">
-
-          <label for="topo-elevation">
-            Elevation
-          </label>
-
-          <input
-            id="topo-elevation"
-            data-topo-slider
-            type="range"
-            min="0"
-            max="100"
-            value="50"
-            step="1"
-            aria-label="Highlighted elevation level"
-          >
-
-          <output
-            data-topo-output
-            for="topo-elevation"
-          >
-            50%
-          </output>
-
-          <span class="topo-hint">
-            Move cursor / drag to explore
+          <span>
+            Department of Statistical Sciences
+            <br>
+            UNIVERSITY OF TORONTO
           </span>
 
         </div>
 
+
+        <h1 id="cover-title">
+          STATISTICAL
+          <br>
+          SCIENCES
+        </h1>
+
       </div>
 
+
+      <!-- PROGRAM LABEL -->
+
+      <div class="cover-bottom">
+
+        <p>
+          UNDERGRADUATE PROGRAMS
+        </p>
+
+        <div>
+          SPECIALIST
+          <span>•</span>
+          MAJOR
+          <span>•</span>
+          MINOR
+        </div>
+
+      </div>
+
+
+      <!-- SCROLL INDICATOR -->
+
+      <a
+        class="down"
+        href="#why"
+        aria-label="Explore undergraduate programs"
+      >
+        ↓
+      </a>
+
     </section>
+
 
 
     <!-- ====================================================
@@ -232,12 +173,13 @@
 
     <section
       id="why"
-      class="panel dark why-panel"
+      class="panel why-panel dark"
     >
 
       <div class="eyebrow">
         Why Study Statistics?
       </div>
+
 
       <div class="why-layout">
 
@@ -250,34 +192,54 @@
 
         </div>
 
+
         <div class="why-copy">
 
           <h3>
-            Data is everywhere.
+            Data is everywhere
           </h3>
 
           <p>
             Every day, we encounter data in social media,
             medical records, financial markets, scientific
             experiments and artificial intelligence.
+            Data is not just numbers: it includes images,
+            text, video and information about how people
+            interact with the world.
           </p>
 
+
+          <h3>
+            How do we know what data means?
+          </h3>
+
           <p>
-            Statistics helps us understand what data means,
-            identify meaningful patterns, evaluate evidence
-            and make informed decisions, even when the
-            answers are not certain.
+            Which patterns matter? Can we trust the
+            conclusions? Statistics helps us work with data,
+            evaluate evidence and make informed decisions,
+            even when the answers are not certain.
           </p>
+
 
           <h3>
             What will you learn?
           </h3>
 
           <p>
-            Discover how mathematics, statistics and computing
-            work together to help us understand the world.
-            Learn to develop models, make predictions, evaluate
-            conclusions and use data responsibly.
+            Learn how mathematics, statistics and computing
+            work together to help us understand the world
+            through data. You will explore how to identify
+            patterns, develop models, make predictions
+            and evaluate evidence.
+          </p>
+
+          <p>
+            Our programs emphasize mathematical foundations
+            alongside programming and computational skills.
+            You will learn not only how to analyse data,
+            but also how statistical methods work,
+            why they work and when their conclusions
+            can be trusted.
           </p>
 
         </div>
@@ -287,34 +249,42 @@
     </section>
 
 
+
     <!-- ====================================================
-         03 / UNDERGRADUATE PROGRAMS
+         03 / PROGRAM OVERVIEW
          ==================================================== -->
 
     <section
       id="programs"
-      class="panel dark programs-panel"
+      class="panel programs-panel dark"
     >
 
       <div class="eyebrow">
         Undergraduate Programs
       </div>
 
+
       <h2>
-        Find your path
+        Which program
         <br>
-        in statistics.
+        is right for you?
       </h2>
 
+
       <div class="program-grid">
+
 
         <article class="program-card">
 
           <span class="program-number">01</span>
 
-          <h3>Specialist</h3>
+          <h3>
+            Specialist
+          </h3>
 
-          <h4>Theory and Methods</h4>
+          <h4>
+            Theory and Methods
+          </h4>
 
           <p>
             Build strong mathematical foundations in
@@ -333,9 +303,13 @@
 
           <span class="program-number">02</span>
 
-          <h3>Specialist</h3>
+          <h3>
+            Specialist
+          </h3>
 
-          <h4>Methods and Practice</h4>
+          <h4>
+            Methods and Practice
+          </h4>
 
           <p>
             Focus on statistical modelling, computing
@@ -353,9 +327,13 @@
 
           <span class="program-number">03</span>
 
-          <h3>Major</h3>
+          <h3>
+            Major
+          </h3>
 
-          <h4>Statistics</h4>
+          <h4>
+            Statistics
+          </h4>
 
           <p>
             Develop a flexible foundation in statistics
@@ -373,13 +351,18 @@
 
           <span class="program-number">04</span>
 
-          <h3>Minor</h3>
+          <h3>
+            Minor
+          </h3>
 
-          <h4>Statistics</h4>
+          <h4>
+            Statistics
+          </h4>
 
           <p>
-            Complement your primary field of study with
-            statistical knowledge and analytical skills.
+            Complement your primary field of study
+            with statistical knowledge and
+            analytical skills.
           </p>
 
           <a href="#major-minor">
@@ -393,14 +376,18 @@
 
           <span class="program-number">05</span>
 
-          <h3>Specialist</h3>
+          <h3>
+            Specialist
+          </h3>
 
-          <h4>Data Science</h4>
+          <h4>
+            Data Science
+          </h4>
 
           <p>
             Explore an interdisciplinary program offered
-            with Computer Science, combining statistics
-            and computing.
+            with Computer Science that combines
+            statistics and computing.
           </p>
 
           <a href="#data-science">
@@ -414,9 +401,13 @@
 
           <span class="program-number">06</span>
 
-          <h3>Minor</h3>
+          <h3>
+            Minor
+          </h3>
 
-          <h4>Applied Data Science</h4>
+          <h4>
+            Applied Data Science
+          </h4>
 
           <p>
             Develop computing and applied data science
@@ -430,13 +421,15 @@
 
         </article>
 
+
       </div>
 
     </section>
 
 
+
     <!-- ====================================================
-         04 / STATISTICS SPECIALISTS
+         04 / STATISTICAL SCIENCE SPECIALISTS
          ==================================================== -->
 
     <section
@@ -464,6 +457,7 @@
 
       </div>
 
+
       <div class="detail-list">
 
         <article>
@@ -477,12 +471,13 @@
           </h3>
 
           <p>
-            Develop a strong mathematical foundation in
+            Build strong mathematical foundations in
             probability, statistical theory and the
-            creation of statistical methods.
+            development of statistical methods.
           </p>
 
         </article>
+
 
         <article>
 
@@ -495,9 +490,8 @@
           </h3>
 
           <p>
-            Explore statistical modelling, computation
-            and the application of statistical methods
-            to real-world challenges.
+            Focus on statistical modelling, computing
+            and solving applied problems.
           </p>
 
         </article>
@@ -507,8 +501,9 @@
     </section>
 
 
+
     <!-- ====================================================
-         05 / MAJOR AND MINOR
+         05 / STATISTICS MAJOR AND MINOR
          ==================================================== -->
 
     <section
@@ -536,6 +531,7 @@
 
       </div>
 
+
       <div class="detail-list">
 
         <article>
@@ -549,11 +545,12 @@
           </h3>
 
           <p>
-            A flexible statistical foundation designed
-            to complement another major.
+            Develop a flexible foundation in statistics
+            that can be combined with another major.
           </p>
 
         </article>
+
 
         <article>
 
@@ -566,8 +563,9 @@
           </h3>
 
           <p>
-            Add statistical reasoning and analytical
-            skills to your primary field of study.
+            Complement your primary field of study
+            with statistical knowledge and
+            analytical skills.
           </p>
 
         </article>
@@ -575,6 +573,7 @@
       </div>
 
     </section>
+
 
 
     <!-- ====================================================
@@ -606,6 +605,7 @@
 
       </div>
 
+
       <div class="detail-list">
 
         <article>
@@ -620,11 +620,12 @@
 
           <p>
             Offered jointly with Computer Science,
-            combining statistical foundations and
-            advanced computing.
+            combining statistical foundations
+            and advanced computing.
           </p>
 
         </article>
+
 
         <article>
 
@@ -637,7 +638,7 @@
           </h3>
 
           <p>
-            Develop applied data science and computing
+            Develop computing and applied data science
             skills without the advanced mathematics
             required by other programs.
           </p>
@@ -649,13 +650,14 @@
     </section>
 
 
+
     <!-- ====================================================
          07 / RESEARCH EXCELLENCE
          ==================================================== -->
 
     <section
       id="rankings"
-      class="panel dark metrics"
+      class="panel metrics dark"
     >
 
       <div>
@@ -671,12 +673,13 @@
         </h2>
 
         <p class="lede">
-          Our faculty advance statistical theory, develop
-          computational methods and collaborate across
-          disciplines to answer important questions.
+          Our faculty advance statistical theory,
+          develop computational methods and collaborate
+          across disciplines to answer important questions.
         </p>
 
       </div>
+
 
       <div class="metric-grid">
 
@@ -690,6 +693,7 @@
 
         </div>
 
+
         <div>
 
           <strong>#2</strong>
@@ -699,6 +703,7 @@
           </span>
 
         </div>
+
 
         <div>
 
@@ -712,11 +717,13 @@
 
       </div>
 
+
       <small>
         ShanghaiRanking Global Ranking of Academic Subjects 2026
       </small>
 
     </section>
+
 
 
     <!-- ====================================================
@@ -731,22 +738,24 @@
       <div>
 
         <div class="eyebrow">
-          Internships and Careers
+          Making Sense of Data
         </div>
 
         <h2>
-          The future
+          A world of
           <br>
-          looks bright.
+          possibilities.
         </h2>
 
         <p class="lede">
-          Statistical methods are used across technology,
-          finance, health, government, research and many
-          other sectors.
+          Data can tell us a great deal, but it does not
+          speak for itself. Statistics gives us the tools
+          to ask the right questions, uncover meaningful
+          patterns and draw reliable conclusions.
         </p>
 
       </div>
+
 
       <div class="career-list">
 
@@ -781,8 +790,9 @@
     </section>
 
 
+
     <!-- ====================================================
-         09 / ALUMNI GLOBE
+         09 / ALUMNI — INTERACTIVE GLOBE
          ==================================================== -->
 
     <section
@@ -804,29 +814,59 @@
 
         <p>
           Our alumni community connects Statistical Sciences
-          with destinations across Canada and around the world.
+          with destinations across Canada and around
+          the world.
         </p>
+
+
+        <!-- THREE ANCHORED STATISTICS -->
 
         <div class="globe-stats">
 
           <div>
-            <strong id="alumni-total">12K+</strong>
-            <span>Alumni</span>
+
+            <strong id="alumni-total">
+              12K+
+            </strong>
+
+            <span>
+              Alumni
+            </span>
+
           </div>
 
-          <div>
-            <strong id="country-total">47</strong>
-            <span>Countries</span>
-          </div>
 
           <div>
-            <strong id="city-total">212+</strong>
-            <span>Destinations</span>
+
+            <strong id="country-total">
+              47
+            </strong>
+
+            <span>
+              Countries
+            </span>
+
+          </div>
+
+
+          <div>
+
+            <strong id="city-total">
+              212+
+            </strong>
+
+            <span>
+              Destinations
+            </span>
+
           </div>
 
         </div>
 
       </div>
+
+
+      <!-- GLOBE CANVAS -->
 
       <div
         id="alumni-globe"
@@ -839,9 +879,16 @@
           aria-hidden="true"
         ></canvas>
 
+        <div
+          id="globe-tooltip"
+          class="globe-tooltip"
+          aria-hidden="true"
+        ></div>
+
       </div>
 
     </section>
+
 
 
     <!-- ====================================================
@@ -867,7 +914,9 @@
 
       </div>
 
+
       <div class="experience-grid">
+
 
         <article>
 
@@ -882,11 +931,12 @@
           <p>
             ASIP offers eligible students paid work experience
             and is available to the Statistics Major,
-            both Statistical Science Specialists and the
-            Data Science Specialist.
+            both Statistical Science Specialists and
+            the Data Science Specialist.
           </p>
 
         </article>
+
 
         <article>
 
@@ -906,6 +956,7 @@
 
         </article>
 
+
         <article>
 
           <span>
@@ -924,6 +975,7 @@
 
         </article>
 
+
         <article>
 
           <span>
@@ -935,17 +987,19 @@
           </h3>
 
           <p>
-            Explore faculty-supervised projects, summer
-            research awards and opportunities through the
-            University of Toronto Statistical Sciences
-            Research Program.
+            Work alongside world-class researchers.
+            Explore projects using data to understand
+            problems in health, the environment, finance
+            and society.
           </p>
 
         </article>
 
+
       </div>
 
     </section>
+
 
 
     <!-- ====================================================
@@ -978,6 +1032,7 @@
 
       </div>
 
+
       <div class="admissions-content">
 
         <article>
@@ -1002,6 +1057,7 @@
           </a>
 
         </article>
+
 
         <article>
 
@@ -1030,6 +1086,7 @@
     </section>
 
 
+
     <!-- ====================================================
          12 / EXPLORE AND APPLY
          ==================================================== -->
@@ -1053,6 +1110,7 @@
 
       </div>
 
+
       <div class="apply-content">
 
         <p>
@@ -1061,6 +1119,7 @@
           for complete requirements and the Program Toolkit
           for enrolment information.
         </p>
+
 
         <div class="program-codes">
 
@@ -1096,6 +1155,7 @@
 
         </div>
 
+
         <a
           class="button"
           href="https://www.statistics.utoronto.ca/undergraduate"
@@ -1108,6 +1168,7 @@
       </div>
 
     </section>
+
 
 
     <!-- ====================================================
@@ -1132,6 +1193,7 @@
 
       </div>
 
+
       <div>
 
         <span>
@@ -1148,6 +1210,7 @@
 
     </footer>
 
+
   </main>
 
 
@@ -1155,23 +1218,41 @@
        JAVASCRIPT DEPENDENCIES
        ====================================================== -->
 
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <!-- D3 is required by collision.js and the alumni globe -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
+    defer
+  ></script>
+
+  <!-- TopoJSON is required by the alumni globe -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"
+    defer
+  ></script>
 
 
   <!-- ======================================================
        SITE JAVASCRIPT
        ====================================================== -->
 
-  <!-- Interactive artwork -->
-  <script src="assets/js/statistical-landscape.js?v=1" defer></script>
+  <!-- Original D3 collision-particle hero -->
+  <script
+    src="assets/js/collision.js?v=2"
+    defer
+  ></script>
 
   <!-- Interactive alumni globe -->
-  <script src="assets/js/alumni-globe.js?v=2" defer></script>
+  <script
+    src="assets/js/alumni-globe.js?v=2"
+    defer
+  ></script>
 
-  <!-- General navigation -->
-  <script src="assets/js/main.js?v=1" defer></script>
+  <!-- General page interactions -->
+  <script
+    src="assets/js/main.js?v=1"
+    defer
+  ></script>
+
 
 </body>
-
 </html>
