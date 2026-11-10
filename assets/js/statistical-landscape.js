@@ -5,123 +5,90 @@
 
    UNDERGRADUATE DIGITAL BROCHURE
 
-   INTERACTIVE TOPOGRAPHIC LANDSCAPE
+   GENERATIVE DATA STREAM VISUALIZATION
 
    File: assets/js/statistical-landscape.js
-   Version: 8.0
+   Version: 1.0
 
-   Improvements:
-   - Reduced vertical exaggeration
-   - More balanced camera perspective
-   - Automatic terrain framing
-   - Peaks remain inside the viewport
-   - Irregular ridges and valleys preserved
-   - Crisp, thick contour lines
-   - Orange elevation highlighting
-   - Slow cinematic camera movement
-   - No motion blur
-   - Responsive desktop and mobile
+   Features:
+   - Entirely generative Canvas visualization
+   - No external images or elevation maps
+   - No Three.js or WebGL
+   - Multicoloured flowing data streams
+   - Scattered observation nodes
+   - Smooth mathematical ribbon formation
+   - Subtle continuous ambient movement
+   - Mouse-reactive collision / repulsion
+   - Soft spring recovery without bouncing
+   - Responsive desktop, tablet and mobile
    - Reduced-motion support
+   - Full-page scrolling compatibility
 
-   Requires Three.js 0.160.1 and import map.
    ========================================================== */
 
-import * as THREE from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js";
+(() => {
 
-import { LineSegments2 } from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineSegments2.js";
-
-import { LineSegmentsGeometry } from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineSegmentsGeometry.js";
-
-import { LineMaterial } from
-  "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/lines/LineMaterial.js";
+  "use strict";
 
 
-/* ==========================================================
-   01 / ELEMENTS
-   ========================================================== */
-
-const container = document.getElementById(
-  "statistical-landscape"
-);
-
-const cover = document.getElementById("cover");
-
-if (container && cover) {
-  initializeLandscape();
-}
-
-
-/* ==========================================================
-   02 / INITIALIZE
-   ========================================================== */
-
-function initializeLandscape() {
-
-  /* ========================================================
-     03 / SETTINGS
-     ======================================================== */
+  /* ==========================================================
+     01 / SETTINGS
+     ========================================================== */
 
   const SETTINGS = {
 
-    background: 0x0180a5,
+    background: "#002A5C",
 
-    /* Terrain */
+    /* Number of flowing streams */
 
-    worldWidth: 34,
-    worldDepth: 24,
+    desktopLines: 68,
+    tabletLines: 52,
+    mobileLines: 34,
 
-    verticalScale: 0.95,
+    /* Samples per stream */
 
-    /* Sampling */
+    desktopSamples: 125,
+    tabletSamples: 105,
+    mobileSamples: 85,
 
-    desktopResolution: 190,
-    tabletResolution: 135,
-    mobileResolution: 90,
+    /* Appearance */
 
-    /* Elevation contours */
+    lineWidth: 1.0,
+    lineOpacity: 0.68,
 
-    desktopContours: 38,
-    tabletContours: 28,
-    mobileContours: 19,
-
-    contourOffset: 0.035,
-
-    /* Lines */
-
-    lineWidth: 2.5,
-    mobileLineWidth: 1.8,
-
-    /* Highlight */
-
-    highlightColor: 0xff9345,
-    highlightWidth: 0.8,
-    highlightResponse: 0.15,
-
-    /* Camera */
-
-    cameraFov: 48,
+    nodeRadius: 3.2,
+    nodeOpacity: 0.92,
 
     /*
-     * Fraction of the available viewport occupied
-     * by the automatically framed landscape.
-
-     * Smaller values create more breathing room.
+     * Restrained multicolour palette.
      */
 
-    frameMargin: 0.82,
+    colors: [
+      "#51c8f0",
+      "#419be0",
+      "#54d4b1",
+      "#6fc66b",
+      "#e6d35d",
+      "#e77aaa"
+    ],
+
+    /* Ambient animation */
+
+    ambientAmplitude: 2.0,
+    ambientSpeed: 0.55,
+
+    /* Mouse interaction */
+
+    interactionRadius: 125,
+    interactionStrength: 0.20,
+    maximumDisplacement: 11,
 
     /*
-     * Slow ambient movement.
+     * Higher = faster recovery.
+     * No overshoot or elastic recoil.
      */
 
-    flyoverSpeed: 0.13,
-    flyoverDistance: 0.65,
-
-    cameraSway: 0.20,
-    cameraSwaySpeed: 0.11,
+    recovery: 0.17,
 
     /* Rendering */
 
@@ -130,1159 +97,966 @@ function initializeLandscape() {
   };
 
 
-  /* ========================================================
-     04 / COVER POSITIONING
-     ======================================================== */
+  /* ==========================================================
+     02 / ELEMENTS AND INITIALIZATION
+     ========================================================== */
 
-  Object.assign(container.style, {
+  const cover = document.getElementById("cover");
+
+  if (!cover) {
+    console.warn(
+      "[statistical landscape] Cover element not found."
+    );
+    return;
+  }
+
+
+  /* ==========================================================
+     03 / CLEAN UP PREVIOUS TOPOGRAPHY HTML
+
+     Preserve the University branding, title and
+     undergraduate program information.
+
+     Remove the previous image-based visualization.
+     ========================================================== */
+
+  const oldExperience = cover.querySelector(
+    ".topo-experience"
+  );
+
+  if (oldExperience) {
+
+    const preservedElements = [
+      ".cover-top",
+      ".cover-bottom",
+      ".down"
+    ];
+
+    for (const selector of preservedElements) {
+
+      const element = oldExperience.querySelector(
+        selector
+      );
+
+      if (element) {
+        cover.appendChild(element);
+      }
+
+    }
+
+    oldExperience.remove();
+  }
+
+
+  /* Remove any previous topographic artwork or controls. */
+
+  cover.querySelector(
+    ".topo-readout"
+  )?.remove();
+
+  cover.querySelector(
+    ".topo-footer"
+  )?.remove();
+
+
+  /* ==========================================================
+     04 / CREATE CANVAS LAYER
+     ========================================================== */
+
+  cover.style.backgroundColor =
+    SETTINGS.background;
+
+  cover.style.position = "relative";
+
+  cover.style.isolation = "isolate";
+
+  const previousCanvas =
+    cover.querySelector("#statistical-landscape");
+
+  previousCanvas?.remove();
+
+
+  const layer = document.createElement("div");
+
+  layer.id = "statistical-landscape";
+
+  Object.assign(layer.style, {
+
     position: "absolute",
+
     inset: "0",
+
     width: "100%",
+
     height: "100%",
+
     zIndex: "1",
+
     overflow: "hidden",
-    cursor: "crosshair",
-    touchAction: "pan-y"
+
+    pointerEvents: "none",
+
+    background: SETTINGS.background
+
   });
 
 
-  /* ========================================================
-     05 / STATE
-     ======================================================== */
+  const canvas = document.createElement("canvas");
 
-  let contourLines = [];
+  canvas.id = "statistical-landscape-canvas";
 
-  let targetElevation = 0.48;
-  let currentElevation = 0.48;
+  canvas.setAttribute(
+    "aria-hidden",
+    "true"
+  );
 
-  let resolution = 0;
-  let contourCount = 0;
+  Object.assign(canvas.style, {
 
-  let viewportWidth = 1;
-  let viewportHeight = 1;
+    display: "block",
+
+    width: "100%",
+
+    height: "100%",
+
+    maxWidth: "none"
+
+  });
+
+
+  layer.appendChild(canvas);
+
+  cover.insertBefore(
+    layer,
+    cover.firstChild
+  );
+
+
+  /* Keep existing foreground elements above canvas. */
+
+  for (const selector of [
+    ".cover-top",
+    ".cover-bottom",
+    ".down"
+  ]) {
+
+    const element = cover.querySelector(selector);
+
+    if (element) {
+
+      element.style.zIndex =
+        selector === ".down" ? "5" : "3";
+
+    }
+  }
+
+
+  /* ==========================================================
+     05 / CANVAS CONTEXT
+     ========================================================== */
+
+  const ctx = canvas.getContext("2d", {
+    alpha: false,
+    desynchronized: true
+  });
+
+  if (!ctx) {
+
+    console.error(
+      "[statistical landscape] Canvas rendering unavailable."
+    );
+
+    return;
+  }
+
+
+  /* ==========================================================
+     06 / STATE
+     ========================================================== */
+
+  let width = 1;
+  let height = 1;
+
+  let dpr = 1;
+
+  let lines = [];
+
+  let lineCount = 0;
+  let sampleCount = 0;
 
   let animationFrame = null;
-  let lastFrameTime = null;
+  let lastFrame = 0;
 
   let elapsedTime = 0;
 
-  let isSectionVisible = true;
-  let currentDimensions = "";
+  let isVisible = true;
 
-  let terrainBounds = null;
+  let pointer = null;
 
   const reducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   );
 
 
-  /* ========================================================
-     06 / SCENE
-     ======================================================== */
+  /* ==========================================================
+     07 / SEEDED RANDOM NUMBER
 
-  const scene = new THREE.Scene();
+     Creates consistent line patterns across redraws.
+     ========================================================== */
 
-  scene.background = null;
+  function random(seed) {
 
+    const value = Math.sin(
+      seed * 127.1 + 311.7
+    ) * 43758.5453;
 
-  /* ========================================================
-     07 / CAMERA
-     ======================================================== */
-
-  const camera = new THREE.PerspectiveCamera(
-    SETTINGS.cameraFov,
-    1,
-    0.1,
-    250
-  );
-
-  const cameraBase = new THREE.Vector3(
-    0,
-    9,
-    23
-  );
-
-  const cameraTarget = new THREE.Vector3(
-    0,
-    2.5,
-    0
-  );
-
-  const cameraDirection = new THREE.Vector3();
-
-  camera.position.copy(cameraBase);
-  camera.lookAt(cameraTarget);
-
-
-  /* ========================================================
-     08 / RENDERER
-     ======================================================== */
-
-  let renderer;
-
-  try {
-
-    renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: "default"
-    });
-
-  } catch (error) {
-
-    console.error(
-      "Topographic landscape: WebGL unavailable.",
-      error
-    );
-
-    return;
-  }
-
-  renderer.setClearColor(
-    SETTINGS.background,
-    0
-  );
-
-  renderer.outputColorSpace =
-    THREE.SRGBColorSpace;
-
-  renderer.domElement.style.display = "block";
-  renderer.domElement.style.width = "100%";
-  renderer.domElement.style.height = "100%";
-  renderer.domElement.style.touchAction = "pan-y";
-
-  container.appendChild(renderer.domElement);
-
-
-  /* ========================================================
-     09 / TERRAIN HELPERS
-     ======================================================== */
-
-  function gaussian(
-    x, z,
-    centerX, centerZ,
-    widthX, widthZ,
-    height
-  ) {
-
-    const dx = (x - centerX) / widthX;
-    const dz = (z - centerZ) / widthZ;
-
-    return height * Math.exp(
-      -(dx * dx + dz * dz)
-    );
+    return value - Math.floor(value);
   }
 
 
-  function ridge(
-    x, z,
-    centerX, centerZ,
-    angle,
-    length, width,
-    height
-  ) {
+  /* ==========================================================
+     08 / SMOOTH CURVE INTERPOLATION
+     ========================================================== */
 
-    const dx = x - centerX;
-    const dz = z - centerZ;
+  function catmullRom(points, t) {
 
-    const cosine = Math.cos(angle);
-    const sine = Math.sin(angle);
+    const segments = points.length - 1;
 
-    const along =
-      dx * cosine + dz * sine;
-
-    const across =
-      -dx * sine + dz * cosine;
-
-    return height * Math.exp(
-      -(
-        (along * along) / (length * length) +
-        (across * across) / (width * width)
+    const position = Math.max(
+      0,
+      Math.min(
+        segments - 0.000001,
+        t * segments
       )
     );
-  }
 
+    const index = Math.floor(position);
 
-  /* ========================================================
-     10 / ASYMMETRIC TERRAIN
+    const local = position - index;
 
-     The same irregular mountain formations as Version 7,
-     with reduced vertical exaggeration.
+    const p0 = points[Math.max(0, index - 1)];
+    const p1 = points[index];
+    const p2 = points[index + 1];
+    const p3 = points[
+      Math.min(points.length - 1, index + 2)
+    ];
 
-     The geometry remains stationary.
-     ======================================================== */
+    const v0 = p0 * -0.5 + p1 * 1.5 -
+      p2 * 1.5 + p3 * 0.5;
 
-  function terrainHeight(x, z) {
+    const v1 = p0 - p1 * 2.5 +
+      p2 * 2 - p3 * 0.5;
 
-    const warpedX =
-      x +
-      1.35 * Math.sin(z * 0.43 + x * 0.12) +
-      0.55 * Math.sin(z * 1.1);
+    const v2 = -p0 * 0.5 + p2 * 0.5;
 
-    const warpedZ =
-      z +
-      1.15 * Math.cos(x * 0.31) +
-      0.45 * Math.sin(x * 0.9 + z * 0.2);
+    const v3 = p1;
 
-
-    /* Major ridges */
-
-    const mountainOne = ridge(
-      warpedX, warpedZ,
-      -10, -3,
-      0.45, 7.2, 1.8, 5.8
-    );
-
-    const mountainTwo = ridge(
-      warpedX, warpedZ,
-      -3, -7,
-      -0.35, 5.5, 1.4, 7.4
-    );
-
-    const mountainThree = ridge(
-      warpedX, warpedZ,
-      5, -1.5,
-      0.85, 6.8, 1.65, 8.6
-    );
-
-    const mountainFour = ridge(
-      warpedX, warpedZ,
-      12, -5,
-      -0.55, 4.6, 1.25, 6.9
-    );
-
-
-    /* Secondary peaks */
-
-    const peakOne = gaussian(
-      warpedX, warpedZ,
-      -13, 4,
-      2.2, 1.8, 4.1
-    );
-
-    const peakTwo = gaussian(
-      warpedX, warpedZ,
-      -5, 3,
-      1.7, 2.1, 5.4
-    );
-
-    const peakThree = gaussian(
-      warpedX, warpedZ,
-      1, -9,
-      1.5, 1.8, 4.9
-    );
-
-    const peakFour = gaussian(
-      warpedX, warpedZ,
-      10, 5,
-      2.1, 1.6, 5.6
-    );
-
-    const peakFive = gaussian(
-      warpedX, warpedZ,
-      15, 1,
-      1.5, 2.2, 4.4
-    );
-
-
-    /* Valleys */
-
-    const valleyOne = ridge(
-      warpedX, warpedZ,
-      -7, -1,
-      -0.4, 8, 0.85, -3.8
-    );
-
-    const valleyTwo = ridge(
-      warpedX, warpedZ,
-      3, 4,
-      0.65, 7, 1.1, -4.6
-    );
-
-    const valleyThree = ridge(
-      warpedX, warpedZ,
-      11, -1,
-      -0.8, 5, 0.75, -3.5
-    );
-
-
-    /* Fine irregularities */
-
-    const fineVariation =
-      0.35 * Math.sin(
-        warpedX * 0.85 +
-        warpedZ * 0.48
-      ) +
-
-      0.24 * Math.cos(
-        warpedX * 1.35 -
-        warpedZ * 0.72
-      ) +
-
-      0.15 * Math.sin(
-        warpedX * 2.1 +
-        warpedZ * 1.4
-      );
-
-
-    const elevation =
-      mountainOne +
-      mountainTwo +
-      mountainThree +
-      mountainFour +
-
-      peakOne +
-      peakTwo +
-      peakThree +
-      peakFour +
-      peakFive +
-
-      valleyOne +
-      valleyTwo +
-      valleyThree +
-
-      fineVariation;
-
-
-    return Math.max(
-      0,
-      elevation * SETTINGS.verticalScale
+    return (
+      v0 * local * local * local +
+      v1 * local * local +
+      v2 * local +
+      v3
     );
   }
 
 
-  /* ========================================================
-     11 / RESPONSIVE DIMENSIONS
-     ======================================================== */
+  /* ==========================================================
+     09 / RIBBON SHAPE
+
+     The overall trajectory follows the reference:
+
+     - Dispersed observations on the left
+     - A broad descending valley
+     - A prominent central crest
+     - A second valley
+     - An upward sweep on the right
+
+     Each stream follows the same general trajectory,
+     but occupies a different position in the ribbon.
+     ========================================================== */
+
+  const CENTER_CURVE = [
+    0.44,
+    0.48,
+    0.64,
+    0.76,
+    0.20,
+    0.34,
+    0.50,
+    -0.20
+  ];
+
+
+  const RIBBON_WIDTH = [
+    0.36,
+    0.26,
+    0.15,
+    0.105,
+    0.105,
+    0.12,
+    0.18,
+    0.34
+  ];
+
+
+  function curveY(t) {
+
+    return catmullRom(
+      CENTER_CURVE,
+      t
+    );
+  }
+
+
+  function ribbonWidth(t) {
+
+    return catmullRom(
+      RIBBON_WIDTH,
+      t
+    );
+  }
+
+
+  /* ==========================================================
+     10 / RESPONSIVE DIMENSIONS
+     ========================================================== */
 
   function getDimensions() {
 
-    const viewport = window.innerWidth;
-
-    if (viewport <= 800) {
+    if (window.innerWidth <= 600) {
 
       return [
-        SETTINGS.mobileResolution,
-        SETTINGS.mobileContours
+        SETTINGS.mobileLines,
+        SETTINGS.mobileSamples
       ];
+
     }
 
-    if (viewport <= 1200) {
+    if (window.innerWidth <= 1100) {
 
       return [
-        SETTINGS.tabletResolution,
-        SETTINGS.tabletContours
+        SETTINGS.tabletLines,
+        SETTINGS.tabletSamples
       ];
+
     }
 
     return [
-      SETTINGS.desktopResolution,
-      SETTINGS.desktopContours
+      SETTINGS.desktopLines,
+      SETTINGS.desktopSamples
     ];
+
   }
 
 
-  /* ========================================================
-     12 / SAMPLE TERRAIN
-     ======================================================== */
+  /* ==========================================================
+     11 / BUILD DATA STREAMS
+     ========================================================== */
 
-  function sampleTerrain() {
+  function buildLines() {
 
-    const heights = [];
+    const dimensions = getDimensions();
 
-    let minimum = Infinity;
-    let maximum = -Infinity;
+    lineCount = dimensions[0];
 
-    const stepX =
-      SETTINGS.worldWidth / (resolution - 1);
+    sampleCount = dimensions[1];
 
-    const stepZ =
-      SETTINGS.worldDepth / (resolution - 1);
+    lines = [];
 
-    for (let row = 0; row < resolution; row++) {
 
-      const z =
-        -SETTINGS.worldDepth / 2 +
-        row * stepZ;
-
-      const values = [];
-
-      for (let col = 0; col < resolution; col++) {
-
-        const x =
-          -SETTINGS.worldWidth / 2 +
-          col * stepX;
-
-        const height = terrainHeight(x, z);
-
-        values.push(height);
-
-        minimum = Math.min(minimum, height);
-        maximum = Math.max(maximum, height);
-      }
-
-      heights.push(values);
-    }
-
-    return {
-      heights,
-      minimum,
-      maximum,
-      stepX,
-      stepZ
-    };
-  }
-
-
-  /* ========================================================
-     13 / MARCHING SQUARES
-     ======================================================== */
-
-  function extractContourSegments(
-    terrain,
-    elevation
-  ) {
-
-    const segments = [];
-
-    const {
-      heights,
-      stepX,
-      stepZ
-    } = terrain;
-
-    const halfWidth =
-      SETTINGS.worldWidth / 2;
-
-    const halfDepth =
-      SETTINGS.worldDepth / 2;
-
-
-    function interpolate(
-      x1, z1, h1,
-      x2, z2, h2
-    ) {
-
-      const difference = h2 - h1;
-
-      const t = Math.abs(difference) < 0.000001
-        ? 0.5
-        : THREE.MathUtils.clamp(
-            (elevation - h1) / difference,
-            0,
-            1
-          );
-
-      return [
-        x1 + (x2 - x1) * t,
-        z1 + (z2 - z1) * t
-      ];
-    }
-
-
-    for (let row = 0; row < resolution - 1; row++) {
-
-      for (let col = 0; col < resolution - 1; col++) {
-
-        const x0 = -halfWidth + col * stepX;
-        const x1 = x0 + stepX;
-
-        const z0 = -halfDepth + row * stepZ;
-        const z1 = z0 + stepZ;
-
-        const A = heights[row][col];
-        const B = heights[row][col + 1];
-        const C = heights[row + 1][col + 1];
-        const D = heights[row + 1][col];
-
-        const edges = [];
-
-        if ((A < elevation) !== (B < elevation)) {
-
-          edges.push({
-            edge: 0,
-            point: interpolate(
-              x0, z0, A,
-              x1, z0, B
-            )
-          });
-        }
-
-        if ((B < elevation) !== (C < elevation)) {
-
-          edges.push({
-            edge: 1,
-            point: interpolate(
-              x1, z0, B,
-              x1, z1, C
-            )
-          });
-        }
-
-        if ((C < elevation) !== (D < elevation)) {
-
-          edges.push({
-            edge: 2,
-            point: interpolate(
-              x1, z1, C,
-              x0, z1, D
-            )
-          });
-        }
-
-        if ((D < elevation) !== (A < elevation)) {
-
-          edges.push({
-            edge: 3,
-            point: interpolate(
-              x0, z1, D,
-              x0, z0, A
-            )
-          });
-        }
-
-        if (edges.length === 2) {
-
-          segments.push([
-            edges[0].point,
-            edges[1].point
-          ]);
-
-        } else if (edges.length === 4) {
-
-          const center =
-            (A + B + C + D) / 4;
-
-          const byEdge = new Map(
-            edges.map(item => [
-              item.edge,
-              item.point
-            ])
-          );
-
-          const pairs = center >= elevation
-            ? [[0, 1], [2, 3]]
-            : [[0, 3], [1, 2]];
-
-          for (const pair of pairs) {
-
-            segments.push([
-              byEdge.get(pair[0]),
-              byEdge.get(pair[1])
-            ]);
-          }
-        }
-      }
-    }
-
-    return segments;
-  }
-
-
-  /* ========================================================
-     14 / COLOURS
-     ======================================================== */
-
-  const baseColors = [
-    new THREE.Color(0xffffff),
-    new THREE.Color(0xd4f5ff),
-    new THREE.Color(0x86e3f5),
-    new THREE.Color(0x56cde8)
-  ];
-
-  const orange = new THREE.Color(
-    SETTINGS.highlightColor
-  );
-
-
-  /* ========================================================
-     15 / LINE MATERIAL
-     ======================================================== */
-
-  function createLineMaterial(
-    color,
-    opacity
-  ) {
-
-    const isMobile =
-      window.innerWidth <= 800;
-
-    return new LineMaterial({
-
-      color,
-
-      linewidth: isMobile
-        ? SETTINGS.mobileLineWidth
-        : SETTINGS.lineWidth,
-
-      worldUnits: false,
-
-      transparent: true,
-
-      opacity,
-
-      depthWrite: false,
-
-      resolution: new THREE.Vector2(
-        viewportWidth,
-        viewportHeight
-      )
-    });
-  }
-
-
-  /* ========================================================
-     16 / CLEAR CONTOURS
-     ======================================================== */
-
-  function clearContours() {
-
-    for (const contour of contourLines) {
-
-      scene.remove(contour.line);
-
-      contour.line.geometry.dispose();
-      contour.material.dispose();
-    }
-
-    contourLines = [];
-  }
-
-
-  /* ========================================================
-     17 / BUILD CONTOURS
-     ======================================================== */
-
-  function buildContours() {
-
-    clearContours();
-
-    const terrain = sampleTerrain();
-
-    const minimum =
-      terrain.minimum +
-      (terrain.maximum - terrain.minimum) * 0.025;
-
-    const maximum =
-      terrain.minimum +
-      (terrain.maximum - terrain.minimum) * 0.965;
-
-
-    /* ------------------------------------------------------
-       Save terrain bounds for automatic camera framing.
-       ------------------------------------------------------ */
-
-    terrainBounds = new THREE.Box3(
-      new THREE.Vector3(
-        -SETTINGS.worldWidth / 2,
-        terrain.minimum,
-        -SETTINGS.worldDepth / 2
-      ),
-      new THREE.Vector3(
-        SETTINGS.worldWidth / 2,
-        terrain.maximum,
-        SETTINGS.worldDepth / 2
-      )
-    );
-
-
-    for (let i = 0; i < contourCount; i++) {
+    for (let i = 0; i < lineCount; i++) {
 
       const normalized =
-        (i + 1) / (contourCount + 1);
+        (i / (lineCount - 1)) * 2 - 1;
 
-      const elevation =
-        THREE.MathUtils.lerp(
-          minimum,
-          maximum,
-          normalized
+      const seed = i + 1;
+
+      const startRandom =
+        random(seed * 3.7);
+
+      const startX =
+        width * (
+          0.075 + startRandom * 0.20
         );
 
-      const segments =
-        extractContourSegments(
-          terrain,
-          elevation
+      const phase =
+        random(seed * 8.3) * Math.PI * 2;
+
+      const colorIndex =
+        Math.floor(
+          random(seed * 4.2) *
+          SETTINGS.colors.length
         );
 
-      const positions = [];
+      const color =
+        SETTINGS.colors[colorIndex];
 
-      for (const segment of segments) {
-
-        const [start, end] = segment;
-
-        positions.push(
-          start[0],
-          elevation + SETTINGS.contourOffset,
-          start[1],
-
-          end[0],
-          elevation + SETTINGS.contourOffset,
-          end[1]
+      const opacity =
+        SETTINGS.lineOpacity *
+        (
+          0.72 +
+          random(seed * 6.1) * 0.28
         );
+
+      const showNode =
+        random(seed * 9.1) > 0.28;
+
+
+      /*
+       * Precalculate the original trajectory.
+       */
+
+      const baseX = new Float32Array(sampleCount);
+
+      const baseY = new Float32Array(sampleCount);
+
+      const displacement = new Float32Array(sampleCount);
+
+      const currentX = new Float32Array(sampleCount);
+
+      const currentY = new Float32Array(sampleCount);
+
+
+      for (let j = 0; j < sampleCount; j++) {
+
+        const t =
+          j / (sampleCount - 1);
+
+        const x =
+          startX +
+          (width * 1.055 - startX) * t;
+
+        const center =
+          curveY(t) * height;
+
+        const spread =
+          ribbonWidth(t) * height;
+
+        /*
+         * Fine variations differentiate individual
+         * streams without disturbing the main ribbon.
+         */
+
+        const individualVariation =
+          Math.sin(
+            t * 8.0 + phase
+          ) * 1.25;
+
+        const y =
+          center +
+          normalized * spread +
+          individualVariation;
+
+        baseX[j] = x;
+        baseY[j] = y;
+
       }
 
-      if (!positions.length) continue;
 
-      const geometry =
-        new LineSegmentsGeometry();
+      lines.push({
 
-      geometry.setPositions(positions);
+        index: i,
 
-      const baseColor =
-        baseColors[i % baseColors.length].clone();
-
-      const material =
-        createLineMaterial(
-          baseColor,
-          0.85
-        );
-
-      const line =
-        new LineSegments2(
-          geometry,
-          material
-        );
-
-      line.frustumCulled = false;
-
-      scene.add(line);
-
-      contourLines.push({
-        line,
-        material,
-        baseColor,
         normalized,
-        elevation
+
+        phase,
+
+        color,
+
+        opacity,
+
+        startX,
+
+        showNode,
+
+        baseX,
+
+        baseY,
+
+        displacement,
+
+        currentX,
+
+        currentY
+
       });
+
     }
 
-    updateHighlight(true);
   }
 
 
-  /* ========================================================
-     18 / AUTOMATIC CAMERA FRAMING
+  /* ==========================================================
+     12 / MOUSE INTERACTION
 
-     Determine a safe camera distance using the actual
-     sampled terrain bounds.
+     Creates a soft local repulsion field.
 
-     All eight bounding-box corners must fit inside
-     the viewport with a margin.
+     The cursor minimally displaces nearby streams
+     perpendicular to their direction of travel.
 
-     The flyover is included in the framing allowance.
-     ======================================================== */
+     No collisions, bouncing or excessive recoil.
+     ========================================================== */
 
-  function frameTerrain() {
+  function updateInteraction(line, frameScale) {
 
-    if (!terrainBounds) return;
+    const {
 
-    const center = terrainBounds.getCenter(
-      new THREE.Vector3()
-    );
+      baseX,
+      baseY,
+      displacement,
+      currentX,
+      currentY
 
-    cameraTarget.copy(center);
+    } = line;
 
-    /*
-     * Camera direction maintains a moderately elevated
-     * perspective without returning to the old top-down
-     * view.
-     */
 
-    const aspect = viewportWidth / viewportHeight;
+    for (let j = 0; j < sampleCount; j++) {
 
-    if (aspect < 0.8) {
+      const x = baseX[j];
 
-      cameraDirection.set(0, 0.48, 1);
+      const y = baseY[j];
 
-    } else if (aspect < 1.4) {
+      let target = 0;
 
-      cameraDirection.set(0, 0.40, 1);
 
-    } else {
+      /* ------------------------------------------------------
+         Calculate local curve direction
+         ------------------------------------------------------ */
 
-      cameraDirection.set(0, 0.34, 1);
-    }
+      const previous =
+        Math.max(0, j - 1);
 
-    cameraDirection.normalize();
+      const next =
+        Math.min(sampleCount - 1, j + 1);
 
-    const corners = [];
+      const dx =
+        baseX[next] - baseX[previous];
 
-    for (const x of [
-      terrainBounds.min.x,
-      terrainBounds.max.x
-    ]) {
+      const dy =
+        baseY[next] - baseY[previous];
 
-      for (const y of [
-        terrainBounds.min.y,
-        terrainBounds.max.y
-      ]) {
+      const length =
+        Math.hypot(dx, dy) || 1;
 
-        for (const z of [
-          terrainBounds.min.z,
-          terrainBounds.max.z
-        ]) {
+      const normalX =
+        -dy / length;
 
-          corners.push(
-            new THREE.Vector3(x, y, z)
+      const normalY =
+        dx / length;
+
+
+      /* ------------------------------------------------------
+         Mouse repulsion
+         ------------------------------------------------------ */
+
+      if (pointer) {
+
+        const differenceX =
+          pointer.x - x;
+
+        const differenceY =
+          pointer.y - y;
+
+        const distance =
+          Math.hypot(
+            differenceX,
+            differenceY
           );
+
+        const radius =
+          SETTINGS.interactionRadius *
+          (width < 650 ? 0.78 : 1);
+
+        if (distance < radius * 2.5) {
+
+          const influence = Math.exp(
+            -(
+              distance * distance
+            ) /
+            (radius * radius)
+          );
+
+          /*
+           * Push the stream away from the cursor.
+           */
+
+          const signedDistance =
+            differenceX * normalX +
+            differenceY * normalY;
+
+          target =
+            -signedDistance *
+            influence *
+            SETTINGS.interactionStrength;
+
+          target = Math.max(
+            -SETTINGS.maximumDisplacement,
+            Math.min(
+              SETTINGS.maximumDisplacement,
+              target
+            )
+          );
+
         }
-      }
-    }
 
-    const margin = SETTINGS.frameMargin;
-
-    /*
-     * Test whether every bounding-box corner is inside
-     * the desired screen-space margin.
-     */
-
-    function fitsAtDistance(distance) {
-
-      camera.position.copy(
-        cameraTarget
-      ).addScaledVector(
-        cameraDirection,
-        distance
-      );
-
-      camera.lookAt(cameraTarget);
-      camera.updateMatrixWorld();
-
-      for (const corner of corners) {
-
-        const projected = corner.clone().project(camera);
-
-        if (
-          !Number.isFinite(projected.x) ||
-          !Number.isFinite(projected.y) ||
-          !Number.isFinite(projected.z) ||
-          Math.abs(projected.x) > margin ||
-          Math.abs(projected.y) > margin ||
-          projected.z >= 1 ||
-          projected.z <= -1
-        ) {
-          return false;
-        }
       }
 
-      return true;
+
+      /* ------------------------------------------------------
+         Smooth spring recovery
+
+         This interpolation is deliberately damped.
+         There is no velocity overshoot.
+         ------------------------------------------------------ */
+
+      const blend =
+        1 - Math.pow(
+          1 - SETTINGS.recovery,
+          frameScale
+        );
+
+      displacement[j] +=
+        (target - displacement[j]) * blend;
+
+
+      /* ------------------------------------------------------
+         Final position
+         ------------------------------------------------------ */
+
+      currentX[j] =
+        x + normalX * displacement[j];
+
+      currentY[j] =
+        y + normalY * displacement[j];
+
     }
 
-    /*
-     * Binary search for the nearest safe camera position.
-     */
-
-    let near = 1;
-    let far = 200;
-
-    for (let i = 0; i < 32; i++) {
-
-      const middle = (near + far) / 2;
-
-      if (fitsAtDistance(middle)) {
-        far = middle;
-      } else {
-        near = middle;
-      }
-    }
-
-    /*
-     * Additional room for camera flyover.
-     */
-
-    const safeDistance =
-      far + SETTINGS.flyoverDistance * 1.5;
-
-    cameraBase.copy(cameraTarget)
-      .addScaledVector(
-        cameraDirection,
-        safeDistance
-      );
-
-    camera.position.copy(cameraBase);
-    camera.lookAt(cameraTarget);
-
-    camera.updateMatrixWorld();
   }
 
 
-  /* ========================================================
-     19 / ORANGE ELEVATION HIGHLIGHT
-     ======================================================== */
+  /* ==========================================================
+     13 / AMBIENT MOVEMENT
 
-  function updateHighlight(
-    immediate = false
-  ) {
+     Small continuous undulations make the ribbon feel
+     alive without noticeably changing its shape.
+     ========================================================== */
 
-    if (immediate) {
-      currentElevation = targetElevation;
-    }
-
-    const width =
-      SETTINGS.highlightWidth /
-      Math.max(1, contourCount);
-
-    for (const contour of contourLines) {
-
-      const distance =
-        Math.abs(
-          contour.normalized -
-          currentElevation
-        );
-
-      const influence = Math.exp(
-        -(distance * distance) /
-        (2 * width * width)
-      );
-
-      contour.material.color
-        .copy(contour.baseColor)
-        .lerp(
-          orange,
-          influence
-        );
-
-      contour.material.opacity =
-        0.82 + influence * 0.18;
-    }
-  }
-
-
-  /* ========================================================
-     20 / POINTER INTERACTION
-     ======================================================== */
-
-  function handlePointer(event) {
-
-    const rect =
-      container.getBoundingClientRect();
-
-    if (rect.height <= 0) return;
-
-    const normalizedY =
-      (event.clientY - rect.top) /
-      rect.height;
-
-    targetElevation =
-      THREE.MathUtils.clamp(
-        1 - normalizedY,
-        0,
-        1
-      );
+  function ambientY(line, t, time) {
 
     if (reducedMotion.matches) {
-
-      updateHighlight(true);
-      renderer.render(scene, camera);
+      return 0;
     }
-  }
 
-  container.addEventListener(
-    "pointermove",
-    handlePointer,
-    { passive: true }
-  );
-
-  container.addEventListener(
-    "pointerdown",
-    handlePointer
-  );
-
-
-  /* ========================================================
-     21 / CAMERA FLYOVER
-
-     Camera moves gently toward and away from the terrain.
-
-     The terrain geometry remains stationary.
-     ======================================================== */
-
-  function updateCamera(deltaSeconds) {
-
-    if (reducedMotion.matches) return;
-
-    elapsedTime += deltaSeconds;
-
-    const forward =
+    const a =
       Math.sin(
-        elapsedTime * SETTINGS.flyoverSpeed
-      ) *
-      SETTINGS.flyoverDistance;
+        t * 5.2 +
+        line.phase +
+        time * SETTINGS.ambientSpeed
+      ) * 1.35;
 
-    const sway =
+    const b =
       Math.sin(
-        elapsedTime * SETTINGS.cameraSwaySpeed
-      ) *
-      SETTINGS.cameraSway;
+        t * 10.5 -
+        time * 0.32 +
+        line.phase * 0.65
+      ) * 0.55;
 
-    camera.position.copy(cameraBase);
+    const c =
+      Math.sin(
+        time * 0.25 +
+        line.phase
+      ) * 0.35;
 
-    camera.position.z -= forward;
-    camera.position.x += sway;
-
-    camera.lookAt(
-      cameraTarget.x + sway * 0.2,
-      cameraTarget.y,
-      cameraTarget.z
-    );
+    return (a + b + c);
   }
 
 
-  /* ========================================================
-     22 / RESIZE
-     ======================================================== */
+  /* ==========================================================
+     14 / DRAW STREAMS
+     ========================================================== */
 
-  function resize() {
+  function drawLines(frameScale, time) {
 
-    const rect =
-      container.getBoundingClientRect();
+    for (const line of lines) {
 
-    viewportWidth =
-      Math.max(1, rect.width);
+      updateInteraction(
+        line,
+        frameScale
+      );
 
-    viewportHeight =
-      Math.max(1, rect.height);
+      const {
+        currentX,
+        currentY,
+        color,
+        opacity
+      } = line;
 
-    camera.aspect =
-      viewportWidth / viewportHeight;
 
-    camera.updateProjectionMatrix();
+      ctx.beginPath();
 
-    renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio || 1,
-        SETTINGS.maxPixelRatio
-      )
-    );
+      for (let j = 0; j < sampleCount; j++) {
 
-    renderer.setSize(
-      viewportWidth,
-      viewportHeight,
-      false
-    );
+        const t =
+          j / (sampleCount - 1);
 
-    const dimensions =
-      getDimensions();
+        const x =
+          currentX[j];
 
-    const key =
-      dimensions.join("x");
+        const y =
+          currentY[j] +
+          ambientY(line, t, time);
 
-    if (key !== currentDimensions) {
 
-      currentDimensions = key;
+        if (j === 0) {
 
-      resolution = dimensions[0];
-      contourCount = dimensions[1];
+          ctx.moveTo(x, y);
 
-      buildContours();
+        } else {
+
+          ctx.lineTo(x, y);
+
+        }
+
+      }
+
+
+      ctx.strokeStyle = color;
+
+      ctx.globalAlpha = opacity;
+
+      ctx.lineWidth =
+        width < 600 ? 0.85 : SETTINGS.lineWidth;
+
+      ctx.lineCap = "round";
+
+      ctx.lineJoin = "round";
+
+      ctx.stroke();
+
     }
+
+    ctx.globalAlpha = 1;
+
+  }
+
+
+  /* ==========================================================
+     15 / DRAW OBSERVATION NODES
+
+     Small coloured points at the beginning of selected
+     streams represent individual data observations.
+     ========================================================== */
+
+  function drawNodes(time) {
+
+    for (const line of lines) {
+
+      if (!line.showNode) continue;
+
+      const x =
+        line.currentX[0];
+
+      const y =
+        line.currentY[0] +
+        ambientY(line, 0, time);
+
+      const radius =
+        width < 600
+          ? 2.3
+          : SETTINGS.nodeRadius;
+
+
+      /*
+       * Soft coloured glow.
+       */
+
+      ctx.beginPath();
+
+      ctx.arc(
+        x,
+        y,
+        radius * 2.4,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle = line.color;
+
+      ctx.globalAlpha = 0.13;
+
+      ctx.fill();
+
+
+      /*
+       * Solid observation point.
+       */
+
+      ctx.beginPath();
+
+      ctx.arc(
+        x,
+        y,
+        radius,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.globalAlpha =
+        SETTINGS.nodeOpacity;
+
+      ctx.fillStyle = line.color;
+
+      ctx.fill();
+
+    }
+
+    ctx.globalAlpha = 1;
+
+  }
+
+
+  /* ==========================================================
+     16 / SUBTLE BACKGROUND GRADIENT
+
+     Gives the data ribbon depth without introducing
+     visual clutter or competing with the heading.
+     ========================================================== */
+
+  function drawBackground() {
+
+    ctx.fillStyle =
+      SETTINGS.background;
+
+    ctx.fillRect(
+      0,
+      0,
+      width,
+      height
+    );
 
     /*
-     * Reframe whenever viewport dimensions change.
+     * Very subtle darkening behind the text area.
      */
 
-    frameTerrain();
-
-    for (const contour of contourLines) {
-
-      contour.material.resolution.set(
-        viewportWidth,
-        viewportHeight
+    const gradient =
+      ctx.createLinearGradient(
+        0,
+        0,
+        width * 0.48,
+        height * 0.55
       );
-    }
 
-    renderer.render(scene, camera);
+    gradient.addColorStop(
+      0,
+      "rgba(0, 0, 0, 0.13)"
+    );
+
+    gradient.addColorStop(
+      1,
+      "rgba(0, 0, 0, 0)"
+    );
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillRect(
+      0,
+      0,
+      width,
+      height
+    );
+
   }
 
 
-  /* ========================================================
-     23 / ANIMATION
-     ======================================================== */
+  /* ==========================================================
+     17 / RENDER FRAME
+     ========================================================== */
 
-  function animate(timestamp) {
+  function render(now) {
 
     animationFrame = null;
 
-    if (
-      !isSectionVisible ||
-      document.hidden
-    ) {
+    if (!isVisible || document.hidden) {
       return;
     }
 
-    if (lastFrameTime === null) {
-      lastFrameTime = timestamp;
+    if (!lastFrame) {
+      lastFrame = now;
     }
 
-    const deltaSeconds =
+    const delta =
       Math.min(
-        0.05,
+        50,
         Math.max(
           0,
-          (timestamp - lastFrameTime) / 1000
+          now - lastFrame
         )
       );
 
-    lastFrameTime = timestamp;
+    lastFrame = now;
+
+    const frameScale =
+      delta / 16.667;
+
+    elapsedTime +=
+      reducedMotion.matches
+        ? 0
+        : delta / 1000;
 
 
-    /* Highlight */
+    /* Clear background */
 
-    if (reducedMotion.matches) {
-
-      currentElevation = targetElevation;
-
-    } else {
-
-      const response =
-        1 - Math.pow(
-          1 - SETTINGS.highlightResponse,
-          deltaSeconds * 60
-        );
-
-      currentElevation +=
-        (targetElevation - currentElevation) *
-        response;
-    }
-
-    updateHighlight();
+    drawBackground();
 
 
-    /* Camera */
+    /* Draw continuous data ribbon */
 
-    updateCamera(deltaSeconds);
-
-
-    /* Render */
-
-    renderer.render(
-      scene,
-      camera
+    drawLines(
+      frameScale,
+      elapsedTime
     );
 
-    animationFrame =
-      requestAnimationFrame(animate);
+
+    /* Draw observation nodes */
+
+    drawNodes(elapsedTime);
+
+
+    /*
+     * Continue while visible.
+
+     * Even with no cursor interaction, the ambient
+     * ribbon movement continues.
+     */
+
+    if (!reducedMotion.matches) {
+
+      animationFrame =
+        requestAnimationFrame(render);
+
+    }
+
   }
 
 
-  /* ========================================================
-     24 / ANIMATION CONTROL
-     ======================================================== */
+  /* ==========================================================
+     18 / ANIMATION CONTROL
+     ========================================================== */
 
   function startAnimation() {
 
     if (
       animationFrame !== null ||
-      !isSectionVisible ||
+      !isVisible ||
       document.hidden
     ) {
       return;
     }
 
-    lastFrameTime = null;
+    lastFrame = 0;
 
     animationFrame =
-      requestAnimationFrame(animate);
+      requestAnimationFrame(render);
+
   }
 
 
@@ -1295,15 +1069,145 @@ function initializeLandscape() {
       );
 
       animationFrame = null;
+
     }
 
-    lastFrameTime = null;
+    lastFrame = 0;
+
   }
 
 
-  /* ========================================================
-     25 / VISIBILITY OBSERVER
-     ======================================================== */
+  /* ==========================================================
+     19 / POINTER EVENTS
+     ========================================================== */
+
+  cover.addEventListener(
+    "pointermove",
+    event => {
+
+      const rect =
+        cover.getBoundingClientRect();
+
+      pointer = {
+
+        x: event.clientX - rect.left,
+
+        y: event.clientY - rect.top
+
+      };
+
+      if (reducedMotion.matches) {
+        renderStatic();
+      }
+
+    },
+    { passive: true }
+  );
+
+
+  cover.addEventListener(
+    "pointerleave",
+    () => {
+
+      pointer = null;
+
+      if (reducedMotion.matches) {
+        renderStatic();
+      }
+
+    }
+  );
+
+
+  /* ==========================================================
+     20 / STATIC RENDER
+     ========================================================== */
+
+  function renderStatic() {
+
+    if (!lines.length) return;
+
+    drawBackground();
+
+    drawLines(
+      1,
+      0
+    );
+
+    drawNodes(0);
+
+  }
+
+
+  /* ==========================================================
+     21 / RESIZE
+     ========================================================== */
+
+  function resize() {
+
+    const rect =
+      cover.getBoundingClientRect();
+
+    const newWidth =
+      Math.max(1, rect.width);
+
+    const newHeight =
+      Math.max(1, rect.height);
+
+    const newDpr =
+      Math.min(
+        window.devicePixelRatio || 1,
+        SETTINGS.maxPixelRatio
+      );
+
+    const dimensionsChanged =
+      newWidth !== width ||
+      newHeight !== height;
+
+    width = newWidth;
+
+    height = newHeight;
+
+    dpr = newDpr;
+
+
+    canvas.width =
+      Math.round(width * dpr);
+
+    canvas.height =
+      Math.round(height * dpr);
+
+    canvas.style.width =
+      `${width}px`;
+
+    canvas.style.height =
+      `${height}px`;
+
+
+    ctx.setTransform(
+      dpr,
+      0,
+      0,
+      dpr,
+      0,
+      0
+    );
+
+
+    if (dimensionsChanged || !lines.length) {
+
+      buildLines();
+
+    }
+
+    renderStatic();
+
+  }
+
+
+  /* ==========================================================
+     22 / VISIBILITY OBSERVER
+     ========================================================== */
 
   if ("IntersectionObserver" in window) {
 
@@ -1311,28 +1215,56 @@ function initializeLandscape() {
       new IntersectionObserver(
         entries => {
 
-          isSectionVisible =
+          isVisible =
             entries[0].isIntersecting;
 
-          if (isSectionVisible) {
+          if (isVisible) {
+
             startAnimation();
+
           } else {
+
             stopAnimation();
+
           }
+
         },
         {
           root: document.querySelector(".snap"),
-          threshold: 0.05
+          threshold: 0.01
         }
       );
 
     observer.observe(cover);
+
   }
 
 
-  /* ========================================================
-     26 / REDUCED MOTION
-     ======================================================== */
+  /* ==========================================================
+     23 / PAGE VISIBILITY
+     ========================================================== */
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if (document.hidden) {
+
+        stopAnimation();
+
+      } else {
+
+        startAnimation();
+
+      }
+
+    }
+  );
+
+
+  /* ==========================================================
+     24 / REDUCED MOTION
+     ========================================================== */
 
   reducedMotion.addEventListener(
     "change",
@@ -1342,47 +1274,30 @@ function initializeLandscape() {
 
         stopAnimation();
 
-        camera.position.copy(cameraBase);
-        camera.lookAt(cameraTarget);
+        pointer = null;
 
-        updateHighlight(true);
-        renderer.render(scene, camera);
+        renderStatic();
 
       } else {
 
         startAnimation();
+
       }
+
     }
   );
 
 
-  /* ========================================================
-     27 / PAGE VISIBILITY
-     ======================================================== */
-
-  document.addEventListener(
-    "visibilitychange",
-    () => {
-
-      if (document.hidden) {
-        stopAnimation();
-      } else {
-        startAnimation();
-      }
-    }
-  );
-
-
-  /* ========================================================
-     28 / RESIZE OBSERVER
-     ======================================================== */
+  /* ==========================================================
+     25 / RESPONSIVE RESIZE OBSERVER
+     ========================================================== */
 
   if ("ResizeObserver" in window) {
 
     const observer =
       new ResizeObserver(resize);
 
-    observer.observe(container);
+    observer.observe(cover);
 
   } else {
 
@@ -1391,25 +1306,20 @@ function initializeLandscape() {
       resize,
       { passive: true }
     );
+
   }
 
 
-  /* ========================================================
-     29 / INITIALIZE
-     ======================================================== */
+  /* ==========================================================
+     26 / INITIALIZE
+     ========================================================== */
 
   resize();
-
-  updateHighlight(true);
-
-  renderer.render(
-    scene,
-    camera
-  );
 
   startAnimation();
 
   console.log(
-    `Topographic landscape v8 initialized: ${contourLines.length} elevation levels.`
+    `[statistical landscape] Initialized: ${lineCount} data streams.`
   );
-}
+
+})();
