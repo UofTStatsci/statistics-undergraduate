@@ -6,14 +6,15 @@
    UNDERGRADUATE DIGITAL BROCHURE
 
    File: assets/css/main.css
-   Version: 5.0
+   Version: 6.0
 
    Updates:
-   - Pantone-inspired cover blue: #002A5C
-   - Subdued topographic artwork
-   - Reduced orange overlay opacity
-   - Improved headline legibility
+   - Full-width responsive topographic artwork
+   - Feathered image edges blending into #002A5C
+   - Single WebGL artwork and overlay composite
+   - No zoom or translation
    - Existing brochure layouts preserved
+   - Interactive alumni globe preserved
    ========================================================== */
 
 
@@ -341,7 +342,6 @@ img {
   flex: 1 1 auto;
 
   width: 100%;
-
   min-height: 0;
 
   overflow: hidden;
@@ -351,21 +351,25 @@ img {
 
 
 /* ==========================================================
-   10 / TOPOGRAPHIC ARTWORK
+   10 / FULL-WIDTH TOPOGRAPHIC ARTWORK
    ========================================================== */
 
 .topo-section .topo-art {
   position: relative;
 
+  display: block;
+
   width: 100%;
 
   aspect-ratio: 2048 / 1365;
 
-  flex: none;
+  flex: 0 0 auto;
 
   overflow: hidden;
 
   isolation: isolate;
+
+  background: var(--pantone-blue);
 
   cursor: ns-resize;
 
@@ -373,7 +377,37 @@ img {
 
   outline: none;
 
-  background: var(--pantone-blue);
+  transform: none !important;
+}
+
+
+/* ----------------------------------------------------------
+   Feathered vertical edges
+
+   Smoothly blends the topographic artwork into the
+   surrounding institutional blue.
+
+   The fade applies equally to the artwork and overlay.
+   ---------------------------------------------------------- */
+
+.topo-section .topo-art {
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000000 11%,
+      #000000 89%,
+      transparent 100%
+    );
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000000 11%,
+      #000000 89%,
+      transparent 100%
+    );
 }
 
 .topo-section .topo-art:focus-visible {
@@ -383,13 +417,56 @@ img {
 
 
 /* ----------------------------------------------------------
-   Original artwork
+   Source image
 
-   The reduced opacity allows the Pantone blue background
-   to blend through the dark portions of the image.
+   Displayed as a fallback before WebGL initialization.
    ---------------------------------------------------------- */
 
-.topo-section .topo-art img,
+.topo-section .topo-art img {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: fill;
+
+  opacity: 0.21;
+
+  user-select: none;
+
+  -webkit-user-drag: none;
+
+  pointer-events: none;
+
+  transition: none;
+}
+
+
+/*
+ * Once WebGL is ready, the original image is rendered
+ * inside the canvas. Hide the HTML image to prevent
+ * duplicate rendering.
+ */
+
+.topo-section .topo-art.topo-webgl-ready img {
+  opacity: 0;
+}
+
+
+/* ----------------------------------------------------------
+   Unified WebGL canvas
+
+   The canvas renders:
+   - Original artwork
+   - Orange elevation highlight
+   - Subtle flowing displacement
+
+   All three effects share the same UV coordinates.
+   ---------------------------------------------------------- */
+
 .topo-section .topo-art canvas {
   position: absolute;
   inset: 0;
@@ -398,32 +475,14 @@ img {
 
   width: 100%;
   height: 100%;
-}
 
-.topo-section .topo-art img {
-  object-fit: fill;
+  max-width: none;
 
-  opacity: 0.58;
-
-  user-select: none;
-
-  -webkit-user-drag: none;
+  opacity: 1;
 
   pointer-events: none;
-}
 
-
-/* ----------------------------------------------------------
-   Orange JavaScript elevation overlay
-
-   Reduced opacity keeps the highlighted contours
-   visible without overpowering the typography.
-   ---------------------------------------------------------- */
-
-.topo-section .topo-art canvas {
-  pointer-events: none;
-
-  opacity: 0.72;
+  transition: none;
 }
 
 
@@ -472,7 +531,7 @@ img {
 
 
 /* ----------------------------------------------------------
-   Main heading
+   Main headline
    ---------------------------------------------------------- */
 
 .topo-section .cover h1 {
@@ -1276,14 +1335,6 @@ img {
 
   .topo-section .cover h1 {
     font-size: clamp(3rem, 10vw, 5.2rem);
-  }
-
-  .topo-section .topo-art img {
-    opacity: 0.50;
-  }
-
-  .topo-section .topo-art canvas {
-    opacity: 0.68;
   }
 
   .topo-section .cover-bottom {
