@@ -1,0 +1,1374 @@
+
+/* ==========================================================
+   U OF T STATISTICAL SCIENCES
+   UNDERGRADUATE DIGITAL BROCHURE
+
+   File: assets/css/main.css
+   Version: 1.0
+   ========================================================== */
+
+
+/* ==========================================================
+   01 / DESIGN VARIABLES
+   ========================================================== */
+
+:root {
+  --blue: #0180a5;
+  --navy: #08264b;
+  --globe-bg: #071b33;
+  --globe-land: #d9e8ed;
+
+  --black: #050505;
+  --white: #ffffff;
+  --paper: #f3f2ee;
+  --grey: #b9b9b9;
+
+  --page-padding: 7vw;
+  --section-top: 12vh;
+  --section-bottom: 8vh;
+
+  --font-body: Arial, Helvetica, sans-serif;
+
+  --transition: 250ms ease;
+}
+
+
+/* ==========================================================
+   02 / RESET AND GLOBAL
+   ========================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+
+  background: var(--black);
+  color: var(--white);
+
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+img {
+  display: block;
+  height: auto;
+}
+
+::selection {
+  background: var(--blue);
+  color: var(--white);
+}
+
+
+/* ==========================================================
+   03 / ACCESSIBILITY
+   ========================================================== */
+
+.skip {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  z-index: 100;
+
+  padding: 1rem 1.5rem;
+
+  background: var(--white);
+  color: var(--black);
+
+  text-decoration: none;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 5px;
+}
+
+
+/* ==========================================================
+   04 / NAVIGATION
+   ========================================================== */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  width: 100%;
+  padding: 20px 3vw;
+
+  mix-blend-mode: difference;
+}
+
+.nav a {
+  color: var(--white);
+  text-decoration: none;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.crest {
+  padding: 5px;
+
+  border: 1px solid currentColor;
+}
+
+.nav nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nav nav a {
+  transition: opacity var(--transition);
+}
+
+
+/* ==========================================================
+   05 / FULL-PAGE SCROLLING
+   ========================================================== */
+
+.snap {
+  height: 100vh;
+  height: 100dvh;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+}
+
+.panel {
+  position: relative;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  padding:
+    var(--section-top)
+    var(--page-padding)
+    var(--section-bottom);
+
+  overflow: hidden;
+
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+
+/* ==========================================================
+   06 / COMMON TYPOGRAPHY
+   ========================================================== */
+
+.dark {
+  background: var(--black);
+}
+
+.eyebrow {
+  margin-bottom: 2rem;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+
+  opacity: 0.72;
+}
+
+.panel h2 {
+  margin: 0;
+
+  font-size: clamp(3rem, 7vw, 7rem);
+  font-weight: 800;
+
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+}
+
+.panel h3 {
+  line-height: 1.15;
+}
+
+.lede {
+  max-width: 650px;
+
+  font-size: clamp(1.1rem, 1.7vw, 1.55rem);
+  line-height: 1.55;
+}
+
+.panel p {
+  line-height: 1.55;
+}
+
+
+/* ==========================================================
+   07 / COVER
+   ========================================================== */
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 5vh 5vw;
+
+  background: var(--blue);
+}
+
+
+/* ----------------------------------------------------------
+   Interactive collision canvas
+   ---------------------------------------------------------- */
+
+.cover canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  max-width: none;
+
+  touch-action: none;
+}
+
+
+/* ----------------------------------------------------------
+   Foreground layers
+   ---------------------------------------------------------- */
+
+.cover-top,
+.cover-bottom,
+.down {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* ----------------------------------------------------------
+   Logo lockup
+   ---------------------------------------------------------- */
+
+.logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.logo-mark {
+  padding: 8px;
+
+  border: 1px solid var(--white);
+
+  font-weight: 800;
+}
+
+
+/* ----------------------------------------------------------
+   Cover title
+   ---------------------------------------------------------- */
+
+.cover h1 {
+  margin: 0.25em 0 0;
+
+  font-size: clamp(4.5rem, 10.5vw, 11rem);
+  font-weight: 900;
+
+  line-height: 0.88;
+  letter-spacing: -0.065em;
+}
+
+
+/* ----------------------------------------------------------
+   Undergraduate Programs
+   ---------------------------------------------------------- */
+
+.cover-bottom {
+  width: min(620px, 85vw);
+  padding-top: 18px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.cover-bottom p {
+  margin: 0 0 8px;
+
+  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-weight: 800;
+
+  line-height: 1.1;
+}
+
+.cover-bottom div {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cover-bottom span {
+  margin: 0 0.35rem;
+  opacity: 0.6;
+}
+
+
+/* ----------------------------------------------------------
+   Scroll arrow
+   ---------------------------------------------------------- */
+
+.down {
+  position: absolute;
+  right: 5vw;
+  bottom: 5vh;
+
+  font-size: 2rem;
+  text-decoration: none;
+
+  color: var(--white);
+}
+
+
+/* ==========================================================
+   08 / WHY STUDY STATISTICS
+   ========================================================== */
+
+.why-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.why-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: start;
+  gap: 8vw;
+}
+
+.why-heading h2 {
+  max-width: 850px;
+}
+
+.why-copy {
+  max-width: 520px;
+}
+
+.why-copy h3 {
+  margin: 0 0 1rem;
+
+  color: var(--blue);
+  font-size: clamp(1.25rem, 1.8vw, 1.8rem);
+}
+
+.why-copy p {
+  margin: 0 0 2rem;
+
+  color: #d0d0d0;
+  font-size: 1rem;
+}
+
+
+/* ==========================================================
+   09 / UNDERGRADUATE PROGRAM OVERVIEW
+   ========================================================== */
+
+.programs-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.programs-panel h2 {
+  max-width: 900px;
+}
+
+.program-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+
+  margin-top: 6vh;
+
+  background: #3d3d3d;
+  border: 1px solid #3d3d3d;
+}
+
+.program-card {
+  display: flex;
+  flex-direction: column;
+
+  min-height: 245px;
+  padding: 1.5rem;
+
+  background: #0b0b0b;
+
+  transition: background var(--transition);
+}
+
+.program-card:hover {
+  background: #121f2b;
+}
+
+.program-number {
+  color: var(--blue);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.program-card h3 {
+  margin: 1.1rem 0 0;
+
+  color: var(--blue);
+
+  font-size: clamp(1.5rem, 2.4vw, 2.8rem);
+  font-weight: 800;
+
+  letter-spacing: -0.045em;
+}
+
+.program-card h4 {
+  margin: 0.4rem 0 0;
+
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.program-card p {
+  margin: 1rem 0;
+
+  color: #cccccc;
+
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.program-card a {
+  margin-top: auto;
+  padding-top: 0.5rem;
+
+  color: var(--white);
+
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+
+/* ==========================================================
+   10 / PROGRAM DETAIL SECTIONS
+   ========================================================== */
+
+.program-detail {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--paper);
+  color: #111111;
+}
+
+.program-detail.alt {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.program-detail h2 {
+  max-width: 850px;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.detail-list article {
+  padding-top: 1.5rem;
+
+  border-top: 1px solid currentColor;
+}
+
+.detail-list article > span {
+  display: block;
+
+  margin-bottom: 1rem;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.detail-list h3 {
+  margin: 0 0 1rem;
+
+  font-size: clamp(1.5rem, 2vw, 2.5rem);
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+.detail-list p {
+  max-width: 480px;
+  margin: 0;
+
+  line-height: 1.55;
+}
+
+
+/* ==========================================================
+   11 / RESEARCH RANKINGS
+   ========================================================== */
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  align-items: center;
+  gap: 8vw;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.metric-grid > div {
+  padding: 1.5rem 0 2rem;
+
+  border-top: 1px solid #555555;
+}
+
+.metric-grid strong {
+  display: block;
+
+  color: var(--blue);
+
+  font-size: clamp(3rem, 6vw, 6rem);
+  font-weight: 900;
+
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.metric-grid span {
+  display: block;
+
+  margin-top: 1rem;
+
+  color: #dddddd;
+
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.metrics small {
+  position: absolute;
+  right: var(--page-padding);
+  bottom: 4vh;
+
+  color: #aaaaaa;
+
+  font-size: 0.7rem;
+}
+
+
+/* ==========================================================
+   12 / CAREERS
+   ========================================================== */
+
+.careers-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--paper);
+  color: #111111;
+}
+
+.career-list {
+  padding-top: 1.5rem;
+
+  border-top: 1px solid #111111;
+}
+
+.career-list h3 {
+  margin: 0 0 2rem;
+
+  color: var(--blue);
+
+  font-size: 1.4rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.columns ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.columns li {
+  margin-bottom: 0.9rem;
+
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+
+/* ==========================================================
+   13 / ALUMNI — INTERACTIVE GLOBE
+   ========================================================== */
+
+.globe-panel {
+  display: grid;
+
+  grid-template-columns:
+    minmax(320px, 0.75fr)
+    minmax(0, 1.25fr);
+
+  align-items: center;
+  gap: 4vw;
+
+  width: 100%;
+
+  background: var(--globe-bg);
+}
+
+
+/* ----------------------------------------------------------
+   Globe copy — LEFT
+   ---------------------------------------------------------- */
+
+.globe-copy {
+  position: relative;
+  z-index: 2;
+
+  grid-column: 1;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.globe-copy p {
+  max-width: 480px;
+
+  color: rgba(255, 255, 255, 0.78);
+
+  line-height: 1.55;
+}
+
+
+/* ----------------------------------------------------------
+   Alumni statistics
+   ---------------------------------------------------------- */
+
+.globe-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+
+  width: 100%;
+  margin-top: 3rem;
+}
+
+.globe-stats > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.globe-stats strong {
+  color: var(--white);
+
+  font-size: clamp(2rem, 3vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.globe-stats span {
+  margin-top: 0.5rem;
+
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+
+  opacity: 0.6;
+}
+
+
+/* ----------------------------------------------------------
+   Globe — RIGHT
+   ---------------------------------------------------------- */
+
+.globe-container {
+  position: relative;
+
+  grid-column: 2;
+
+  width: 100%;
+  height: 80vh;
+  min-width: 0;
+  min-height: 520px;
+
+  align-self: center;
+  justify-self: stretch;
+
+  cursor: grab;
+}
+
+.globe-container:active {
+  cursor: grabbing;
+}
+
+#globe-canvas {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  max-width: none;
+
+  touch-action: none;
+}
+
+
+/* ==========================================================
+   14 / EXPERIENCE AND OPPORTUNITY
+   ========================================================== */
+
+.experience-panel {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  align-items: center;
+  gap: 7vw;
+
+  background: var(--white);
+  color: #111111;
+}
+
+.experience-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.experience-grid article {
+  padding-top: 1.5rem;
+
+  border-top: 1px solid #888888;
+}
+
+.experience-grid article > span {
+  color: var(--blue);
+
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+}
+
+.experience-grid h3 {
+  margin: 1rem 0;
+
+  font-size: clamp(1.3rem, 1.8vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.experience-grid p {
+  margin: 0;
+
+  color: #444444;
+
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+
+/* ==========================================================
+   15 / ADMISSIONS
+   ========================================================== */
+
+.admissions-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--paper);
+  color: #111111;
+}
+
+.admissions-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.admissions-content article {
+  padding-top: 1.5rem;
+
+  border-top: 1px solid #999999;
+}
+
+.admissions-content h3 {
+  margin: 0 0 1rem;
+
+  color: var(--blue);
+  font-size: 1.5rem;
+}
+
+.admissions-content p {
+  margin-bottom: 1.25rem;
+
+  line-height: 1.6;
+}
+
+.admissions-content a {
+  color: #111111;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+
+/* ==========================================================
+   16 / EXPLORE AND APPLY
+   ========================================================== */
+
+.apply-panel {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--blue);
+  color: var(--white);
+}
+
+.apply-content {
+  max-width: 680px;
+}
+
+.apply-content > p {
+  max-width: 580px;
+
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.program-codes {
+  margin-top: 2rem;
+}
+
+.program-codes > div {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 1rem;
+
+  padding: 0.85rem 0;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.program-codes strong {
+  font-size: 0.82rem;
+}
+
+.program-codes span {
+  font-size: 0.85rem;
+}
+
+.button {
+  display: inline-block;
+
+  margin-top: 2rem;
+  padding: 15px 20px;
+
+  border: 1px solid var(--white);
+
+  color: var(--white);
+
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.button:hover {
+  background: var(--white);
+  color: var(--blue);
+  opacity: 1;
+}
+
+
+/* ==========================================================
+   17 / FOOTER
+   ========================================================== */
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 3rem;
+
+  min-height: 100vh;
+
+  background: var(--black);
+
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.footer strong {
+  font-size: 1.2rem;
+}
+
+.footer p {
+  color: #cccccc;
+}
+
+.footer a {
+  color: var(--white);
+}
+
+
+/* ==========================================================
+   18 / TABLET AND SMALL LAPTOP
+   ========================================================== */
+
+@media (max-width: 1100px) {
+
+  .nav nav {
+    gap: 14px;
+  }
+
+  .panel h2 {
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+  }
+
+  .program-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .programs-panel {
+    justify-content: flex-start;
+  }
+
+  .globe-panel {
+    grid-template-columns:
+      minmax(260px, 0.8fr)
+      minmax(0, 1.2fr);
+  }
+
+  .globe-stats {
+    gap: 0.8rem;
+  }
+
+  .globe-stats strong {
+    font-size: clamp(1.8rem, 2.7vw, 3rem);
+  }
+
+  .experience-panel {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4vw;
+  }
+}
+
+
+/* ==========================================================
+   19 / MOBILE
+   ========================================================== */
+
+@media (max-width: 800px) {
+
+  :root {
+    --page-padding: 7vw;
+    --section-top: 12vh;
+    --section-bottom: 7vh;
+  }
+
+  .nav nav {
+    display: none;
+  }
+
+  .panel {
+    min-height: 100dvh;
+  }
+
+  .snap {
+    scroll-snap-type: y proximity;
+  }
+
+  .panel h2 {
+    font-size: clamp(2.8rem, 10vw, 4.5rem);
+  }
+
+
+  /* --------------------------------------------------------
+     Cover
+     -------------------------------------------------------- */
+
+  .cover {
+    padding: 5vh 5vw;
+  }
+
+  .cover h1 {
+    font-size: clamp(3.1rem, 13.5vw, 6rem);
+  }
+
+  .cover-bottom {
+    width: 90%;
+  }
+
+  .cover-bottom p {
+    font-size: clamp(1.35rem, 5.5vw, 2rem);
+  }
+
+  .cover-bottom div {
+    font-size: 0.9rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Why Statistics
+     -------------------------------------------------------- */
+
+  .why-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .why-copy {
+    max-width: none;
+  }
+
+
+  /* --------------------------------------------------------
+     Programs
+     -------------------------------------------------------- */
+
+  .program-grid {
+    grid-template-columns: 1fr;
+    margin-top: 3rem;
+  }
+
+  .program-card {
+    min-height: auto;
+    padding: 1.5rem;
+  }
+
+  .program-card h3 {
+    font-size: 2rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Program details
+     -------------------------------------------------------- */
+
+  .program-detail {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 3rem;
+  }
+
+  .detail-list {
+    gap: 1.5rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Rankings
+     -------------------------------------------------------- */
+
+  .metrics {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-grid strong {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+  }
+
+  .metric-grid span {
+    font-size: 0.75rem;
+  }
+
+  .metrics small {
+    position: static;
+    display: block;
+    margin-top: 2rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Careers
+     -------------------------------------------------------- */
+
+  .careers-panel {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Alumni globe
+     -------------------------------------------------------- */
+
+  .globe-panel {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 1rem;
+  }
+
+  .globe-copy {
+    grid-column: 1;
+    max-width: none;
+  }
+
+  .globe-copy > p {
+    display: none;
+  }
+
+  .globe-stats {
+    margin-top: 1.5rem;
+    gap: 1rem;
+  }
+
+  .globe-stats strong {
+    font-size: clamp(1.8rem, 7vw, 3rem);
+  }
+
+  .globe-container {
+    grid-column: 1;
+
+    width: 100%;
+    height: 46vh;
+    min-height: 310px;
+  }
+
+
+  /* --------------------------------------------------------
+     Experience
+     -------------------------------------------------------- */
+
+  .experience-panel {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .experience-grid {
+    gap: 1.5rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Admissions
+     -------------------------------------------------------- */
+
+  .admissions-panel {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Apply
+     -------------------------------------------------------- */
+
+  .apply-panel {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Footer
+     -------------------------------------------------------- */
+
+  .footer {
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+  }
+}
+
+
+/* ==========================================================
+   20 / SMALL MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+  .cover h1 {
+    font-size: 13vw;
+  }
+
+  .cover-bottom div {
+    font-size: 0.78rem;
+  }
+
+  .program-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    gap: 0.6rem;
+  }
+
+  .metric-grid strong {
+    font-size: 2.4rem;
+  }
+
+  .metric-grid span {
+    font-size: 0.68rem;
+  }
+
+  .globe-stats {
+    gap: 0.5rem;
+  }
+
+  .globe-stats strong {
+    font-size: 1.75rem;
+  }
+
+  .globe-stats span {
+    font-size: 0.6rem;
+  }
+
+  .globe-container {
+    height: 42vh;
+    min-height: 280px;
+  }
+
+  .experience-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .program-codes > div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+
+/* ==========================================================
+   21 / SHORT SCREENS AND CONTENT OVERFLOW
+   ========================================================== */
+
+@media (max-height: 750px) {
+
+  .programs-panel,
+  .experience-panel,
+  .admissions-panel,
+  .apply-panel {
+    justify-content: flex-start;
+  }
+
+  .panel {
+    scroll-snap-align: start;
+  }
+}
+
+
+/* ==========================================================
+   22 / REDUCED MOTION
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .snap {
+    scroll-snap-type: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
