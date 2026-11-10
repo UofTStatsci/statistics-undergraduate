@@ -5,21 +5,20 @@
 
    Interactive Alumni Destinations Globe
 
-   Based on the Graduate Programs digital brochure.
-
    Features:
-   - Orthographic globe
-   - Anonymous destination points
+   - White orthographic globe
+   - Anonymous alumni destination points
    - Toronto-to-destination connections
-   - Automatic rotation
-   - Drag interaction
-   - Momentum / inertia
-   - Friction-based deceleration
+   - Automatic rotation at 3.25 degrees/second
+   - Drag-to-rotate interaction
+   - Momentum and friction after release
+   - Immediate momentum cancellation on grab
    - Responsive canvas
+   - Pause when off-screen
    - Reduced-motion support
 
    File: assets/js/alumni-globe.js
-   Version: 1.0
+   Version: 2.0
    ========================================================== */
 
 (() => {
@@ -61,7 +60,6 @@
     land: "#d9e8ed",
     blue: "#0180a5",
     darkBlue: "#071b33",
-
     landOutline: "rgba(1,128,165,0.55)",
     graticule: "rgba(1,128,165,0.16)",
     arc: "rgba(1,128,165,0.34)",
@@ -92,46 +90,25 @@
 
 
   /* ==========================================================
-     05 / ROTATION SETTINGS
+     05 / ROTATION AND MOMENTUM SETTINGS
      ========================================================== */
 
-  /*
-   * Ambient rotation in degrees per second.
-   */
-
+  // Degrees per second during idle rotation.
   const AUTO_ROTATE_SPEED = 3.25;
 
-  /*
-   * Angular movement per pixel dragged.
-   */
-
+  // Angular movement per pixel dragged.
   const DRAG_SENSITIVITY = 0.35;
 
-  /*
-   * Momentum retention per 60fps frame.
-   *
-   * Higher values = longer coast.
-   */
-
+  // Momentum retained per 60fps frame.
   const MOMENTUM_FRICTION = 0.94;
 
-  /*
-   * Minimum angular velocity before returning
-   * to ambient rotation.
-   */
-
+  // Minimum momentum before returning to idle rotation.
   const MOMENTUM_MINIMUM = 0.01;
 
-  /*
-   * Maximum angular momentum per 60fps frame.
-   */
-
+  // Maximum angular momentum per 60fps frame.
   const MAX_MOMENTUM = 2.8;
 
-  /*
-   * Smoothing applied to pointer velocity.
-   */
-
+  // Smoothing of measured drag velocity.
   const MOMENTUM_SMOOTHING = 0.65;
 
 
@@ -146,12 +123,7 @@
   let land = null;
   let destinations = [];
 
-  /*
-   * Initial globe orientation.
-   *
-   * North America is prominent on load.
-   */
-
+  // Initial orientation: North America.
   const rotation = [79, -28, 0];
 
   let isDragging = false;
@@ -165,7 +137,19 @@
   let lastDragTime = null;
 
   let resizeTimer = null;
-  let isVisible = true;
+
+  /*
+   * IMPORTANT:
+   * This tracks visibility of the alumni SECTION.
+   *
+   * It is deliberately named differently from the
+   * geographic isVisible() function below.
+   */
+  let isSectionVisible = true;
+
+  const motionPreference = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
 
 
   /* ==========================================================
@@ -194,11 +178,7 @@
   }
 
   function clampLatitude() {
-    rotation[1] = clamp(
-      rotation[1],
-      -90,
-      90
-    );
+    rotation[1] = clamp(rotation[1], -90, 90);
   }
 
   function normalizeLongitude() {
@@ -211,9 +191,13 @@
   }
 
   function prefersReducedMotion() {
-    return window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    return motionPreference.matches;
+  }
+
+  function stopMomentum() {
+    hasMomentum = false;
+    momentumX = 0;
+    momentumY = 0;
   }
 
 
@@ -224,7 +208,7 @@
   async function loadData() {
 
     /* --------------------------------------------------------
-       World geography
+       World geography — required
        -------------------------------------------------------- */
 
     const worldResponse = await fetch(
@@ -239,6 +223,15 @@
 
     const worldData = await worldResponse.json();
 
+    if (
+      !worldData.objects ||
+      !worldData.objects.land
+    ) {
+      throw new Error(
+        "Invalid TopoJSON: expected objects.land"
+      );
+    }
+
     land = topojson.feature(
       worldData,
       worldData.objects.land
@@ -246,12 +239,10 @@
 
 
     /* --------------------------------------------------------
-       Anonymous alumni destinations
+       Anonymous destinations — optional
 
-       Only coordinates are used.
-
-       Names, counts, and other alumni information are
-       ignored by the visualization.
+       Only geographic coordinates are used.
+       City names and alumni counts are ignored.
        -------------------------------------------------------- */
 
     try {
@@ -267,25 +258,45 @@
 
       const data = await response.json();
 
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "alumni-cities.json must contain an array."
+        );
+      }
+
       destinations = data
-        .filter(d =>
-          Number.isFinite(Number(d.longitude)) &&
-          Number.isFinite(Number(d.latitude)) &&
-          Math.abs(Number(d.latitude)) <= 90 &&
-          Math.abs(Number(d.longitude)) <= 180
-        )
+        .filter(d => {
+          if (
+            d.longitude === null ||
+            d.longitude === undefined ||
+            d.latitude === null ||
+            d.latitude === undefined
+          ) {
+            return false;
+          }
+
+          const longitude = Number(d.longitude);
+          const latitude = Number(d.latitude);
+
+          return (
+            Number.isFinite(longitude) &&
+            Number.isFinite(latitude) &&
+            Math.abs(longitude) <= 180 &&
+            Math.abs(latitude) <= 90
+          );
+        })
         .map(d => ({
           longitude: Number(d.longitude),
           latitude: Number(d.latitude)
         }));
 
       console.log(
-        `Alumni globe: ${destinations.length} anonymous destinations loaded.`
+        `Alumni globe: loaded ${destinations.length} anonymous destinations.`
       );
 
     } catch (error) {
       console.warn(
-        "Alumni destination data unavailable. Globe will render without destination points.",
+        "Alumni destination data unavailable. Rendering globe without destination points.",
         error
       );
 
@@ -335,6 +346,9 @@
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
 
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
     context.setTransform(
       dpr, 0,
       0, dpr,
@@ -354,13 +368,22 @@
      12 / GEOGRAPHIC VISIBILITY
      ========================================================== */
 
+  /*
+   * This function determines whether a coordinate
+   * is on the visible hemisphere of the globe.
+   *
+   * It is NOT the same as isSectionVisible.
+   */
+
   function isVisible(longitude, latitude) {
     const center = projection.invert([
       width / 2,
       height / 2
     ]);
 
-    if (!center) return false;
+    if (!center) {
+      return false;
+    }
 
     return d3.geoDistance(
       center,
@@ -390,7 +413,9 @@
      ========================================================== */
 
   function drawArc(destination) {
-    if (isToronto(destination)) return;
+    if (isToronto(destination)) {
+      return;
+    }
 
     if (
       !isVisible(
@@ -411,10 +436,11 @@
     const projectedStart = projection(start);
     const projectedEnd = projection(end);
 
-    if (!projectedStart || !projectedEnd) return;
+    if (!projectedStart || !projectedEnd) {
+      return;
+    }
 
     const interpolate = d3.geoInterpolate(start, end);
-
     const steps = 50;
 
     const dx = projectedEnd[0] - projectedStart[0];
@@ -435,7 +461,6 @@
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-
       const geographicPoint = interpolate(t);
 
       if (
@@ -450,7 +475,9 @@
 
       const point = projection(geographicPoint);
 
-      if (!point) continue;
+      if (!point) {
+        continue;
+      }
 
       const arcHeight =
         4 * t * (1 - t) * lift;
@@ -491,9 +518,11 @@
       destination.latitude
     ]);
 
-    if (!point) return;
+    if (!point) {
+      return;
+    }
 
-    /* Halo */
+    /* Destination halo */
 
     context.beginPath();
 
@@ -509,7 +538,7 @@
     context.fill();
 
 
-    /* Destination */
+    /* Destination point */
 
     context.beginPath();
 
@@ -546,7 +575,9 @@
 
     const point = projection(TORONTO.coordinates);
 
-    if (!point) return;
+    if (!point) {
+      return;
+    }
 
     /* Halo */
 
@@ -564,7 +595,7 @@
     context.fill();
 
 
-    /* Main marker */
+    /* Toronto marker */
 
     context.beginPath();
 
@@ -606,11 +637,15 @@
      ========================================================== */
 
   function draw() {
-    if (!land) return;
+    if (!land) {
+      return;
+    }
 
     context.clearRect(
-      0, 0,
-      width, height
+      0,
+      0,
+      width,
+      height
     );
 
     projection.rotate(rotation);
@@ -638,7 +673,7 @@
     context.stroke();
 
 
-    /* Geographic grid */
+    /* Graticule */
 
     context.beginPath();
     path(d3.geoGraticule10());
@@ -648,7 +683,7 @@
     context.stroke();
 
 
-    /* Destination connections */
+    /* Destination arcs */
 
     for (const destination of destinations) {
       drawArc(destination);
@@ -667,7 +702,7 @@
     drawToronto();
 
 
-    /* Outer sphere */
+    /* Globe outline */
 
     context.beginPath();
     path({ type: "Sphere" });
@@ -689,14 +724,14 @@
 
     const delta = Math.min(
       50,
-      timestamp - lastFrameTime
+      Math.max(0, timestamp - lastFrameTime)
     );
 
     lastFrameTime = timestamp;
 
     const frameScale = delta / (1000 / 60);
 
-    if (!isDragging && isVisible) {
+    if (!isDragging && isSectionVisible) {
 
       /* ------------------------------------------------------
          Momentum
@@ -751,26 +786,21 @@
 
   const drag = d3.drag()
 
-    /* --------------------------------------------------------
-       Grab
-       -------------------------------------------------------- */
+    /* Grab */
 
     .on("start", () => {
       isDragging = true;
-      hasMomentum = false;
 
-      momentumX = 0;
-      momentumY = 0;
+      stopMomentum();
 
       lastDragTime = performance.now();
+      lastFrameTime = null;
 
       canvas.style.cursor = "grabbing";
     })
 
 
-    /* --------------------------------------------------------
-       Drag
-       -------------------------------------------------------- */
+    /* Drag */
 
     .on("drag", event => {
       const now = performance.now();
@@ -824,16 +854,28 @@
     })
 
 
-    /* --------------------------------------------------------
-       Release
-       -------------------------------------------------------- */
+    /* Release */
 
     .on("end", () => {
       isDragging = false;
 
-      hasMomentum =
-        Math.abs(momentumX) >= MOMENTUM_MINIMUM ||
-        Math.abs(momentumY) >= MOMENTUM_MINIMUM;
+      const releaseDelay =
+        lastDragTime === null
+          ? Infinity
+          : performance.now() - lastDragTime;
+
+      /*
+       * If the pointer was stationary before release,
+       * do not preserve an outdated flick velocity.
+       */
+
+      if (releaseDelay > 120) {
+        stopMomentum();
+      } else {
+        hasMomentum =
+          Math.abs(momentumX) >= MOMENTUM_MINIMUM ||
+          Math.abs(momentumY) >= MOMENTUM_MINIMUM;
+      }
 
       lastFrameTime = null;
       lastDragTime = null;
@@ -843,19 +885,7 @@
 
 
   /* ==========================================================
-     20 / STOP MOMENTUM
-     ========================================================== */
-
-  function stopMomentum() {
-    hasMomentum = false;
-
-    momentumX = 0;
-    momentumY = 0;
-  }
-
-
-  /* ==========================================================
-     21 / RESIZE
+     20 / RESIZE HANDLING
      ========================================================== */
 
   function handleResize() {
@@ -869,7 +899,7 @@
 
 
   /* ==========================================================
-     22 / VISIBILITY OBSERVER
+     21 / VISIBILITY OBSERVER
      ========================================================== */
 
   function observeVisibility() {
@@ -884,10 +914,13 @@
 
     const observer = new IntersectionObserver(
       entries => {
-        isVisible = entries[0].isIntersecting;
+        isSectionVisible = entries[0].isIntersecting;
         lastFrameTime = null;
       },
-      { threshold: 0.05 }
+      {
+        root: document.querySelector(".snap"),
+        threshold: 0.05
+      }
     );
 
     observer.observe(section);
@@ -895,7 +928,7 @@
 
 
   /* ==========================================================
-     23 / INITIALIZE
+     22 / INITIALIZE
      ========================================================== */
 
   async function init() {
@@ -904,7 +937,11 @@
 
       resize();
 
+      /* Drag interaction */
+
       d3.select(canvas).call(drag);
+
+      /* Stop inertia immediately on pointer down */
 
       canvas.addEventListener(
         "pointerdown",
@@ -912,17 +949,25 @@
         { passive: true }
       );
 
+      /* Responsive resize */
+
       window.addEventListener(
         "resize",
         handleResize,
         { passive: true }
       );
 
+      /* Pause animation when the section is off-screen */
+
       observeVisibility();
+
+      /* Respect reduced-motion preference */
 
       if (!prefersReducedMotion()) {
         animationFrame = requestAnimationFrame(animate);
       }
+
+      console.log("Alumni globe initialized successfully.");
 
     } catch (error) {
       console.error(
