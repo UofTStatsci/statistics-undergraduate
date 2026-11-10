@@ -6,15 +6,14 @@
    UNDERGRADUATE DIGITAL BROCHURE
 
    File: assets/css/main.css
-   Version: 4.0
+   Version: 5.0
 
-   Design:
-   - Editorial full-page layouts
-   - Interactive topographic cover artwork
-   - Image-locked elevation highlighting
-   - U of T blue, black, white and pale grey
-   - Interactive alumni globe
-   - Responsive desktop, tablet and mobile
+   Updates:
+   - Pantone-inspired cover blue: #002A5C
+   - Subdued topographic artwork
+   - Reduced orange overlay opacity
+   - Improved headline legibility
+   - Existing brochure layouts preserved
    ========================================================== */
 
 
@@ -24,16 +23,16 @@
 
 :root {
   --blue: #0180a5;
+  --pantone-blue: #002A5C;
   --navy: #08264b;
   --globe-bg: #071b33;
-  --globe-land: #d9e8ed;
 
   --black: #050505;
   --white: #ffffff;
   --paper: #f3f2ee;
   --grey: #b9b9b9;
 
-  --topo-bg: #020b10;
+  --topo-bg: #002A5C;
   --topo-orange: #ff690d;
   --topo-cyan: #67dbff;
 
@@ -275,14 +274,6 @@ img {
    07 / COVER — TOPOGRAPHIC EXPERIENCE
    ========================================================== */
 
-/*
- * The cover uses the original topographic artwork
- * as a fixed background image.
- *
- * The transparent WebGL canvas highlights elevation
- * contours without changing the source image.
- */
-
 .cover.topo-section {
   display: block;
 
@@ -296,7 +287,7 @@ img {
 
   overflow: hidden;
 
-  background: var(--topo-bg);
+  background: var(--pantone-blue);
   color: var(--white);
 
   isolation: isolate;
@@ -325,7 +316,7 @@ img {
   min-height: 100vh;
   min-height: 100dvh;
 
-  background: var(--topo-bg);
+  background: var(--pantone-blue);
 
   font-family:
     -apple-system,
@@ -355,12 +346,12 @@ img {
 
   overflow: hidden;
 
-  background: var(--topo-bg);
+  background: var(--pantone-blue);
 }
 
 
 /* ==========================================================
-   10 / ORIGINAL TOPOGRAPHIC ARTWORK
+   10 / TOPOGRAPHIC ARTWORK
    ========================================================== */
 
 .topo-section .topo-art {
@@ -381,6 +372,8 @@ img {
   touch-action: none;
 
   outline: none;
+
+  background: var(--pantone-blue);
 }
 
 .topo-section .topo-art:focus-visible {
@@ -390,7 +383,10 @@ img {
 
 
 /* ----------------------------------------------------------
-   Original artwork image
+   Original artwork
+
+   The reduced opacity allows the Pantone blue background
+   to blend through the dark portions of the image.
    ---------------------------------------------------------- */
 
 .topo-section .topo-art img,
@@ -407,6 +403,8 @@ img {
 .topo-section .topo-art img {
   object-fit: fill;
 
+  opacity: 0.58;
+
   user-select: none;
 
   -webkit-user-drag: none;
@@ -416,21 +414,22 @@ img {
 
 
 /* ----------------------------------------------------------
-   Transparent orange elevation overlay
+   Orange JavaScript elevation overlay
+
+   Reduced opacity keeps the highlighted contours
+   visible without overpowering the typography.
    ---------------------------------------------------------- */
 
 .topo-section .topo-art canvas {
   pointer-events: none;
+
+  opacity: 0.72;
 }
 
 
 /* ==========================================================
    11 / COVER FOREGROUND
    ========================================================== */
-
-/*
- * Branding and headline sit above the original artwork.
- */
 
 .topo-section .cover-top {
   position: absolute;
@@ -473,7 +472,7 @@ img {
 
 
 /* ----------------------------------------------------------
-   Main headline
+   Main heading
    ---------------------------------------------------------- */
 
 .topo-section .cover h1 {
@@ -489,63 +488,14 @@ img {
   line-height: 0.9;
   letter-spacing: -0.065em;
 
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.18);
+  text-shadow:
+    0 2px 20px rgba(0, 0, 0, 0.18),
+    0 2px 40px rgba(0, 0, 0, 0.12);
 }
 
 
 /* ==========================================================
-   12 / ELEVATION READOUT
-   ========================================================== */
-
-.topo-section .topo-readout {
-  position: absolute;
-
-  z-index: 4;
-
-  top: clamp(22px, 3.5vw, 46px);
-  right: clamp(20px, 3.5vw, 46px);
-
-  min-width: 150px;
-
-  padding: 11px 16px;
-
-  border: 1px solid rgba(103, 219, 255, 0.20);
-  border-radius: 8px;
-
-  background: rgba(1, 14, 21, 0.72);
-
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
-  pointer-events: none;
-}
-
-.topo-section .topo-readout strong {
-  display: block;
-
-  color: var(--white);
-
-  font-size: clamp(15px, 1.7vw, 23px);
-  font-weight: 550;
-
-  line-height: 1.25;
-}
-
-.topo-section .topo-readout span {
-  display: block;
-
-  margin-top: 2px;
-
-  color: #b8dce8;
-
-  font-size: clamp(12px, 1.1vw, 16px);
-
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ==========================================================
-   13 / UNDERGRADUATE PROGRAM LABEL
+   12 / UNDERGRADUATE PROGRAM LABEL
    ========================================================== */
 
 .topo-section .cover-bottom {
@@ -565,6 +515,8 @@ img {
   color: var(--white);
 
   pointer-events: none;
+
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
 }
 
 .topo-section .cover-bottom p {
@@ -590,7 +542,7 @@ img {
 
 
 /* ==========================================================
-   14 / SCROLL INDICATOR
+   13 / SCROLL INDICATOR
    ========================================================== */
 
 .topo-section .down {
@@ -609,90 +561,7 @@ img {
 
 
 /* ==========================================================
-   15 / ELEVATION CONTROLS
-   ========================================================== */
-
-.topo-section .topo-footer {
-  display: flex;
-  flex: 0 0 auto;
-
-  align-items: center;
-
-  gap: clamp(10px, 1.8vw, 22px);
-
-  min-height: 70px;
-
-  padding:
-    10px
-    clamp(16px, 3vw, 42px);
-
-  border-top: 1px solid rgba(103, 219, 255, 0.15);
-
-  background: #04151d;
-
-  color: var(--white);
-}
-
-
-/* ----------------------------------------------------------
-   Elevation label
-   ---------------------------------------------------------- */
-
-.topo-section .topo-footer label {
-  flex: 0 0 auto;
-
-  color: #b8dce8;
-
-  font-size: 13px;
-}
-
-
-/* ----------------------------------------------------------
-   Elevation slider
-   ---------------------------------------------------------- */
-
-.topo-section .topo-footer input[type="range"] {
-  flex: 1 1 120px;
-
-  min-width: 0;
-
-  accent-color: var(--topo-orange);
-
-  cursor: pointer;
-}
-
-
-/* ----------------------------------------------------------
-   Elevation percentage
-   ---------------------------------------------------------- */
-
-.topo-section .topo-footer output {
-  flex: 0 0 38px;
-
-  color: #ff9a5c;
-
-  font-size: 14px;
-  text-align: right;
-
-  font-variant-numeric: tabular-nums;
-}
-
-
-/* ----------------------------------------------------------
-   Interaction hint
-   ---------------------------------------------------------- */
-
-.topo-section .topo-hint {
-  color: #88a6b0;
-
-  font-size: 12px;
-
-  white-space: nowrap;
-}
-
-
-/* ==========================================================
-   16 / WHY STUDY STATISTICS
+   14 / WHY STUDY STATISTICS
    ========================================================== */
 
 .why-panel {
@@ -732,7 +601,7 @@ img {
 
 
 /* ==========================================================
-   17 / UNDERGRADUATE PROGRAM OVERVIEW
+   15 / UNDERGRADUATE PROGRAM OVERVIEW
    ========================================================== */
 
 .programs-panel {
@@ -820,7 +689,7 @@ img {
 
 
 /* ==========================================================
-   18 / PROGRAM DETAIL SECTIONS
+   16 / PROGRAM DETAIL SECTIONS
    ========================================================== */
 
 .program-detail {
@@ -884,7 +753,7 @@ img {
 
 
 /* ==========================================================
-   19 / RESEARCH RANKINGS
+   17 / RESEARCH RANKINGS
    ========================================================== */
 
 .metrics {
@@ -941,7 +810,7 @@ img {
 
 
 /* ==========================================================
-   20 / CAREERS
+   18 / CAREERS
    ========================================================== */
 
 .careers-panel {
@@ -988,7 +857,7 @@ img {
 
 
 /* ==========================================================
-   21 / ALUMNI — INTERACTIVE GLOBE
+   19 / ALUMNI — INTERACTIVE GLOBE
    ========================================================== */
 
 .globe-panel {
@@ -1005,11 +874,6 @@ img {
 
   background: var(--globe-bg);
 }
-
-
-/* ----------------------------------------------------------
-   Globe copy — LEFT
-   ---------------------------------------------------------- */
 
 .globe-copy {
   position: relative;
@@ -1029,11 +893,6 @@ img {
 
   line-height: 1.55;
 }
-
-
-/* ----------------------------------------------------------
-   Alumni statistics
-   ---------------------------------------------------------- */
 
 .globe-stats {
   display: grid;
@@ -1067,11 +926,6 @@ img {
 
   opacity: 0.6;
 }
-
-
-/* ----------------------------------------------------------
-   Globe — RIGHT
-   ---------------------------------------------------------- */
 
 .globe-container {
   position: relative;
@@ -1107,7 +961,7 @@ img {
 
 
 /* ==========================================================
-   22 / EXPERIENCE AND OPPORTUNITY
+   20 / EXPERIENCE AND OPPORTUNITY
    ========================================================== */
 
 .experience-panel {
@@ -1159,7 +1013,7 @@ img {
 
 
 /* ==========================================================
-   23 / ADMISSIONS
+   21 / ADMISSIONS
    ========================================================== */
 
 .admissions-panel {
@@ -1206,7 +1060,7 @@ img {
 
 
 /* ==========================================================
-   24 / EXPLORE AND APPLY
+   22 / EXPLORE AND APPLY
    ========================================================== */
 
 .apply-panel {
@@ -1280,7 +1134,7 @@ img {
 
 
 /* ==========================================================
-   25 / FOOTER
+   23 / FOOTER
    ========================================================== */
 
 .footer {
@@ -1311,7 +1165,7 @@ img {
 
 
 /* ==========================================================
-   26 / LARGE DESKTOP
+   24 / LARGE DESKTOP
    ========================================================== */
 
 @media (min-width: 1200px) {
@@ -1324,16 +1178,15 @@ img {
     padding: 5vh 5vw;
   }
 
-  .topo-section .topo-readout {
-    right: 4vw;
-    top: 4vh;
+  .topo-section .cover-bottom {
+    bottom: 5vh;
   }
 
 }
 
 
 /* ==========================================================
-   27 / TABLET AND SMALL LAPTOP
+   25 / TABLET AND SMALL LAPTOP
    ========================================================== */
 
 @media (max-width: 1100px) {
@@ -1377,7 +1230,7 @@ img {
 
 
 /* ==========================================================
-   28 / MOBILE
+   26 / MOBILE
    ========================================================== */
 
 @media (max-width: 800px) {
@@ -1425,22 +1278,12 @@ img {
     font-size: clamp(3rem, 10vw, 5.2rem);
   }
 
-  .topo-section .topo-readout {
-    top: auto;
-    right: 5vw;
-    bottom: 22px;
-
-    min-width: 110px;
-
-    padding: 8px 11px;
+  .topo-section .topo-art img {
+    opacity: 0.50;
   }
 
-  .topo-section .topo-readout strong {
-    font-size: 14px;
-  }
-
-  .topo-section .topo-readout span {
-    font-size: 12px;
+  .topo-section .topo-art canvas {
+    opacity: 0.68;
   }
 
   .topo-section .cover-bottom {
@@ -1461,31 +1304,6 @@ img {
   .topo-section .down {
     right: 5vw;
     bottom: 3vh;
-  }
-
-
-  /* --------------------------------------------------------
-     Elevation controls
-     -------------------------------------------------------- */
-
-  .topo-section .topo-footer {
-    min-height: 58px;
-
-    gap: 12px;
-
-    padding: 9px 16px;
-  }
-
-  .topo-section .topo-hint {
-    display: none;
-  }
-
-  .topo-section .topo-footer label {
-    font-size: 12px;
-  }
-
-  .topo-section .topo-footer output {
-    font-size: 13px;
   }
 
 
@@ -1660,7 +1478,7 @@ img {
 
 
 /* ==========================================================
-   29 / SMALL MOBILE
+   27 / SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
@@ -1688,25 +1506,6 @@ img {
 
   .topo-section .cover-bottom div {
     font-size: 0.75rem;
-  }
-
-  .topo-section .topo-readout {
-    min-width: 98px;
-    padding: 7px 9px;
-  }
-
-  .topo-section .topo-readout strong {
-    font-size: 12px;
-  }
-
-  .topo-section .topo-readout span {
-    font-size: 11px;
-  }
-
-  .topo-section .topo-footer {
-    gap: 8px;
-    min-height: 54px;
-    padding: 8px 12px;
   }
 
   .metric-grid {
@@ -1755,7 +1554,7 @@ img {
 
 
 /* ==========================================================
-   30 / SHORT SCREENS
+   28 / SHORT SCREENS
    ========================================================== */
 
 @media (max-height: 700px) and (min-width: 801px) {
@@ -1772,15 +1571,11 @@ img {
     bottom: 3vh;
   }
 
-  .topo-section .topo-footer {
-    min-height: 54px;
-  }
-
 }
 
 
 /* ==========================================================
-   31 / REDUCED MOTION
+   29 / REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
