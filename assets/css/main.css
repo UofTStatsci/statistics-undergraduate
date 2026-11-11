@@ -200,7 +200,7 @@ body {
   z-index: 2;
 }
 
-/* Official reverse-white logo */
+/* Official reverse-white SVG logo */
 
 .cover-top {
   width: fit-content;
@@ -643,12 +643,7 @@ body {
 
 
 /* ==========================================================
-   14. FOOTER
-   ========================================================== */
-
-
-/* ==========================================================
-   FINAL PAGE / DEPARTMENT
+   14. FINAL PAGE — DEPARTMENT / CONTACT
    ========================================================== */
 
 .footer {
@@ -664,6 +659,8 @@ body {
 
   overflow: hidden;
 }
+
+/* Contact information */
 
 .footer-content {
   display: flex;
@@ -694,13 +691,14 @@ body {
 .footer-link {
   display: inline-block;
   width: fit-content;
+
   margin-top: 1.5rem;
+  padding-bottom: 5px;
 
   color: var(--white);
   text-decoration: none;
 
-  border-bottom: 1px solid rgba(255,255,255,.6);
-  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .footer-social {
@@ -709,61 +707,40 @@ body {
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+
   opacity: 0.65;
 }
 
+/* Photograph */
+
 .footer-image {
   position: relative;
+
+  width: 100%;
   min-height: 100vh;
+
   overflow: hidden;
 }
 
 .footer-image img {
+  position: absolute;
+  inset: 0;
+
   display: block;
 
   width: 100%;
   height: 100%;
 
-  position: absolute;
-  inset: 0;
-
   object-fit: cover;
   object-position: center;
+
+  /* Avoid unwanted image stretching */
+  max-width: none;
 }
-
-/* MOBILE */
-
-@media (max-width: 800px) {
-
-  .footer {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 40vh;
-    min-height: 100vh;
-  }
-
-  .footer-content {
-    padding: 10vh 7vw 7vh;
-  }
-
-  .footer-content h2 {
-    font-size: clamp(3rem, 12vw, 5rem);
-    margin-bottom: 2rem;
-  }
-
-  .footer-social {
-    margin-top: 2rem;
-  }
-
-  .footer-image {
-    min-height: 40vh;
-  }
-
-}
-
 
 
 /* ==========================================================
-   15. MOBILE AND TABLET NAVIGATION
+   15. MOBILE AND TABLET
    Breakpoint: 800px
    ========================================================== */
 
@@ -834,13 +811,13 @@ body {
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* Closed menu: completely hidden */
+  /* Closed state: hide all text navigation */
 
   .nav nav.nav-menu {
     display: none;
   }
 
-  /* Open menu: dropdown appears */
+  /* Open state: show dropdown */
 
   .nav nav.nav-menu.is-open {
     display: flex;
@@ -883,9 +860,7 @@ body {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  /* --------------------------------------------------------
-     General panel layouts
-     -------------------------------------------------------- */
+  /* General panel layouts */
 
   .panel {
     padding: 12vh 7vw 7vh;
@@ -982,13 +957,30 @@ body {
     grid-template-columns: 1fr;
   }
 
-  /* Footer */
+  /* Footer layout */
 
   .footer {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-end;
-    gap: 3rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 40vh;
+
+    min-height: 100vh;
+  }
+
+  .footer-content {
+    padding: 10vh 7vw 7vh;
+  }
+
+  .footer-content h2 {
+    font-size: clamp(3rem, 12vw, 5rem);
+    margin-bottom: 2rem;
+  }
+
+  .footer-social {
+    margin-top: 2rem;
+  }
+
+  .footer-image {
+    min-height: 40vh;
   }
 
   /* Scroll snapping */
