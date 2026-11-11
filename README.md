@@ -1,6 +1,6 @@
 # U of T Statistical Sciences — Graduate Programs
 
-Static, template-free GitHub Pages site based on the Department of Statistical Sciences graduate brochure.
+Static, template-free GitHub Pages site for the Department of Statistical Sciences graduate brochure.
 
 ## Publish
 1. Upload all files in this folder to the root of a GitHub repository.
@@ -9,9 +9,6 @@ Static, template-free GitHub Pages site based on the Department of Statistical S
 4. Save.
 
 No build process is required.
-
-## Alumni map data
-`assets/data/alumni-locations.json` currently contains demonstration cities. Replace these with **aggregated/derived** coordinates from alumni locations.
 
 Format:
 ```json
@@ -24,7 +21,6 @@ The site loads D3 v7 and topojson-client from jsDelivr. Geographic land data is 
 ## Notes
 - Full-page behaviour uses native CSS scroll snap rather than fullPage.js.
 - The cover collision canvas is adapted to standard browser JavaScript from the supplied D3/Observable concept and uses white particles.
-- Replace the temporary text-based logo lockup with approved U of T / Statistical Sciences logo assets before production if desired.
 
 
 ## Previewing locally
