@@ -646,22 +646,120 @@ body {
    14. FOOTER
    ========================================================== */
 
+
+/* ==========================================================
+   FINAL PAGE / DEPARTMENT
+   ========================================================== */
+
 .footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
 
   min-height: 100vh;
+  padding: 0;
 
-  background: var(--black);
-
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-.footer a {
+  background: var(--undergrad-blue);
   color: var(--white);
+
+  overflow: hidden;
 }
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 10vh 7vw;
+}
+
+.footer-content .eyebrow {
+  margin-bottom: 2rem;
+}
+
+.footer-content h2 {
+  margin: 0 0 3rem;
+
+  font-size: clamp(3rem, 6vw, 6rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+}
+
+.footer-details {
+  font-size: 1rem;
+  line-height: 1.8;
+  opacity: 0.85;
+}
+
+.footer-link {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 1.5rem;
+
+  color: var(--white);
+  text-decoration: none;
+
+  border-bottom: 1px solid rgba(255,255,255,.6);
+  padding-bottom: 5px;
+}
+
+.footer-social {
+  margin-top: 4rem;
+
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.footer-image {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.footer-image img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  position: absolute;
+  inset: 0;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+
+  .footer {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 40vh;
+    min-height: 100vh;
+  }
+
+  .footer-content {
+    padding: 10vh 7vw 7vh;
+  }
+
+  .footer-content h2 {
+    font-size: clamp(3rem, 12vw, 5rem);
+    margin-bottom: 2rem;
+  }
+
+  .footer-social {
+    margin-top: 2rem;
+  }
+
+  .footer-image {
+    min-height: 40vh;
+  }
+
+}
+
 
 
 /* ==========================================================
