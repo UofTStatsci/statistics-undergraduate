@@ -4,647 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Undergraduate Programs | Department of Statistical Sciences</title>
-  <meta name="description" content="Explore undergraduate statistics and data science programs at the University of Toronto, including specialist, major and minor pathways.">
 
-<style>
-    :root {
-      --blue: #0180a5;
-      --navy: #08264b;
-      --globe-bg: #071b33;
-      --globe-land: #d9e8ed;
-      --black: #050505;
-      --white: #ffffff;
-      --paper: #f3f2ee;
-    }
+  <title>Undergraduate Programs | Statistical Sciences</title>
 
-    * { box-sizing: border-box; }
+  <meta
+    name="description"
+    content="Explore undergraduate statistics and data science programs, including specialist, major and minor pathways."
+  >
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      margin: 0;
-      background: var(--black);
-      color: var(--white);
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .skip {
-      position: fixed;
-      top: 0;
-      left: -999px;
-      z-index: 99;
-      padding: 1rem;
-      background: var(--white);
-      color: var(--black);
-    }
-
-    .skip:focus { left: 0; }
-
-    /* NAVIGATION */
-    .nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      padding: 20px 3vw;
-      mix-blend-mode: difference;
-    }
-
-    .nav a {
-      color: var(--white);
-      text-decoration: none;
-    }
-
-    .wordmark {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.78rem;
-    }
-
-    .crest {
-      padding: 5px;
-      border: 1px solid currentColor;
-    }
-
-    .nav nav {
-      display: flex;
-      gap: 22px;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    /* FULL-PAGE SCROLLING */
-    .snap {
-      height: 100vh;
-      overflow-y: auto;
-      scroll-snap-type: y mandatory;
-    }
-
-    .panel {
-      position: relative;
-      min-height: 100vh;
-      padding: 12vh 7vw 8vh;
-      overflow: hidden;
-      scroll-snap-align: start;
-    }
-
-    /* TYPOGRAPHY */
-    .dark { background: var(--black); }
-
-    .eyebrow {
-      margin-bottom: 2rem;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      opacity: 0.72;
-    }
-
-    .panel h2 {
-      margin: 0;
-      font-size: clamp(3rem, 7vw, 7rem);
-      line-height: 0.9;
-      letter-spacing: -0.055em;
-    }
-
-    .lede {
-      max-width: 650px;
-      font-size: clamp(1.1rem, 1.7vw, 1.55rem);
-      line-height: 1.55;
-    }
-
-    /* COVER */
-    .cover {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 5vh 5vw;
-      background: #002a5c;
-    }
-
-    .cover canvas {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    .cover-top,
-    .cover-bottom,
-    .down {
-      position: relative;
-      z-index: 2;
-    }
-
-    .logo-lockup {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 0.78rem;
-      line-height: 1.3;
-    }
-
-    .logo-mark {
-      padding: 8px;
-      border: 1px solid var(--white);
-      font-weight: 800;
-    }
-
-    /* Statistical Sciences heading — reduced by 50% */
-    .cover h1 {
-      width: fit-content;
-      max-width: 100%;
-      margin: 0.25em 0 0;
-      font-size: clamp(2.25rem, 6.5vw, 6rem);
-      line-height: 0.8;
-      letter-spacing: -0.065em;
-    }
-
-    .cover-bottom {
-      width: min(560px, 80vw);
-      padding-top: 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.75);
-    }
-
-    .cover-bottom p {
-      width: fit-content;
-      max-width: 100%;
-      margin: 0 0 6px;
-      font-size: clamp(1.5rem, 3vw, 3rem);
-      font-weight: 700;
-    }
-
-    .cover-bottom div {
-      width: fit-content;
-      max-width: 100%;
-      font-size: 1.15rem;
-    }
-
-    .cover-bottom span { opacity: 0.6; }
-
-    .down {
-      position: absolute;
-      right: 5vw;
-      bottom: 5vh;
-      color: var(--white);
-      font-size: 2rem;
-      text-decoration: none;
-    }
-
-    /* PROGRAM OVERVIEW */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      margin-top: 8vh;
-      background: #444444;
-    }
-
-    .cards article {
-      min-height: 300px;
-      padding: 2.2rem;
-      background: #0b0b0b;
-    }
-
-    .cards b {
-      color: var(--blue);
-      font-size: 3rem;
-    }
-
-    .cards h3 { font-size: 1.25rem; }
-
-    .cards p {
-      color: #cfcfcf;
-      line-height: 1.55;
-    }
-
-    .cards a { color: var(--white); }
-
-    /* INDIVIDUAL PROGRAMS */
-    .program {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      align-items: center;
-      gap: 8vw;
-      background: var(--paper);
-      color: #111111;
-    }
-
-    .program.alt {
-      background: var(--blue);
-      color: var(--white);
-    }
-
-    .program dl { margin: 0; }
-
-    .program dl div {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 1rem;
-      padding: 1.2rem 0;
-      border-top: 1px solid currentColor;
-    }
-
-    .program dt {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .program dd {
-      margin: 0;
-      line-height: 1.45;
-    }
-
-    /* METRICS */
-    .metrics {
-      display: grid;
-      grid-template-columns: 1fr 1.3fr;
-      align-items: center;
-      gap: 8vw;
-    }
-
-    .metric-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .metric-grid div {
-      padding: 1.5rem 1rem 2.5rem 0;
-      border-top: 1px solid #555555;
-    }
-
-    .metric-grid strong {
-      display: block;
-      color: var(--blue);
-      font-size: clamp(2.5rem, 5vw, 5rem);
-      letter-spacing: -0.05em;
-    }
-
-    .metric-grid span { line-height: 1.4; }
-
-    .metrics small {
-      position: absolute;
-      right: 7vw;
-      bottom: 4vh;
-      color: #aaaaaa;
-    }
-
-    /* ALUMNI GLOBE */
-    .globe-panel {
-      display: grid;
-      grid-template-columns:
-        minmax(320px, 0.75fr)
-        minmax(0, 1.25fr);
-      align-items: center;
-      gap: 4vw;
-      width: 100%;
-      background: var(--globe-bg);
-    }
-
-    .globe-copy {
-      position: relative;
-      z-index: 2;
-      grid-column: 1;
-      width: 100%;
-      min-width: 0;
-      max-width: 520px;
-    }
-
-    .globe-copy p {
-      max-width: 480px;
-      color: rgba(255, 255, 255, 0.78);
-      line-height: 1.55;
-    }
-
-    .globe-stats {
-      display: grid;
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-      gap: 1.5rem;
-      width: 100%;
-      margin-top: 3rem;
-    }
-
-    .globe-stats div {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .globe-stats strong {
-      color: var(--white);
-      font-size: clamp(2rem, 3vw, 4rem);
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-
-    .globe-stats span {
-      margin-top: 0.5rem;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      opacity: 0.6;
-    }
-
-    .globe-container {
-      position: relative;
-      grid-column: 2;
-      width: 100%;
-      height: 80vh;
-      min-width: 0;
-      min-height: 520px;
-      align-self: center;
-      justify-self: stretch;
-      cursor: grab;
-    }
-
-    .globe-container:active { cursor: grabbing; }
-
-    #globe-canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    /* CAREERS AND EXPERIENCE */
-    .research {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      gap: 8vw;
-      background: var(--white);
-      color: #111111;
-    }
-
-    .columns {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4vw;
-    }
-
-    .columns h3 { color: var(--blue); }
-
-    .columns p { line-height: 1.9; }
-
-    .career-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem 2rem;
-      margin: 1.2rem 0 0;
-      padding-left: 1.2rem;
-      line-height: 1.7;
-    }
-
-    .text-link {
-      display: inline-block;
-      margin-top: 0.75rem;
-      color: inherit;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 4px;
-    }
-
-    /* UNDERGRADUATE RESEARCH */
-    .city {
-      display: flex;
-      align-items: center;
-      background:
-        linear-gradient(
-          120deg,
-          var(--blue) 0 55%,
-          var(--black) 55%
-        );
-    }
-
-    .city-box { max-width: 720px; }
-
-    .city-box p {
-      font-size: 1.35rem;
-      line-height: 1.55;
-    }
-
-    /* ADMISSIONS */
-    .apply {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      gap: 8vw;
-      background: var(--blue);
-    }
-
-    .apply-copy {
-      font-size: 1.05rem;
-      line-height: 1.55;
-    }
-
-    .apply-copy li { margin-bottom: 1rem; }
-
-    .button {
-      display: inline-block;
-      margin-top: 1rem;
-      padding: 14px 18px;
-      border: 1px solid var(--white);
-      color: var(--white);
-      text-decoration: none;
-    }
-
-    .program-codes {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.7rem 1.2rem;
-      margin: 1rem 0 0;
-      padding-top: 1rem;
-      border-top: 1px solid currentColor;
-      font-size: 0.9rem;
-      line-height: 1.35;
-    }
-
-    .program-codes dt {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .program-codes dd {
-      margin: 0;
-      text-align: right;
-    }
-
-    /* FOOTER */
-    .footer {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      min-height: 100vh;
-      background: var(--black);
-      font-size: 1.1rem;
-      line-height: 1.6;
-    }
-
-    .footer a { color: var(--white); }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    /* MOBILE */
-    @media (max-width: 800px) {
-      .nav nav { display: none; }
-
-      .panel { padding: 12vh 7vw 7vh; }
-
-      .cards,
-      .program,
-      .metrics,
-      .research,
-      .apply {
-        grid-template-columns: 1fr;
-      }
-
-      .cover { padding: 5vh 5vw; }
-
-      /* Heading remains approximately half its original size */
-      .cover h1 { font-size: 10vw; }
-
-      .cards { margin-top: 4vh; }
-
-      .cards article { min-height: auto; }
-
-      .program { align-content: center; }
-
-      .metric-grid { margin-top: 4vh; }
-
-      .globe-panel {
-        grid-template-columns: 1fr;
-        align-content: center;
-        gap: 1rem;
-      }
-
-      .globe-copy {
-        grid-column: 1;
-        max-width: none;
-      }
-
-      .globe-copy h2 { font-size: 3.3rem; }
-
-      .globe-copy > p { display: none; }
-
-      .globe-stats {
-        grid-template-columns:
-          repeat(3, minmax(0, 1fr));
-        gap: 1rem;
-        margin-top: 1.5rem;
-      }
-
-      .globe-stats strong {
-        font-size: clamp(1.8rem, 8vw, 3rem);
-      }
-
-      .globe-container {
-        grid-column: 1;
-        width: 100%;
-        height: 46vh;
-        min-height: 310px;
-      }
-
-      .columns { grid-template-columns: 1fr 1fr; }
-
-      .career-list { grid-template-columns: 1fr; }
-
-      .footer {
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-end;
-        gap: 3rem;
-      }
-
-      .snap { scroll-snap-type: y proximity; }
-    }
-
-    @media (max-width: 520px) {
-      .globe-stats { gap: 0.6rem; }
-
-      .globe-stats strong { font-size: 1.8rem; }
-
-      .globe-stats span { font-size: 0.6rem; }
-
-      .globe-container {
-        height: 43vh;
-        min-height: 290px;
-      }
-
-      .columns { grid-template-columns: 1fr; }
-
-      .program-codes {
-        grid-template-columns: 1fr;
-        gap: 0.2rem;
-      }
-
-      .program-codes dd {
-        margin-bottom: 0.65rem;
-        text-align: left;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .snap { scroll-snap-type: none; }
-    }
-
-    /* Final layout refinements */
-    .globe-stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      max-width: 390px;
-    }
-
-    .globe-stats div { min-width: 0; }
-
-    .eyebrow a { color: inherit; }
-
-    .research .columns ul,
-    .city-box ul {
-      padding-left: 1.2rem;
-      line-height: 1.7;
-    }
-
-    .program .lede { max-width: 680px; }
-
-    @media (max-width: 800px) {
-      .globe-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        max-width: 360px;
-      }
-    }
-
-    @media (max-width: 520px) {
-      .program-codes {
-        grid-template-columns: 1fr;
-        gap: 0.2rem;
-      }
-
-      .program-codes dd {
-        margin-bottom: 0.65rem;
-        text-align: left;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 
 <body>
@@ -654,11 +22,6 @@
 
   <!-- NAVIGATION -->
   <header class="nav">
-    <a class="wordmark" href="#cover">
-      <span class="crest">U of T</span>
-      <span>Statistical Sciences</span>
-    </a>
-
     <nav aria-label="Primary">
       <a href="#programs">Programs</a>
       <a href="#experience">Experience</a>
@@ -672,31 +35,16 @@
     <!-- COVER -->
     <section id="cover" class="panel cover">
 
-      <canvas
-        id="collision-canvas"
-        aria-hidden="true"
-      ></canvas>
+      <canvas id="collision-canvas" aria-hidden="true"></canvas>
 
       <div class="cover-top">
-
-       <div class="logo-lockup">
-  <img
-    src="statistical%20sciences_reverse_white.png"
-    alt="University of Toronto"
-    class="cover-logo"
-  >
-
-  <span>
-    Department of Statistical Sciences<br>
-    UNIVERSITY OF TORONTO
-  </span>
-</div>
-
-        <h1>
-          STATISTICAL<br>
-          SCIENCES
-        </h1>
-
+        <img
+          id="cover-logo"
+          class="cover-logo"
+          src="statistical%20sciences_knockedout.svg"
+          alt="University of Toronto Department of Statistical Sciences"
+          draggable="false"
+        >
       </div>
 
       <div class="cover-bottom">
@@ -793,6 +141,7 @@
       </div>
 
       <dl>
+
         <div>
           <dt>Theory and Methods</dt>
           <dd>
@@ -821,6 +170,7 @@
             for complete requirements.
           </dd>
         </div>
+
       </dl>
 
     </section>
@@ -844,6 +194,7 @@
       </div>
 
       <dl>
+
         <div>
           <dt>Statistics Major</dt>
           <dd>
@@ -872,6 +223,7 @@
             for complete requirements.
           </dd>
         </div>
+
       </dl>
 
     </section>
@@ -895,6 +247,7 @@
       </div>
 
       <dl>
+
         <div>
           <dt>Data Science Specialist</dt>
           <dd>
@@ -923,6 +276,7 @@
             for complete requirements.
           </dd>
         </div>
+
       </dl>
 
     </section>
@@ -1098,6 +452,7 @@
           <li>Methodologist</li>
           <li>Financial Analyst</li>
         </ul>
+
       </div>
 
     </section>
@@ -1196,8 +551,7 @@
         <p>
           Undergraduate students can explore faculty-supervised
           projects, undergraduate summer research awards and the
-          University of Toronto Statistical Sciences Research
-          Program (UTSSRP).
+          Statistical Sciences Research Program (UTSSRP).
         </p>
 
         <a
@@ -1215,7 +569,7 @@
     <section id="apply" class="panel apply">
 
       <div>
-        <div class="eyebrow">New to U of T? Start here.</div>
+        <div class="eyebrow">New student? Start here.</div>
 
         <h2>
           Choose your<br>
@@ -1262,7 +616,7 @@
 
       <div class="apply-copy">
 
-        <div class="eyebrow">Already a U of T student?</div>
+        <div class="eyebrow">Already a student?</div>
 
         <h3>Choose your program through ACORN</h3>
 
@@ -1271,7 +625,9 @@
             Select <strong>Enrol &amp; Manage</strong> under Academics
             in the menu on the left.
           </li>
+
           <li>Click on <strong>Programs</strong>.</li>
+
           <li>
             In the <strong>Add a Program</strong> box, enter the code
             for your program.
@@ -1279,6 +635,7 @@
         </ol>
 
         <dl class="program-codes">
+
           <dt>ASSPE1687</dt>
           <dd>Data Science Specialist</dd>
 
@@ -1296,6 +653,7 @@
 
           <dt>ASMIN2289</dt>
           <dd>Statistics Minor</dd>
+
         </dl>
 
         <p>
@@ -1319,17 +677,15 @@
     <footer class="panel footer">
 
       <div>
-        <strong>Department of Statistical Sciences</strong><br>
-        University of Toronto<br>
         700 University Ave, 9th Floor<br>
         Toronto, Ontario, M5G 1Z5<br>
+
         <a href="https://www.statistics.utoronto.ca">
           statistics.utoronto.ca
         </a>
       </div>
 
       <div>
-        <span>#UofTStatsci</span><br>
         <a href="https://www.statistics.utoronto.ca/Statistics-Science-Programs">
           Undergraduate programs
         </a>
@@ -1343,8 +699,8 @@
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 
-  <!-- Existing site scripts -->
-  <script src="assets/js/collision.js?v=5"></script>
+  <!-- EXISTING SITE SCRIPTS -->
+  <script src="assets/js/collision.js?v=7"></script>
   <script src="assets/js/alumni-globe.js?v=8"></script>
   <script src="assets/js/main.js"></script>
 
