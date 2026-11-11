@@ -878,3 +878,50 @@ body {
     display: flex;
   }
 }
+
+
+/* ==========================================================
+   NAVIGATION VISIBILITY FIX
+   ========================================================== */
+
+/* DESKTOP: Full horizontal navigation */
+
+@media (min-width: 801px) {
+  .nav-toggle {
+    display: none !important;
+  }
+
+  .nav nav.nav-menu {
+    display: flex !important;
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+/* MOBILE / TABLET: Hamburger only */
+
+@media (max-width: 800px) {
+  .nav-toggle {
+    display: flex !important;
+  }
+
+  /* Hide text navigation until menu is opened */
+  .nav nav.nav-menu {
+    display: none !important;
+  }
+
+  /* Reveal links when hamburger is clicked */
+  .nav nav.nav-menu.is-open {
+    display: flex !important;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
