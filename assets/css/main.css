@@ -5,9 +5,10 @@
    MAIN STYLESHEET
    ========================================================== */
 
-/* ----------------------------------------------------------
-   VARIABLES
-   ---------------------------------------------------------- */
+
+/* ==========================================================
+   1. VARIABLES AND GLOBAL RESET
+   ========================================================== */
 
 :root {
   --blue: #0180a5;
@@ -19,10 +20,6 @@
   --white: #ffffff;
   --paper: #f3f2ee;
 }
-
-/* ----------------------------------------------------------
-   RESET / GLOBAL
-   ---------------------------------------------------------- */
 
 * {
   box-sizing: border-box;
@@ -39,9 +36,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ----------------------------------------------------------
-   ACCESSIBILITY
-   ---------------------------------------------------------- */
+
+/* ==========================================================
+   2. ACCESSIBILITY
+   ========================================================== */
 
 .skip {
   position: fixed;
@@ -69,9 +67,13 @@ body {
   border: 0;
 }
 
-/* ----------------------------------------------------------
-   NAVIGATION
-   ---------------------------------------------------------- */
+
+/* ==========================================================
+   3. NAVIGATION
+   Desktop: Horizontal links
+   Mobile: Hamburger with dropdown
+   Breakpoint: 800px
+   ========================================================== */
 
 .nav {
   position: fixed;
@@ -94,8 +96,11 @@ body {
   text-decoration: none;
 }
 
-.nav nav {
+/* Desktop navigation */
+
+.nav nav.nav-menu {
   display: flex;
+  align-items: center;
   gap: 22px;
 
   font-size: 0.78rem;
@@ -103,9 +108,16 @@ body {
   letter-spacing: 0.08em;
 }
 
-/* ----------------------------------------------------------
-   FULL-PAGE SCROLLING
-   ---------------------------------------------------------- */
+/* Hamburger button: hidden on desktop */
+
+.nav-toggle {
+  display: none;
+}
+
+
+/* ==========================================================
+   4. FULL-PAGE SCROLLING
+   ========================================================== */
 
 .snap {
   height: 100vh;
@@ -121,9 +133,10 @@ body {
   scroll-snap-align: start;
 }
 
-/* ----------------------------------------------------------
-   COMMON TYPOGRAPHY
-   ---------------------------------------------------------- */
+
+/* ==========================================================
+   5. COMMON TYPOGRAPHY
+   ========================================================== */
 
 .dark {
   background: var(--black);
@@ -131,17 +144,14 @@ body {
 
 .eyebrow {
   margin-bottom: 2rem;
-
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-
   opacity: 0.72;
 }
 
 .panel h2 {
   margin: 0;
-
   font-size: clamp(3rem, 7vw, 7rem);
   line-height: 0.9;
   letter-spacing: -0.055em;
@@ -149,13 +159,13 @@ body {
 
 .lede {
   max-width: 650px;
-
   font-size: clamp(1.1rem, 1.7vw, 1.55rem);
   line-height: 1.55;
 }
 
+
 /* ==========================================================
-   COVER
+   6. COVER
    ========================================================== */
 
 .cover {
@@ -187,9 +197,7 @@ body {
   z-index: 2;
 }
 
-/* ----------------------------------------------------------
-   Cover logo
-   ---------------------------------------------------------- */
+/* Official reverse-white logo */
 
 .cover-top {
   width: fit-content;
@@ -212,9 +220,7 @@ body {
   pointer-events: none;
 }
 
-/* ----------------------------------------------------------
-   Undergraduate program title
-   ---------------------------------------------------------- */
+/* Undergraduate program title */
 
 .cover-bottom {
   width: min(560px, 80vw);
@@ -236,7 +242,6 @@ body {
 .cover-bottom div {
   width: fit-content;
   max-width: 100%;
-
   font-size: 1.15rem;
 }
 
@@ -244,9 +249,7 @@ body {
   opacity: 0.6;
 }
 
-/* ----------------------------------------------------------
-   Scroll arrow
-   ---------------------------------------------------------- */
+/* Scroll arrow */
 
 .down {
   position: absolute;
@@ -254,13 +257,13 @@ body {
   bottom: 5vh;
 
   color: var(--white);
-
   font-size: 2rem;
   text-decoration: none;
 }
 
+
 /* ==========================================================
-   PROGRAM OVERVIEW
+   7. PROGRAM OVERVIEW
    ========================================================== */
 
 .cards {
@@ -298,8 +301,9 @@ body {
   color: var(--white);
 }
 
+
 /* ==========================================================
-   INDIVIDUAL PROGRAMS
+   8. INDIVIDUAL PROGRAMS
    ========================================================== */
 
 .program {
@@ -346,8 +350,9 @@ body {
   max-width: 680px;
 }
 
+
 /* ==========================================================
-   WHY U OF T / METRICS
+   9. WHY STUDY STATISTICS / METRICS
    ========================================================== */
 
 .metrics {
@@ -364,13 +369,11 @@ body {
 
 .metric-grid div {
   padding: 1.5rem 1rem 2.5rem 0;
-
   border-top: 1px solid #555555;
 }
 
 .metric-grid strong {
   display: block;
-
   color: var(--blue);
 
   font-size: clamp(2.5rem, 5vw, 5rem);
@@ -385,12 +388,12 @@ body {
   position: absolute;
   right: 7vw;
   bottom: 4vh;
-
   color: #aaaaaa;
 }
 
+
 /* ==========================================================
-   ALUMNI — INTERACTIVE GLOBE
+   10. ALUMNI — INTERACTIVE GLOBE
    ========================================================== */
 
 .globe-panel {
@@ -408,7 +411,7 @@ body {
   background: var(--globe-bg);
 }
 
-/* Globe copy — LEFT */
+/* Globe copy */
 
 .globe-copy {
   position: relative;
@@ -423,9 +426,7 @@ body {
 
 .globe-copy p {
   max-width: 480px;
-
   color: rgba(255, 255, 255, 0.78);
-
   line-height: 1.55;
 }
 
@@ -434,7 +435,6 @@ body {
 .globe-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-
   gap: 1.5rem;
 
   width: 100%;
@@ -445,13 +445,11 @@ body {
 .globe-stats div {
   display: flex;
   flex-direction: column;
-
   min-width: 0;
 }
 
 .globe-stats strong {
   color: var(--white);
-
   font-size: clamp(2rem, 3vw, 4rem);
   line-height: 1;
   letter-spacing: -0.04em;
@@ -459,19 +457,16 @@ body {
 
 .globe-stats span {
   margin-top: 0.5rem;
-
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-
   opacity: 0.6;
 }
 
-/* Globe — RIGHT */
+/* Globe canvas */
 
 .globe-container {
   position: relative;
-
   grid-column: 2;
 
   width: 100%;
@@ -489,19 +484,16 @@ body {
   cursor: grabbing;
 }
 
-/* Globe canvas */
-
 #globe-canvas {
   display: block;
-
   width: 100%;
   height: 100%;
-
   touch-action: none;
 }
 
+
 /* ==========================================================
-   CAREERS AND EXPERIENCE
+   11. CAREERS AND EXPERIENCE
    ========================================================== */
 
 .research {
@@ -548,12 +540,9 @@ body {
   text-underline-offset: 4px;
 }
 
-.eyebrow a {
-  color: inherit;
-}
 
 /* ==========================================================
-   UNDERGRADUATE RESEARCH
+   12. UNDERGRADUATE RESEARCH
    ========================================================== */
 
 .city {
@@ -582,8 +571,9 @@ body {
   line-height: 1.7;
 }
 
+
 /* ==========================================================
-   ADMISSIONS
+   13. ADMISSIONS
    ========================================================== */
 
 .apply {
@@ -642,8 +632,9 @@ body {
   text-align: right;
 }
 
+
 /* ==========================================================
-   FOOTER
+   14. FOOTER
    ========================================================== */
 
 .footer {
@@ -663,25 +654,152 @@ body {
   color: var(--white);
 }
 
+
 /* ==========================================================
-   MOBILE / TABLET
+   15. HAMBURGER NAVIGATION
+   ========================================================== */
+
+/* Hamburger: hidden on desktop */
+
+.nav-toggle {
+  display: none;
+}
+
+
+/* ==========================================================
+   16. TABLET AND MOBILE
+   Breakpoint: 800px
    ========================================================== */
 
 @media (max-width: 800px) {
 
-  /* Navigation */
+  /* ------------------------------------------
+     Navigation
+     ------------------------------------------ */
 
-  .nav nav {
+  .nav {
+    justify-content: flex-end;
+    align-items: flex-start;
+
+    padding: 16px 5vw;
+
+    mix-blend-mode: normal;
+  }
+
+  /* Show hamburger */
+
+  .nav-toggle {
+    display: flex;
+
+    position: relative;
+    z-index: 22;
+
+    width: 42px;
+    height: 42px;
+    padding: 10px;
+
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+
+    background: var(--undergrad-blue);
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-toggle span {
+    display: block;
+
+    width: 20px;
+    height: 2px;
+
+    background: var(--white);
+    border-radius: 2px;
+
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease;
+  }
+
+  /* Hamburger becomes X when open */
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* CLOSED: hide all text navigation */
+
+  .nav nav.nav-menu {
     display: none;
   }
 
-  /* Panels */
+  /* OPEN: show dropdown */
+
+  .nav nav.nav-menu.is-open {
+    display: flex;
+
+    position: absolute;
+    top: 68px;
+    right: 5vw;
+
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+
+    width: min(260px, 90vw);
+    padding: 10px 0;
+
+    background: rgba(0, 30, 65, 0.98);
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+
+    transform: translateY(0);
+  }
+
+  .nav nav.nav-menu a {
+    display: block;
+
+    padding: 15px 22px;
+
+    color: var(--white);
+    font-size: 0.82rem;
+    letter-spacing: 0.09em;
+
+    text-decoration: none;
+  }
+
+  .nav nav.nav-menu a:hover,
+  .nav nav.nav-menu a:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* ------------------------------------------
+     General panel layouts
+     ------------------------------------------ */
 
   .panel {
     padding: 12vh 7vw 7vh;
   }
-
-  /* Single-column layouts */
 
   .cards,
   .program,
@@ -691,7 +809,9 @@ body {
     grid-template-columns: 1fr;
   }
 
-  /* Cover */
+  /* ------------------------------------------
+     Cover
+     ------------------------------------------ */
 
   .cover {
     padding: 5vh 5vw;
@@ -702,7 +822,9 @@ body {
     max-height: 90px;
   }
 
-  /* Programs */
+  /* ------------------------------------------
+     Programs
+     ------------------------------------------ */
 
   .cards {
     margin-top: 4vh;
@@ -716,19 +838,21 @@ body {
     align-content: center;
   }
 
-  /* Metrics */
+  /* ------------------------------------------
+     Metrics
+     ------------------------------------------ */
 
   .metric-grid {
     margin-top: 4vh;
   }
 
-  /* Alumni globe */
+  /* ------------------------------------------
+     Alumni globe
+     ------------------------------------------ */
 
   .globe-panel {
     grid-template-columns: 1fr;
-
     align-content: center;
-
     gap: 1rem;
   }
 
@@ -747,9 +871,7 @@ body {
 
   .globe-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-
     gap: 1rem;
-
     margin-top: 1.5rem;
     max-width: 360px;
   }
@@ -766,37 +888,41 @@ body {
     min-height: 310px;
   }
 
-  /* Research */
+  /* ------------------------------------------
+     Research
+     ------------------------------------------ */
 
   .columns {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* Careers */
-
   .career-list {
     grid-template-columns: 1fr;
   }
 
-  /* Footer */
+  /* ------------------------------------------
+     Footer
+     ------------------------------------------ */
 
   .footer {
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-end;
-
     gap: 3rem;
   }
 
-  /* Scroll snapping */
+  /* ------------------------------------------
+     Scroll snapping
+     ------------------------------------------ */
 
   .snap {
     scroll-snap-type: y proximity;
   }
 }
 
+
 /* ==========================================================
-   SMALL MOBILE
+   17. SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
@@ -833,8 +959,49 @@ body {
   }
 }
 
+
 /* ==========================================================
-   REDUCED MOTION
+   18. DESKTOP NAVIGATION
+   Explicitly restore horizontal links above 800px
+   ========================================================== */
+
+@media (min-width: 801px) {
+
+  .nav-toggle {
+    display: none !important;
+  }
+
+  .nav nav.nav-menu {
+    display: flex !important;
+
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 22px;
+
+    width: auto;
+    padding: 0;
+
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+
+    transform: none;
+  }
+
+  .nav nav.nav-menu a {
+    padding: 0;
+  }
+}
+
+
+/* ==========================================================
+   19. REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -846,82 +1013,8 @@ body {
   .snap {
     scroll-snap-type: none;
   }
-}
-/* DESKTOP NAVIGATION */
 
-@media (min-width: 801px) {
-  .nav-toggle {
-    display: none !important;
-  }
-
-  .nav nav.nav-menu {
-    display: flex !important;
-    position: static;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: none;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-  }
-}
-
-/* MOBILE / TABLET NAVIGATION */
-
-@media (max-width: 800px) {
-  .nav-toggle {
-    display: flex;
-  }
-
-  .nav nav.nav-menu {
-    display: flex;
-  }
-}
-
-
-/* ==========================================================
-   NAVIGATION VISIBILITY FIX
-   ========================================================== */
-
-/* DESKTOP: Full horizontal navigation */
-
-@media (min-width: 801px) {
-  .nav-toggle {
-    display: none !important;
-  }
-
-  .nav nav.nav-menu {
-    display: flex !important;
-    position: static;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: none;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-  }
-}
-
-/* MOBILE / TABLET: Hamburger only */
-
-@media (max-width: 800px) {
-  .nav-toggle {
-    display: flex !important;
-  }
-
-  /* Hide text navigation until menu is opened */
-  .nav nav.nav-menu {
-    display: none !important;
-  }
-
-  /* Reveal links when hamburger is clicked */
-  .nav nav.nav-menu.is-open {
-    display: flex !important;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translateY(0);
+  .nav-toggle span {
+    transition: none;
   }
 }
