@@ -2,63 +2,68 @@
 /* ==========================================================
    U of T Statistical Sciences — Undergraduate Collision Hero
 
-   D3 particle simulation retained from the graduate brochure.
+   Recovery version: keeps the original D3 simulation and adds
+   transparent-pixel collision masks for the SVG logo and the
+   two lower cover text lines.
 
-   Preserved:
+   Original simulation settings retained:
    - Mobile <= 800px:       100 nodes
-   - Tablet 801–1200px:     200 nodes
-   - Desktop > 1200px:     400 nodes
-   - Original particle sizing, pointer repulsion, centering,
-     damping and node-to-node collision settings.
-
-   Added:
-   - SVG logo alpha mask.
-   - Glyph masks for the cover subheading.
-   - Particles collide with actual visible shapes rather than
-     rectangular image or text boundaries.
-   - Masks rebuild on resize and after fonts/images load.
+   - Tablet 801-1200px:     200 nodes
+   - Desktop > 1200px:      400 nodes
+   - Original node sizing and pointer repulsion
+   - Original centering, damping and collisions
    ========================================================== */
 
 (() => {
   "use strict";
 
-  /* CANVAS */
-
   const canvas = document.getElementById("collision-canvas");
 
   if (!canvas) {
-    console.warn("Collision canvas not found.");
+    console.warn("[collision] #collision-canvas not found.");
     return;
   }
 
   if (typeof d3 === "undefined") {
-    console.warn("D3 is not loaded.");
+    console.error("[collision] D3 is not loaded. Check the D3 script in index.html.");
     return;
   }
 
   const context = canvas.getContext("2d");
-  if (!context) return;
 
-  /* CONFIGURATION */
+  if (!context) {
+    console.error("[collision] Could not create a 2D canvas context.");
+    return;
+  }
 
-  const TEXT_CLEARANCE = 6;
-  const MASK_SCALE = 2;
-  const MASK_PADDING = 10;
-  const VELOCITY_RETENTION = 0.9;
-  const BOUNCE = 0.16;
-  const ALPHA_THRESHOLD = 48;
+  const CONFIG = {
+    clearance: 6,
+    maskScale: 2,
+    maskPadding: 12,
+    alphaThreshold: 48,
+    bounce: 0.16,
+    velocityRetention: 0.9,
+    maxSweepStep: 2.5,
+    maskRefreshDelay: 60
+  };
 
-  let width = 0;
-  let height = 0;
+  let width = 1;
+  let height = 1;
   let dpr = 1;
-
   let nodes = [];
   let simulation = null;
   let currentParticleCount = 0;
-
   let resizeTimer = null;
-  let textMasks = [];
-  let textResizeObserver = null;
+  let maskTimer = null;
+  let masks = [];
+  let observer = null;
+
+  const logo = document.getElementById("cover-logo");
+
+  const textSelectors = [
+    "#cover .cover-bottom p",
+    "#cover .cover-bottom div"
+  ];
 
   /* RESPONSIVE PARTICLE COUNT */
 
@@ -74,7 +79,7 @@
     return Math.min(width, height) / 200;
   }
 
-  /* CREATE DATA */
+  /* CREATE PARTICLE DATA */
 
   function createData() {
     const count = getParticleCount();
@@ -82,11 +87,10 @@
 
     const k = getParticleScale();
     const radius = d3.randomUniform(k, k * 4);
-    const groups = 4;
 
     return Array.from({ length: count }, (_, i) => ({
       r: radius(),
-      group: i && (i % groups + 1)
+      group: i && (i % 4 + 1)
     }));
   }
 
@@ -108,181 +112,89 @@
 
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    buildTextMasks();
+    buildMasks();
   }
 
-  /* MASK UTILITIES */
+  /* CREATE MASK CANVAS */
 
-  function parseLineHeight(style, fontSize) {
-    const value = style.lineHeight;
+  function makeMaskCanvas(w, h) {
+    const c = document.createElement("canvas");
 
-    if (!value || value === "normal") {
-      return fontSize * 1.2;
-    }
+    c.width = Math.max(1, Math.ceil(w));
+    c.height = Math.max(1, Math.ceil(h));
 
-    const parsed = parseFloat(value);
-
-    return Number.isFinite(parsed) ? parsed : fontSize * 1.2;
+    return c;
   }
 
-  function makeCanvas(widthPx, heightPx) {
-    const maskCanvas = document.createElement("canvas");
+  /* MASK POSITION */
 
-    maskCanvas.width = Math.max(1, Math.ceil(widthPx));
-    maskCanvas.height = Math.max(1, Math.ceil(heightPx));
-
-    return maskCanvas;
-  }
-
-  function getFont(style) {
-    const fontSize = parseFloat(style.fontSize) || 16;
+  function getMaskPosition(element, canvasRect) {
+    const rect = element.getBoundingClientRect();
 
     return {
-      fontSize,
-      font: `${style.fontStyle} ${style.fontVariant} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
-      letterSpacing: style.letterSpacing || "normal"
+      left: rect.left - canvasRect.left - width / 2 - CONFIG.maskPadding,
+      top: rect.top - canvasRect.top - height / 2 - CONFIG.maskPadding
     };
   }
 
-  function measureText(ctx, text) {
-    let widthPx = ctx.measureText(text).width;
+  /*
+   * Read mask pixels.
+   *
+   * If an SVG is malformed, references a cross-origin asset,
+   * or cannot be read by Canvas, the function returns null.
+   *
+   * Crucially, this does not stop the particle simulation.
+   */
 
-    if (!("letterSpacing" in ctx) && ctx._letterSpacing) {
-      widthPx += Math.max(0, text.length - 1) * ctx._letterSpacing;
-    }
-
-    return widthPx;
-  }
-
-  function wrapTextLines(ctx, text, maxWidth) {
-    const output = [];
-    const explicitLines = text.replace(/\r/g, "").split("\n");
-
-    explicitLines.forEach(paragraph => {
-      const words = paragraph.trim().split(/\s+/).filter(Boolean);
-
-      if (!words.length) {
-        output.push("");
-        return;
-      }
-
-      let line = "";
-
-      words.forEach(word => {
-        const candidate = line ? `${line} ${word}` : word;
-
-        if (line && measureText(ctx, candidate) > maxWidth) {
-          output.push(line);
-          line = word;
-        } else {
-          line = candidate;
-        }
+  function finishMask(maskCanvas, element, canvasRect) {
+    try {
+      const maskContext = maskCanvas.getContext("2d", {
+        willReadFrequently: true
       });
 
-      if (line) output.push(line);
-    });
+      if (!maskContext) return null;
 
-    return output.length ? output : [text.trim()];
-  }
+      const image = maskContext.getImageData(
+        0,
+        0,
+        maskCanvas.width,
+        maskCanvas.height
+      );
 
-  /* TEXT MASK */
+      const pos = getMaskPosition(element, canvasRect);
 
-  function buildOneTextMask(element, canvasRect) {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
+      return {
+        left: pos.left,
+        top: pos.top,
+        width: maskCanvas.width,
+        height: maskCanvas.height,
+        data: image.data
+      };
 
-    if (!rect.width || !rect.height) return null;
+    } catch (error) {
 
-    const maskCanvas = makeCanvas(
-      (rect.width + MASK_PADDING * 2) * MASK_SCALE,
-      (rect.height + MASK_PADDING * 2) * MASK_SCALE
-    );
+      console.error(
+        "[collision] Could not read logo/text mask. Check that the SVG is same-origin and has no external linked assets.",
+        error
+      );
 
-    const maskContext = maskCanvas.getContext("2d", {
-      willReadFrequently: true
-    });
-
-    if (!maskContext) return null;
-
-    const font = getFont(style);
-    const lineHeight = parseLineHeight(style, font.fontSize);
-
-    maskContext.setTransform(
-      MASK_SCALE,
-      0,
-      0,
-      MASK_SCALE,
-      MASK_PADDING * MASK_SCALE,
-      MASK_PADDING * MASK_SCALE
-    );
-
-    maskContext.font = font.font;
-    maskContext.textBaseline = "alphabetic";
-    maskContext.fillStyle = "#ffffff";
-
-    if ("fontKerning" in maskContext) {
-      maskContext.fontKerning = style.fontKerning || "auto";
+      return null;
     }
-
-    if ("letterSpacing" in maskContext && font.letterSpacing !== "normal") {
-      maskContext.letterSpacing = font.letterSpacing;
-    } else if (font.letterSpacing !== "normal") {
-      maskContext._letterSpacing = parseFloat(font.letterSpacing) || 0;
-    }
-
-    const text = (element.innerText || element.textContent || "").trim();
-
-    if (!text) return null;
-
-    const lines = wrapTextLines(maskContext, text, rect.width);
-    const align = style.textAlign;
-
-    lines.forEach((line, index) => {
-      const textWidth = measureText(maskContext, line);
-      let x = 0;
-
-      if (align === "center") {
-        x = (rect.width - textWidth) / 2;
-      } else if (align === "right" || align === "end") {
-        x = rect.width - textWidth;
-      }
-
-      const baseline =
-        (lineHeight - font.fontSize) / 2 +
-        font.fontSize * 0.82 +
-        index * lineHeight;
-
-      maskContext.fillText(line, x, baseline);
-    });
-
-    const image = maskContext.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    );
-
-    return {
-      left: rect.left - canvasRect.left - width / 2 - MASK_PADDING,
-      top: rect.top - canvasRect.top - height / 2 - MASK_PADDING,
-      width: maskCanvas.width,
-      height: maskCanvas.height,
-      data: image.data
-    };
   }
 
   /* ==========================================================
-     SVG ALPHA MASK
+     SVG LOGO MASK
 
-     The SVG is loaded as an image and rasterized into a
-     transparent offscreen canvas at the displayed dimensions.
+     Reads the actual transparency of the displayed SVG.
 
-     The actual alpha values define the collision surface.
-     Transparent areas in the SVG remain open to particles.
+     Transparent areas remain open to particles.
+     Visible logo artwork becomes the collision surface.
      ========================================================== */
 
-  function buildOneImageMask(element, canvasRect) {
+  function buildImageMask(element, canvasRect) {
+
     if (
+      !element ||
       !element.complete ||
       !element.naturalWidth ||
       !element.naturalHeight
@@ -294,9 +206,12 @@
 
     if (!rect.width || !rect.height) return null;
 
-    const maskCanvas = makeCanvas(
-      (rect.width + MASK_PADDING * 2) * MASK_SCALE,
-      (rect.height + MASK_PADDING * 2) * MASK_SCALE
+    const scale = CONFIG.maskScale;
+    const pad = CONFIG.maskPadding;
+
+    const maskCanvas = makeMaskCanvas(
+      (rect.width + pad * 2) * scale,
+      (rect.height + pad * 2) * scale
     );
 
     const maskContext = maskCanvas.getContext("2d", {
@@ -306,20 +221,15 @@
     if (!maskContext) return null;
 
     maskContext.setTransform(
-      MASK_SCALE,
+      scale,
       0,
       0,
-      MASK_SCALE,
-      MASK_PADDING * MASK_SCALE,
-      MASK_PADDING * MASK_SCALE
+      scale,
+      pad * scale,
+      pad * scale
     );
 
-    /*
-     * Match object-fit: contain and object-position: left center.
-     * This ensures that the mask follows the visible SVG artwork
-     * even when its intrinsic ratio differs from its CSS box.
-     */
-
+    // Match CSS object-fit: contain and object-position: left center.
     const style = window.getComputedStyle(element);
     const fit = style.objectFit || "fill";
 
@@ -329,92 +239,230 @@
     let drawHeight = rect.height;
 
     if (fit === "contain" || fit === "scale-down") {
-      let scale = Math.min(
+
+      let factor = Math.min(
         rect.width / element.naturalWidth,
         rect.height / element.naturalHeight
       );
 
       if (fit === "scale-down") {
-        scale = Math.min(1, scale);
+        factor = Math.min(1, factor);
       }
 
-      drawWidth = element.naturalWidth * scale;
-      drawHeight = element.naturalHeight * scale;
+      drawWidth = element.naturalWidth * factor;
+      drawHeight = element.naturalHeight * factor;
 
-      const position = style.objectPosition || "50% 50%";
-      const parts = position.split(/\s+/);
+      const position = (
+        style.objectPosition || "50% 50%"
+      ).split(/\s+/);
 
-      if (parts[0] === "center") {
-        drawX = (rect.width - drawWidth) / 2;
-      } else if (parts[0] === "right") {
-        drawX = rect.width - drawWidth;
-      } else if (parts[0] === "left") {
-        drawX = 0;
-      }
+      drawX =
+        position[0] === "left" ? 0 :
+        position[0] === "right" ? rect.width - drawWidth :
+        (rect.width - drawWidth) / 2;
 
-      if (parts[1] === "top") {
-        drawY = 0;
-      } else if (parts[1] === "bottom") {
-        drawY = rect.height - drawHeight;
-      } else {
-        drawY = (rect.height - drawHeight) / 2;
-      }
+      drawY =
+        position[1] === "top" ? 0 :
+        position[1] === "bottom" ? rect.height - drawHeight :
+        (rect.height - drawHeight) / 2;
     }
 
-    // Rasterize the vector logo without changing the visible SVG.
-    maskContext.drawImage(
-      element,
-      drawX,
-      drawY,
-      drawWidth,
-      drawHeight
-    );
+    try {
 
-    const image = maskContext.getImageData(
-      0,
-      0,
-      maskCanvas.width,
-      maskCanvas.height
-    );
+      maskContext.drawImage(
+        element,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight
+      );
+
+    } catch (error) {
+
+      console.error(
+        "[collision] SVG could not be drawn into the collision mask.",
+        error
+      );
+
+      return null;
+    }
+
+    return finishMask(maskCanvas, element, canvasRect);
+  }
+
+  /* TEXT FONT UTILITIES */
+
+  function getFont(style) {
+    const fontSize = parseFloat(style.fontSize) || 16;
 
     return {
-      left: rect.left - canvasRect.left - width / 2 - MASK_PADDING,
-      top: rect.top - canvasRect.top - height / 2 - MASK_PADDING,
-      width: maskCanvas.width,
-      height: maskCanvas.height,
-      data: image.data
+      fontSize,
+      font: `${style.fontStyle} ${style.fontVariant} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+      letterSpacing: style.letterSpacing || "normal"
     };
   }
 
-  /* BUILD ALL COLLISION MASKS */
+  function lineHeight(style, size) {
+    if (!style.lineHeight || style.lineHeight === "normal") {
+      return size * 1.2;
+    }
 
-  function buildTextMasks() {
-    const canvasRect = canvas.getBoundingClientRect();
+    const value = parseFloat(style.lineHeight);
 
-    const selectors = [
-      "#cover-logo",
-      "#cover .cover-bottom p",
-      "#cover .cover-bottom div"
-    ];
-
-    textMasks = selectors
-      .map(selector => document.querySelector(selector))
-      .filter(Boolean)
-      .map(element => {
-        if (element.tagName === "IMG") {
-          return buildOneImageMask(element, canvasRect);
-        }
-
-        return buildOneTextMask(element, canvasRect);
-      })
-      .filter(Boolean);
+    return Number.isFinite(value) ? value : size * 1.2;
   }
 
-  /* SAMPLE MASK ALPHA */
+  /* BUILD TEXT MASK */
+
+  function buildTextMask(element, canvasRect) {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+
+    if (!rect.width || !rect.height) return null;
+
+    const scale = CONFIG.maskScale;
+    const pad = CONFIG.maskPadding;
+
+    const maskCanvas = makeMaskCanvas(
+      (rect.width + pad * 2) * scale,
+      (rect.height + pad * 2) * scale
+    );
+
+    const ctx = maskCanvas.getContext("2d", {
+      willReadFrequently: true
+    });
+
+    if (!ctx) return null;
+
+    const font = getFont(style);
+    const lh = lineHeight(style, font.fontSize);
+
+    ctx.setTransform(
+      scale,
+      0,
+      0,
+      scale,
+      pad * scale,
+      pad * scale
+    );
+
+    ctx.font = font.font;
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#fff";
+
+    if ("fontKerning" in ctx) {
+      ctx.fontKerning = style.fontKerning || "auto";
+    }
+
+    if ("letterSpacing" in ctx && font.letterSpacing !== "normal") {
+      ctx.letterSpacing = font.letterSpacing;
+    } else if (font.letterSpacing !== "normal") {
+      ctx._letterSpacing = parseFloat(font.letterSpacing) || 0;
+    }
+
+    const text = (
+      element.innerText || element.textContent || ""
+    ).trim();
+
+    if (!text) return null;
+
+    const paragraphs = text.replace(/\r/g, "").split("\n");
+    const lines = [];
+
+    paragraphs.forEach(paragraph => {
+      const words = paragraph.trim().split(/\s+/).filter(Boolean);
+
+      if (!words.length) {
+        lines.push("");
+        return;
+      }
+
+      let current = "";
+
+      words.forEach(word => {
+        const candidate = current ? `${current} ${word}` : word;
+
+        if (
+          current &&
+          ctx.measureText(candidate).width > rect.width
+        ) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = candidate;
+        }
+      });
+
+      if (current) lines.push(current);
+    });
+
+    lines.forEach((line, index) => {
+      const metrics = ctx.measureText(line);
+      let x = 0;
+
+      if (style.textAlign === "center") {
+        x = (rect.width - metrics.width) / 2;
+      }
+
+      if (
+        style.textAlign === "right" ||
+        style.textAlign === "end"
+      ) {
+        x = rect.width - metrics.width;
+      }
+
+      const baseline =
+        (lh - font.fontSize) / 2 +
+        font.fontSize * 0.82 +
+        index * lh;
+
+      ctx.fillText(line, x, baseline);
+    });
+
+    return finishMask(maskCanvas, element, canvasRect);
+  }
+
+  /* BUILD ALL MASKS */
+
+  function buildMasks() {
+    const canvasRect = canvas.getBoundingClientRect();
+    const next = [];
+
+    // Logo is an image; its alpha channel defines the mask.
+    if (logo) {
+      const logoMask = buildImageMask(logo, canvasRect);
+
+      if (logoMask) {
+        next.push(logoMask);
+      }
+    }
+
+    // The two lower cover labels are rasterized from their fonts.
+    textSelectors.forEach(selector => {
+      const element = document.querySelector(selector);
+
+      if (!element) return;
+
+      const mask = buildTextMask(element, canvasRect);
+
+      if (mask) {
+        next.push(mask);
+      }
+    });
+
+    masks = next;
+  }
+
+  /* ALPHA LOOKUP */
 
   function alphaAt(mask, x, y) {
-    const px = Math.round((x - mask.left) * MASK_SCALE);
-    const py = Math.round((y - mask.top) * MASK_SCALE);
+    const px = Math.round(
+      (x - mask.left) * CONFIG.maskScale
+    );
+
+    const py = Math.round(
+      (y - mask.top) * CONFIG.maskScale
+    );
 
     if (
       px < 0 ||
@@ -425,12 +473,14 @@
       return 0;
     }
 
-    return mask.data[(py * mask.width + px) * 4 + 3];
+    return mask.data[
+      (py * mask.width + px) * 4 + 3
+    ];
   }
 
-  function pointHitsGlyph(x, y) {
-    for (const mask of textMasks) {
-      if (alphaAt(mask, x, y) > ALPHA_THRESHOLD) {
+  function occupancyAt(x, y) {
+    for (const mask of masks) {
+      if (alphaAt(mask, x, y) > CONFIG.alphaThreshold) {
         return true;
       }
     }
@@ -440,63 +490,72 @@
 
   /* CIRCLE-TO-GLYPH COLLISION */
 
-  function circleHitsGlyph(x, y, radius) {
-    if (pointHitsGlyph(x, y)) return true;
+  function circleHitsMask(x, y, radius) {
+    if (occupancyAt(x, y)) return true;
 
-    const rings = [0.42, 0.72, 1.0];
+    const rings = [0.65, 1];
 
     for (const fraction of rings) {
-      const ringRadius = Math.max(1, radius * fraction);
+      const r = radius * fraction;
 
       const count = Math.max(
         16,
-        Math.ceil(2 * Math.PI * ringRadius * MASK_SCALE / 2)
+        Math.ceil(2 * Math.PI * r / 2)
       );
 
-      for (let i = 0; i < count; i += 1) {
+      for (let i = 0; i < count; i++) {
         const angle = (i / count) * Math.PI * 2;
 
-        const px = x + Math.cos(angle) * ringRadius;
-        const py = y + Math.sin(angle) * ringRadius;
-
-        if (pointHitsGlyph(px, py)) return true;
+        if (
+          occupancyAt(
+            x + Math.cos(angle) * r,
+            y + Math.sin(angle) * r
+          )
+        ) {
+          return true;
+        }
       }
     }
 
     return false;
   }
 
-  /* FIND NEAREST GLYPH EDGE */
+  /* FIND NEAREST MASK POINT */
 
-  function nearestGlyphPoint(x, y, searchRadius) {
+  function nearestMaskPoint(x, y, radius) {
     let best = null;
-    let bestDistanceSquared = Infinity;
+    let bestD2 = Infinity;
 
-    const step = 1 / MASK_SCALE;
+    const step = 1 / CONFIG.maskScale;
 
-    for (const mask of textMasks) {
-      const minX = Math.max(mask.left, x - searchRadius);
+    for (const mask of masks) {
+      const minX = Math.max(mask.left, x - radius);
+
       const maxX = Math.min(
-        mask.left + mask.width / MASK_SCALE,
-        x + searchRadius
+        mask.left + mask.width / CONFIG.maskScale,
+        x + radius
       );
 
-      const minY = Math.max(mask.top, y - searchRadius);
+      const minY = Math.max(mask.top, y - radius);
+
       const maxY = Math.min(
-        mask.top + mask.height / MASK_SCALE,
-        y + searchRadius
+        mask.top + mask.height / CONFIG.maskScale,
+        y + radius
       );
 
       for (let py = minY; py <= maxY; py += step) {
         for (let px = minX; px <= maxX; px += step) {
-          if (alphaAt(mask, px, py) <= ALPHA_THRESHOLD) continue;
+
+          if (alphaAt(mask, px, py) <= CONFIG.alphaThreshold) {
+            continue;
+          }
 
           const dx = x - px;
           const dy = y - py;
-          const distanceSquared = dx * dx + dy * dy;
+          const d2 = dx * dx + dy * dy;
 
-          if (distanceSquared < bestDistanceSquared) {
-            bestDistanceSquared = distanceSquared;
+          if (d2 < bestD2) {
+            bestD2 = d2;
             best = { x: px, y: py };
           }
         }
@@ -508,55 +567,49 @@
 
   /* ==========================================================
      GLYPH COLLISION FORCE
-
-     Checks the predicted particle movement in small steps.
-     On contact, the particle is moved to its last safe position.
-     Its velocity is deflected away from the visible SVG or text,
-     while tangential momentum is retained.
      ========================================================== */
 
   function createGlyphCollisionForce() {
     let forceNodes = [];
 
     function force() {
-      if (!textMasks.length) return;
+      if (!masks.length) return;
 
-      for (let i = 1; i < forceNodes.length; i += 1) {
+      for (let i = 1; i < forceNodes.length; i++) {
+
         const node = forceNodes[i];
-        const radius = node.r + TEXT_CLEARANCE;
+        const radius = node.r + CONFIG.clearance;
 
         const startX = node.x;
         const startY = node.y;
 
-        const moveX = node.vx * VELOCITY_RETENTION;
-        const moveY = node.vy * VELOCITY_RETENTION;
+        const moveX = node.vx * CONFIG.velocityRetention;
+        const moveY = node.vy * CONFIG.velocityRetention;
 
         const distance = Math.hypot(moveX, moveY);
 
-        const stepSize = Math.max(
-          1.2,
-          Math.min(2.5, radius * 0.25)
-        );
-
         const steps = Math.max(
           1,
-          Math.ceil(distance / stepSize)
+          Math.ceil(distance / CONFIG.maxSweepStep)
         );
 
         let safeX = startX;
         let safeY = startY;
 
-        let hit = false;
         let hitX = startX;
         let hitY = startY;
 
-        for (let step = 1; step <= steps; step += 1) {
+        let hit = false;
+
+        // Check predicted movement in short increments.
+        for (let step = 1; step <= steps; step++) {
+
           const t = step / steps;
 
           const testX = startX + moveX * t;
           const testY = startY + moveY * t;
 
-          if (circleHitsGlyph(testX, testY, radius)) {
+          if (circleHitsMask(testX, testY, radius)) {
             hit = true;
             hitX = testX;
             hitY = testY;
@@ -569,54 +622,61 @@
 
         if (!hit) continue;
 
-        const edge = nearestGlyphPoint(
+        // Find the nearest actual opaque pixel.
+        const nearest = nearestMaskPoint(
           hitX,
           hitY,
           radius + 5
         );
 
-        let normalX;
-        let normalY;
+        let nx;
+        let ny;
 
-        if (edge) {
-          const nx = safeX - edge.x;
-          const ny = safeY - edge.y;
+        if (nearest) {
+          nx = safeX - nearest.x;
+          ny = safeY - nearest.y;
+
           const length = Math.hypot(nx, ny);
 
           if (length > 0.001) {
-            normalX = nx / length;
-            normalY = ny / length;
+            nx /= length;
+            ny /= length;
+          } else {
+            nx = undefined;
           }
         }
 
-        // Fallback for an initial overlap or ambiguous edge.
-        if (normalX === undefined) {
+        // Fallback direction for an initial overlap.
+        if (
+          nx === undefined ||
+          !Number.isFinite(nx) ||
+          !Number.isFinite(ny)
+        ) {
           const length = Math.hypot(moveX, moveY) || 1;
 
-          normalX = -moveX / length;
-          normalY = -moveY / length;
+          nx = -moveX / length;
+          ny = -moveY / length;
         }
 
-        // Reflect only the velocity component heading into the
-        // obstacle. Keep the tangential component for sliding.
-        const dot = node.vx * normalX + node.vy * normalY;
+        // Reflect inward velocity while preserving tangential motion.
+        const dot = node.vx * nx + node.vy * ny;
 
         let vx = node.vx;
         let vy = node.vy;
 
         if (dot < 0) {
-          const impulse = (1 + BOUNCE) * dot;
+          const impulse = (1 + CONFIG.bounce) * dot;
 
-          vx -= impulse * normalX;
-          vy -= impulse * normalY;
+          vx -= impulse * nx;
+          vy -= impulse * ny;
         }
 
         node.vx = vx;
         node.vy = vy;
 
-        // Compensate for D3 velocity decay and position integration.
-        node.x = safeX - node.vx * VELOCITY_RETENTION;
-        node.y = safeY - node.vy * VELOCITY_RETENTION;
+        // Account for D3 velocity decay and position integration.
+        node.x = safeX - vx * CONFIG.velocityRetention;
+        node.y = safeY - vy * CONFIG.velocityRetention;
       }
     }
 
@@ -635,7 +695,8 @@
     context.save();
     context.translate(width / 2, height / 2);
 
-    for (let i = 1; i < nodes.length; i += 1) {
+    // Node 0 is invisible and follows the pointer.
+    for (let i = 1; i < nodes.length; i++) {
       const d = nodes[i];
 
       context.beginPath();
@@ -656,7 +717,7 @@
     context.restore();
   }
 
-  /* POINTER */
+  /* POINTER INTERACTION */
 
   function pointermoved(event) {
     if (!nodes.length || !nodes[0]) return;
@@ -670,7 +731,9 @@
   /* D3 SIMULATION */
 
   function createSimulation() {
-    if (simulation) simulation.stop();
+    if (simulation) {
+      simulation.stop();
+    }
 
     nodes = createData().map(Object.create);
 
@@ -713,11 +776,25 @@
       .on("tick", ticked);
 
     console.log(
-      `Collision hero: ${currentParticleCount} nodes at ${Math.round(width)}px; ${textMasks.length} masks`
+      `[collision] ${currentParticleCount} nodes; ${masks.length} masks; canvas ${Math.round(width)} x ${Math.round(height)}`
     );
   }
 
-  /* RESPONSIVE RESIZE */
+  /* MASK REFRESH */
+
+  function scheduleMaskRefresh() {
+    clearTimeout(maskTimer);
+
+    maskTimer = setTimeout(() => {
+      buildMasks();
+
+      if (simulation) {
+        simulation.alpha(0.15).restart();
+      }
+    }, CONFIG.maskRefreshDelay);
+  }
+
+  /* RESIZE */
 
   function resized() {
     clearTimeout(resizeTimer);
@@ -734,84 +811,72 @@
     resizeCanvas();
     createSimulation();
 
-    // Rebuild logo mask after SVG image is loaded.
-    const logo = document.getElementById("cover-logo");
-
     if (logo) {
-      const refreshLogoMask = () => {
-        buildTextMasks();
-
-        if (simulation) {
-          simulation.alpha(0.2).restart();
-        }
-      };
 
       if (logo.complete && logo.naturalWidth) {
-        refreshLogoMask();
+        scheduleMaskRefresh();
+
       } else {
-        logo.addEventListener("load", refreshLogoMask, {
-          once: true
-        });
+
+        logo.addEventListener(
+          "load",
+          scheduleMaskRefresh
+        );
 
         logo.addEventListener("error", () => {
           console.error(
-            "[collision] Could not load statistical sciences_knockedout.svg"
+            "[collision] Logo not found. Check the exact filename: statistical sciences_knockedout.svg"
           );
-        }, { once: true });
+        });
       }
     }
 
-    // Pointer input works for mouse, pen and touch.
+    // Mouse, pen and touch interaction.
     d3.select(canvas)
       .on("touchmove", event => event.preventDefault())
       .on("pointermove", pointermoved);
 
-    window.addEventListener("resize", resized, {
-      passive: true
-    });
+    window.addEventListener(
+      "resize",
+      resized,
+      { passive: true }
+    );
 
-    // Refresh after web fonts finish loading.
+    // Wait for fonts before rasterizing text masks.
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        buildTextMasks();
-
-        if (simulation) {
-          simulation.alpha(0.3).restart();
-        }
-      });
+      document.fonts.ready
+        .then(scheduleMaskRefresh)
+        .catch(() => {});
     }
 
-    // Observe the logo and cover text for responsive changes.
+    // Update masks when logo or cover text changes dimensions.
     if ("ResizeObserver" in window) {
-      textResizeObserver = new ResizeObserver(() => {
-        buildTextMasks();
 
-        if (simulation) {
-          simulation.alpha(0.15).restart();
-        }
-      });
+      observer = new ResizeObserver(scheduleMaskRefresh);
 
       [
-        "#cover-logo",
-        "#cover .cover-bottom p",
-        "#cover .cover-bottom div"
-      ].forEach(selector => {
-        const element = document.querySelector(selector);
-
-        if (element) {
-          textResizeObserver.observe(element);
-        }
-      });
+        logo,
+        ...textSelectors.map(selector =>
+          document.querySelector(selector)
+        )
+      ]
+        .filter(Boolean)
+        .forEach(element => observer.observe(element));
     }
   }
 
   /* START */
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, {
-      once: true
-    });
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      { once: true }
+    );
+
   } else {
+
     init();
   }
 
