@@ -1,31 +1,13 @@
+
 <!doctype html>
 <html lang="en">
-
 <head>
-
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Undergraduate Programs | Department of Statistical Sciences</title>
+  <meta name="description" content="Explore undergraduate statistics and data science programs at the University of Toronto, including specialist, major and minor pathways.">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <title>
-    Graduate Programs | Department of Statistical Sciences
-  </title>
-
-  <meta
-    name="description"
-    content="Graduate programs in Statistical Sciences at the University of Toronto."
-  >
-
-
-  <style>
-
-    /* ==========================================================
-       VARIABLES
-       ========================================================== */
-
+<style>
     :root {
       --blue: #0180a5;
       --navy: #08264b;
@@ -35,574 +17,340 @@
       --white: #ffffff;
       --paper: #f3f2ee;
     }
-
-
-    /* ==========================================================
-       RESET / GLOBAL
-       ========================================================== */
-
     * {
       box-sizing: border-box;
     }
-
     html {
       scroll-behavior: smooth;
     }
-
     body {
       margin: 0;
-
       background: var(--black);
       color: var(--white);
-
       font-family: Arial, Helvetica, sans-serif;
     }
-
-
-    /* ==========================================================
-       ACCESSIBILITY
-       ========================================================== */
-
     .skip {
       position: fixed;
       top: 0;
       left: -999px;
       z-index: 99;
-
       padding: 1rem;
-
       background: var(--white);
       color: var(--black);
     }
-
     .skip:focus {
       left: 0;
     }
-
-
-    /* ==========================================================
-       NAVIGATION
-       ========================================================== */
-
     .nav {
       position: fixed;
       top: 0;
       left: 0;
       z-index: 20;
-
       display: flex;
       align-items: center;
       justify-content: space-between;
-
       width: 100%;
       padding: 20px 3vw;
-
       mix-blend-mode: difference;
     }
-
     .nav a {
       color: var(--white);
       text-decoration: none;
     }
-
     .wordmark {
       display: flex;
       align-items: center;
       gap: 10px;
-
       font-size: 0.78rem;
     }
-
     .crest {
       padding: 5px;
-
       border: 1px solid currentColor;
     }
-
     .nav nav {
       display: flex;
       gap: 22px;
-
       font-size: 0.78rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-
-
-    /* ==========================================================
-       FULL-PAGE SCROLLING
-       ========================================================== */
-
     .snap {
       height: 100vh;
-
       overflow-y: auto;
-
       scroll-snap-type: y mandatory;
     }
-
     .panel {
       position: relative;
-
       min-height: 100vh;
       padding: 12vh 7vw 8vh;
-
       overflow: hidden;
-
       scroll-snap-align: start;
     }
-
-
-    /* ==========================================================
-       COMMON TYPOGRAPHY
-       ========================================================== */
-
     .dark {
       background: var(--black);
     }
-
     .eyebrow {
       margin-bottom: 2rem;
-
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-
       opacity: 0.72;
     }
-
     .panel h2 {
       margin: 0;
-
       font-size: clamp(3rem, 7vw, 7rem);
       line-height: 0.9;
       letter-spacing: -0.055em;
     }
-
     .lede {
       max-width: 650px;
-
       font-size: clamp(1.1rem, 1.7vw, 1.55rem);
       line-height: 1.55;
     }
-
-
-    /* ==========================================================
-       COVER
-       ========================================================== */
-
     .cover {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-
       padding: 5vh 5vw;
-
       background: var(--blue);
     }
-
     .cover canvas {
       position: absolute;
       inset: 0;
       z-index: 0;
-
       display: block;
-
       width: 100%;
       height: 100%;
-
       touch-action: none;
     }
-
     .cover-top,
     .cover-bottom,
     .down {
       position: relative;
       z-index: 2;
     }
-
-
-    /* ----------------------------------------------------------
-       Cover logo
-       ---------------------------------------------------------- */
-
     .logo-lockup {
       display: flex;
       align-items: center;
       gap: 14px;
-
       font-size: 0.78rem;
       line-height: 1.3;
     }
-
     .logo-mark {
       padding: 8px;
-
       border: 1px solid var(--white);
-
       font-weight: 800;
     }
-
-
-    /* ----------------------------------------------------------
-       Statistics title
-       ---------------------------------------------------------- */
-
     .cover h1 {
       margin: 0.25em 0 0;
-
       font-size: clamp(4.5rem, 13vw, 12rem);
       line-height: 0.8;
       letter-spacing: -0.065em;
     }
-
-
-    /* ----------------------------------------------------------
-       Graduate Programs
-       ---------------------------------------------------------- */
-
     .cover-bottom {
       width: min(560px, 80vw);
       padding-top: 18px;
-
       border-top: 1px solid rgba(255, 255, 255, 0.75);
     }
-
     .cover-bottom p {
       margin: 0 0 6px;
-
       font-size: clamp(1.5rem, 3vw, 3rem);
       font-weight: 700;
     }
-
     .cover-bottom div {
       font-size: 1.15rem;
     }
-
     .cover-bottom span {
       opacity: 0.6;
     }
-
-
-    /* ----------------------------------------------------------
-       Scroll arrow
-       ---------------------------------------------------------- */
-
     .down {
       position: absolute;
       right: 5vw;
       bottom: 5vh;
-
       color: var(--white);
-
       font-size: 2rem;
       text-decoration: none;
     }
-
-
-    /* ==========================================================
-       PROGRAM OVERVIEW
-       ========================================================== */
-
     .cards {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1px;
-
       margin-top: 8vh;
-
       background: #444444;
     }
-
     .cards article {
       min-height: 300px;
       padding: 2.2rem;
-
       background: #0b0b0b;
     }
-
     .cards b {
       color: var(--blue);
-
       font-size: 3rem;
     }
-
     .cards h3 {
       font-size: 1.25rem;
     }
-
     .cards p {
       color: #cfcfcf;
-
       line-height: 1.55;
     }
-
     .cards a {
       color: var(--white);
     }
-
-
-    /* ==========================================================
-       INDIVIDUAL PROGRAMS
-       ========================================================== */
-
     .program {
       display: grid;
       grid-template-columns: 1.2fr 1fr;
       align-items: center;
       gap: 8vw;
-
       background: var(--paper);
       color: #111111;
     }
-
     .program.alt {
       background: var(--blue);
       color: var(--white);
     }
-
     .program dl {
       margin: 0;
     }
-
     .program dl div {
       display: grid;
       grid-template-columns: 1fr 2fr;
       gap: 1rem;
-
       padding: 1.2rem 0;
-
       border-top: 1px solid currentColor;
     }
-
     .program dt {
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
-
     .program dd {
       margin: 0;
-
       line-height: 1.45;
     }
-
-
-    /* ==========================================================
-       WHY U OF T / METRICS
-       ========================================================== */
-
     .metrics {
       display: grid;
       grid-template-columns: 1fr 1.3fr;
       align-items: center;
       gap: 8vw;
     }
-
     .metric-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
     }
-
     .metric-grid div {
       padding: 1.5rem 1rem 2.5rem 0;
-
       border-top: 1px solid #555555;
     }
-
     .metric-grid strong {
       display: block;
-
       color: var(--blue);
-
       font-size: clamp(2.5rem, 5vw, 5rem);
       letter-spacing: -0.05em;
     }
-
     .metric-grid span {
       line-height: 1.4;
     }
-
     .metrics small {
       position: absolute;
       right: 7vw;
       bottom: 4vh;
-
       color: #aaaaaa;
     }
-
-
-    /* ==========================================================
-       ALUMNI — INTERACTIVE GLOBE
-       ========================================================== */
-
     .globe-panel {
       display: grid;
-
-      /*
-       * Desktop:
-       * Copy on left.
-       * Globe on right.
-       */
-
       grid-template-columns:
         minmax(320px, 0.75fr)
         minmax(0, 1.25fr);
-
       align-items: center;
       gap: 4vw;
-
       width: 100%;
-
       background: var(--globe-bg);
     }
-
-
-    /* ----------------------------------------------------------
-       Globe copy — LEFT
-       ---------------------------------------------------------- */
-
     .globe-copy {
       position: relative;
       z-index: 2;
-
       grid-column: 1;
-
       width: 100%;
       min-width: 0;
       max-width: 520px;
     }
-
     .globe-copy p {
       max-width: 480px;
-
       color: rgba(255, 255, 255, 0.78);
-
       line-height: 1.55;
     }
-
-
-    /* ----------------------------------------------------------
-       Alumni statistics
-       ---------------------------------------------------------- */
-
     .globe-stats {
       display: grid;
-
       grid-template-columns:
         repeat(
           3,
           minmax(0, 1fr)
         );
-
       gap: 1.5rem;
-
       width: 100%;
       margin-top: 3rem;
     }
-
     .globe-stats div {
       display: flex;
       flex-direction: column;
-
       min-width: 0;
     }
-
     .globe-stats strong {
       color: var(--white);
-
       font-size: clamp(2rem, 3vw, 4rem);
       line-height: 1;
       letter-spacing: -0.04em;
     }
-
     .globe-stats span {
       margin-top: 0.5rem;
-
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-
       opacity: 0.6;
     }
-
-
-    /* ----------------------------------------------------------
-       Globe — RIGHT
-       ---------------------------------------------------------- */
-
     .globe-container {
       position: relative;
-
       grid-column: 2;
-
       width: 100%;
       height: 80vh;
       min-width: 0;
       min-height: 520px;
-
       align-self: center;
       justify-self: stretch;
-
       cursor: grab;
     }
-
     .globe-container:active {
       cursor: grabbing;
     }
-
-
-    /* ----------------------------------------------------------
-       Globe canvas
-       ---------------------------------------------------------- */
-
     #globe-canvas {
       display: block;
-
       width: 100%;
       height: 100%;
-
       touch-action: none;
     }
-
-
-    /* ==========================================================
-       RESEARCH
-       ========================================================== */
-
     .research {
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
       gap: 8vw;
-
       background: var(--white);
       color: #111111;
     }
-
     .columns {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 4vw;
     }
-
     .columns h3 {
       color: var(--blue);
     }
-
     .columns p {
       line-height: 1.9;
     }
-
-
-    /* ==========================================================
-       TORONTO
-       ========================================================== */
-
     .city {
       display: flex;
       align-items: center;
-
       background:
         linear-gradient(
           120deg,
@@ -610,102 +358,54 @@
           var(--black) 55%
         );
     }
-
     .city-box {
       max-width: 720px;
     }
-
     .city-box p {
       font-size: 1.35rem;
       line-height: 1.55;
     }
-
-
-    /* ==========================================================
-       APPLY
-       ========================================================== */
-
     .apply {
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
       gap: 8vw;
-
       background: var(--blue);
     }
-
     .apply-copy {
       font-size: 1.05rem;
       line-height: 1.55;
     }
-
     .apply-copy li {
       margin-bottom: 1rem;
     }
-
     .button {
       display: inline-block;
-
       margin-top: 1rem;
       padding: 14px 18px;
-
       border: 1px solid var(--white);
-
       color: var(--white);
       text-decoration: none;
     }
-
-
-    /* ==========================================================
-       FOOTER
-       ========================================================== */
-
     .footer {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-
       min-height: 100vh;
-
       background: var(--black);
-
       font-size: 1.1rem;
       line-height: 1.6;
     }
-
     .footer a {
       color: var(--white);
     }
-
-
-    /* ==========================================================
-       MOBILE
-       ========================================================== */
-
     @media (max-width: 800px) {
-
-      /* --------------------------------------------------------
-         Navigation
-         -------------------------------------------------------- */
-
       .nav nav {
         display: none;
       }
-
-
-      /* --------------------------------------------------------
-         Panels
-         -------------------------------------------------------- */
-
       .panel {
         padding: 12vh 7vw 7vh;
       }
-
-
-      /* --------------------------------------------------------
-         General single-column layouts
-         -------------------------------------------------------- */
-
       .cards,
       .program,
       .metrics,
@@ -713,1067 +413,531 @@
       .apply {
         grid-template-columns: 1fr;
       }
-
-
-      /* --------------------------------------------------------
-         Cover
-         -------------------------------------------------------- */
-
       .cover {
         padding: 5vh 5vw;
       }
-
       .cover h1 {
         font-size: 20vw;
       }
-
-
-      /* --------------------------------------------------------
-         Programs
-         -------------------------------------------------------- */
-
       .cards {
         margin-top: 4vh;
       }
-
       .cards article {
         min-height: auto;
       }
-
       .program {
         align-content: center;
       }
-
-
-      /* --------------------------------------------------------
-         Metrics
-         -------------------------------------------------------- */
-
       .metric-grid {
         margin-top: 4vh;
       }
-
-
-      /* --------------------------------------------------------
-         Alumni globe
-
-         Only mobile switches to one column.
-         -------------------------------------------------------- */
-
       .globe-panel {
         grid-template-columns: 1fr;
-
         align-content: center;
-
         gap: 1rem;
       }
-
       .globe-copy {
         grid-column: 1;
-
         max-width: none;
       }
-
       .globe-copy h2 {
         font-size: 3.3rem;
       }
-
       .globe-copy > p {
         display: none;
       }
-
       .globe-stats {
         grid-template-columns:
           repeat(
             3,
             minmax(0, 1fr)
           );
-
         gap: 1rem;
-
         margin-top: 1.5rem;
       }
-
       .globe-stats strong {
         font-size: clamp(1.8rem, 8vw, 3rem);
       }
-
       .globe-container {
         grid-column: 1;
-
         width: 100%;
         height: 46vh;
         min-height: 310px;
       }
-
-
-      /* --------------------------------------------------------
-         Research
-         -------------------------------------------------------- */
-
       .columns {
         grid-template-columns: 1fr 1fr;
       }
-
-
-      /* --------------------------------------------------------
-         Footer
-         -------------------------------------------------------- */
-
       .footer {
         flex-direction: column;
         align-items: flex-start;
         justify-content: flex-end;
-
         gap: 3rem;
       }
-
-
-      /* --------------------------------------------------------
-         Scroll snapping
-         -------------------------------------------------------- */
-
       .snap {
         scroll-snap-type: y proximity;
       }
     }
-
-
-    /* ==========================================================
-       SMALL MOBILE
-       ========================================================== */
-
     @media (max-width: 520px) {
-
       .globe-stats {
         gap: 0.6rem;
       }
-
       .globe-stats strong {
         font-size: 1.8rem;
       }
-
       .globe-stats span {
         font-size: 0.6rem;
       }
-
       .globe-container {
         height: 43vh;
         min-height: 290px;
       }
-
       .columns {
         grid-template-columns: 1fr;
       }
     }
-
-
-    /* ==========================================================
-       REDUCED MOTION
-       ========================================================== */
-
     @media (prefers-reduced-motion: reduce) {
-
       html {
         scroll-behavior: auto;
       }
-
       .snap {
         scroll-snap-type: none;
       }
     }
-
+    .globe-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 390px;
+    }
+    .globe-stats div { min-width: 0; }
+    .career-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 2rem;
+      margin: 1.2rem 0 0;
+      padding-left: 1.2rem;
+      line-height: 1.7;
+    }
+    .program-codes {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.7rem 1.2rem;
+      margin: 1rem 0 0;
+      padding-top: 1rem;
+      border-top: 1px solid currentColor;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+    .program-codes dt {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .program-codes dd {
+      margin: 0;
+      text-align: right;
+    }
+    .text-link {
+      display: inline-block;
+      margin-top: 0.75rem;
+      color: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+    .eyebrow a { color: inherit; }
+    .research .columns ul,
+    .city-box ul {
+      padding-left: 1.2rem;
+      line-height: 1.7;
+    }
+    .program .lede { max-width: 680px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (max-width: 800px) {
+      .globe-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 360px;
+      }
+      .career-list { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .program-codes {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+      }
+      .program-codes dd {
+        margin-bottom: 0.65rem;
+        text-align: left;
+      }
+    }
   </style>
-
 </head>
-
-
 <body>
 
+  <!-- ACCESSIBILITY -->
+  <a class="skip" href="#main">Skip to main content</a>
 
-  <!-- ========================================================
-       ACCESSIBILITY
-       ======================================================== -->
-
-  <a
-    class="skip"
-    href="#main"
-  >
-    Skip to main content
-  </a>
-
-
-  <!-- ========================================================
-       NAVIGATION
-       ======================================================== -->
-
+  <!-- NAVIGATION -->
   <header class="nav">
-
-    <a
-      class="wordmark"
-      href="#cover"
-    >
-
-      <span class="crest">
-        U of T
-      </span>
-
-      <span>
-        Statistical Sciences
-      </span>
-
+    <a class="wordmark" href="#cover">
+      <span class="crest">U of T</span>
+      <span>Statistical Sciences</span>
     </a>
-
-
     <nav aria-label="Primary">
-
-      <a href="#programs">
-        Programs
-      </a>
-
-      <a href="#why">
-        Why U of T
-      </a>
-
-      <a href="#alumni">
-        Alumni
-      </a>
-
-      <a href="#apply">
-        Apply
-      </a>
-
+      <a href="#programs">Programs</a>
+      <a href="#experience">Experience</a>
+      <a href="#research">Research</a>
+      <a href="#apply">Admissions</a>
     </nav>
-
   </header>
 
+  <main id="main" class="snap">
 
-  <!-- ========================================================
-       MAIN
-       ======================================================== -->
-
-  <main
-    id="main"
-    class="snap"
-  >
-
-
-    <!-- ======================================================
-         COVER
-         ====================================================== -->
-
-    <section
-      id="cover"
-      class="panel cover"
-    >
-
-      <canvas
-        id="collision-canvas"
-        aria-hidden="true"
-      ></canvas>
-
+    <!-- COVER -->
+    <section id="cover" class="panel cover">
+      <canvas id="collision-canvas" aria-hidden="true"></canvas>
 
       <div class="cover-top">
-
         <div class="logo-lockup">
-
-          <span class="logo-mark">
-            U of T
-          </span>
-
+          <span class="logo-mark">U of T</span>
           <span>
-            Department of Statistical Sciences
-            <br>
+            Department of Statistical Sciences<br>
             UNIVERSITY OF TORONTO
           </span>
-
         </div>
-
-
-        <h1>
-          STATISTICS
-        </h1>
-
+        <h1>STATISTICAL<br>SCIENCES</h1>
       </div>
-
 
       <div class="cover-bottom">
-
-        <p>
-          GRADUATE PROGRAMS
-        </p>
-
-        <div>
-          MSC
-          <span>•</span>
-          MFI
-          <span>•</span>
-          PHD
-        </div>
-
+        <p>UNDERGRADUATE PROGRAMS</p>
+        <div>SPECIALIST <span>&bull;</span> MAJOR <span>&bull;</span> MINOR</div>
       </div>
 
-
-      <a
-        class="down"
-        href="#programs"
-        aria-label="Explore graduate programs"
-      >
-        ↓
-      </a>
-
+      <a class="down" href="#programs" aria-label="Explore undergraduate programs">&darr;</a>
     </section>
 
-
-    <!-- ======================================================
-         PROGRAM OVERVIEW
-         ====================================================== -->
-
-    <section
-      id="programs"
-      class="panel dark"
-    >
-
-      <div class="eyebrow">
-        Graduate Programs in Statistics
-      </div>
-
-
-      <h2>
-        Three paths.
-        <br>
-        One statistical community.
-      </h2>
-
+    <!-- PROGRAM OVERVIEW -->
+    <section id="programs" class="panel dark">
+      <div class="eyebrow">Undergraduate programs in statistics and data science</div>
+      <h2>The science of<br>turning data into knowledge.</h2>
+      <p class="lede">Explore six program options that develop the mathematical, statistical and computational skills to understand data, evaluate evidence and solve problems across disciplines.</p>
 
       <div class="cards">
-
-
         <article>
-
-          <b>MSc</b>
-
-          <h3>
-            Master of Science in Statistics
-          </h3>
-
-          <p>
-            Rigorous training in statistical theory,
-            methodology and applications, with coursework
-            and applied project experience.
-          </p>
-
-          <a href="#msc">
-            Explore MSc →
-          </a>
-
+          <b>01</b>
+          <h3>Statistical Science Specialists</h3>
+          <p>Choose a specialist pathway focused on mathematical foundations and statistical methods, or on modelling, computing and applied problem-solving.</p>
+          <a href="#specialists">Explore specialist programs &rarr;</a>
         </article>
 
-
         <article>
-
-          <b>MFI</b>
-
-          <h3>
-            Master of Financial Insurance
-          </h3>
-
-          <p>
-            An interdisciplinary professional program
-            blending actuarial science, statistics and
-            finance, with an applied capstone.
-          </p>
-
-          <a href="#mfi">
-            Explore MFI →
-          </a>
-
+          <b>02</b>
+          <h3>Statistics Major and Minor</h3>
+          <p>Build a flexible foundation in statistics, or complement your primary field of study with statistical knowledge and analytical skills.</p>
+          <a href="#statistics">Explore Statistics programs &rarr;</a>
         </article>
 
-
         <article>
-
-          <b>PhD</b>
-
-          <h3>
-            Doctor of Philosophy in Statistics
-          </h3>
-
-          <p>
-            Advanced training and original research across
-            statistical theory, methodology and applications.
-          </p>
-
-          <a href="#phd">
-            Explore PhD →
-          </a>
-
+          <b>03</b>
+          <h3>Data Science</h3>
+          <p>Combine statistics and computing through an interdisciplinary specialist, or develop applied data science skills through a minor.</p>
+          <a href="#data-science">Explore Data Science programs &rarr;</a>
         </article>
-
-
       </div>
-
     </section>
 
-
-    <!-- ======================================================
-         MSC
-         ====================================================== -->
-
-    <section
-      id="msc"
-      class="panel program"
-    >
-
+    <!-- STATISTICAL SCIENCE SPECIALISTS -->
+    <section id="specialists" class="panel program">
       <div>
-
-        <div class="eyebrow">
-          01 / MSc
-        </div>
-
-        <h2>
-          Build depth.
-          <br>
-          Apply statistics.
-        </h2>
-
-        <p class="lede">
-          A 12-month full-time program balancing statistical
-          foundations with applied work. Applicants are
-          welcomed from a wide range of quantitative fields.
-        </p>
-
+        <div class="eyebrow">01 / Statistical Science Specialists</div>
+        <h2>Two paths.<br>One discipline.</h2>
+        <p class="lede">The two Statistical Science specialist programs offer different emphases within the study of statistics. Choose the pathway that best reflects your interests.</p>
       </div>
-
 
       <dl>
-
         <div>
-          <dt>Length</dt>
-
-          <dd>
-            3 sessions full-time
-            <br>
-            6 sessions part-time
-          </dd>
+          <dt>Theory and Methods</dt>
+          <dd>Build strong mathematical foundations in probability, statistical theory and the development of statistical methods.</dd>
         </div>
-
-
         <div>
-          <dt>Structure</dt>
-
-          <dd>
-            Coursework · 4.0 FCEs total
-          </dd>
+          <dt>Methods and Practice</dt>
+          <dd>Focus on statistical modelling, computing and solving applied problems.</dd>
         </div>
-
-
         <div>
-          <dt>Career focus</dt>
-
-          <dd>
-            Data analysis · consulting · preparation for
-            PhD study
-          </dd>
+          <dt>Program type</dt>
+          <dd>Specialist</dd>
         </div>
-
-
         <div>
-          <dt>Funding</dt>
-
-          <dd>
-            Self-funded; students may apply for TA/RA roles.
-          </dd>
+          <dt>Program descriptions</dt>
+          <dd>Consult the Faculty of Arts &amp; Science Academic Calendar for complete requirements.</dd>
         </div>
-
       </dl>
-
     </section>
 
-
-    <!-- ======================================================
-         MFI
-         ====================================================== -->
-
-    <section
-      id="mfi"
-      class="panel program alt"
-    >
-
+    <!-- STATISTICS MAJOR AND MINOR -->
+    <section id="statistics" class="panel program alt">
       <div>
-
-        <div class="eyebrow">
-          02 / MFI
-        </div>
-
-        <h2>
-          Quantify risk.
-          <br>
-          Shape finance.
-        </h2>
-
-        <p class="lede">
-          A professional, course-based program connecting
-          actuarial science, statistics, finance and
-          industry practice.
-        </p>
-
+        <div class="eyebrow">02 / Statistics</div>
+        <h2>Build a foundation.<br>Keep your options open.</h2>
+        <p class="lede">Statistics can stand at the centre of your studies or complement another field. These programs help students develop the knowledge and analytical skills to work with data.</p>
       </div>
-
 
       <dl>
-
         <div>
-          <dt>Length</dt>
-
-          <dd>
-            3 sessions full-time
-            <br>
-            12 months
-          </dd>
+          <dt>Statistics Major</dt>
+          <dd>Develop a flexible foundation in statistics that can be combined with another major.</dd>
         </div>
-
-
         <div>
-          <dt>Structure</dt>
-
-          <dd>
-            Coursework + applied capstone project
-          </dd>
+          <dt>Statistics Minor</dt>
+          <dd>Complement your primary field of study with statistical knowledge and analytical skills.</dd>
         </div>
-
-
         <div>
-          <dt>Career focus</dt>
-
-          <dd>
-            Financial risk · actuarial practice · insurance ·
-            quantitative finance
-          </dd>
+          <dt>Program types</dt>
+          <dd>Major and Minor</dd>
         </div>
-
-
         <div>
-          <dt>Funding</dt>
-
-          <dd>
-            Self-funded, with some scholarship opportunities.
-          </dd>
+          <dt>Program descriptions</dt>
+          <dd>Consult the Faculty of Arts &amp; Science Academic Calendar for complete requirements.</dd>
         </div>
-
       </dl>
-
     </section>
 
-
-    <!-- ======================================================
-         PHD
-         ====================================================== -->
-
-    <section
-      id="phd"
-      class="panel program"
-    >
-
+    <!-- DATA SCIENCE -->
+    <section id="data-science" class="panel program">
       <div>
-
-        <div class="eyebrow">
-          03 / PhD
-        </div>
-
-        <h2>
-          Ask original
-          <br>
-          questions.
-        </h2>
-
-        <p class="lede">
-          Pursue original research with internationally
-          recognized faculty and contribute to fundamental
-          and interdisciplinary statistical science.
-        </p>
-
+        <div class="eyebrow">03 / Data Science</div>
+        <h2>Statistics meets<br>computation.</h2>
+        <p class="lede">Data science brings together statistical thinking, computing and the tools needed to work with complex data. The department offers both specialist and minor pathways.</p>
       </div>
-
 
       <dl>
-
         <div>
-          <dt>Length</dt>
-
-          <dd>
-            4–5 years full-time
-            <br>
-            continuous
-          </dd>
+          <dt>Data Science Specialist</dt>
+          <dd>Explore an interdisciplinary program offered with Computer Science that combines statistics and computing.</dd>
         </div>
-
-
         <div>
-          <dt>Structure</dt>
-
-          <dd>
-            Coursework + exams + dissertation
-          </dd>
+          <dt>Applied Data Science Minor</dt>
+          <dd>Develop computing and applied data science skills without the advanced mathematics required by other programs.</dd>
         </div>
-
-
         <div>
-          <dt>Supervision</dt>
-
-          <dd>
-            Supervisor assigned
-          </dd>
+          <dt>Program types</dt>
+          <dd>Specialist and Minor</dd>
         </div>
-
-
         <div>
-          <dt>Funding</dt>
-
-          <dd>
-            Fully funded for eligible full-time students.
-          </dd>
+          <dt>Program descriptions</dt>
+          <dd>Consult the Faculty of Arts &amp; Science Academic Calendar for complete requirements.</dd>
         </div>
-
       </dl>
-
     </section>
 
-
-    <!-- ======================================================
-         WHY U OF T
-         ====================================================== -->
-
-    <section
-      id="why"
-      class="panel dark metrics"
-    >
-
+    <!-- WHY STUDY STATISTICS / RANKINGS -->
+    <section id="why" class="panel dark metrics">
       <div>
-
-        <div class="eyebrow">
-          Why Graduate Studies in Statistics?
-        </div>
-
-        <h2>
-          The science
-          <br>
-          of us.
-        </h2>
-
+        <div class="eyebrow">Why study statistics?</div>
+        <h2>Make sense<br>of data.</h2>
+        <p class="lede">Data is everywhere. Statistics helps us identify patterns, develop models, make predictions, evaluate evidence and draw reliable conclusions.</p>
+        <p>Our programs bring together mathematical foundations, programming and computational skills. You learn not only how to analyse data, but how statistical methods work, why they work and when their conclusions can be trusted.</p>
       </div>
-
 
       <div class="metric-grid">
-
         <div>
-
-          <strong>
-            12K
-          </strong>
-
-          <span>
-            Worldwide alumni
-          </span>
-
+          <strong>#1</strong>
+          <span>In Canada for statistics</span>
         </div>
-
-
         <div>
-
-          <strong>
-            47
-          </strong>
-
-          <span>
-            Countries
-          </span>
-
+          <strong>#2</strong>
+          <span>Worldwide for researcher excellence</span>
         </div>
-
-
         <div>
-
-          <strong>
-            35%
-          </strong>
-
-          <span>
-            Projected employment growth for statisticians
-            and data scientists, 2022–32*
-          </span>
-
+          <strong>#7</strong>
+          <span>Worldwide in statistics</span>
         </div>
-
-
         <div>
-
-          <strong>
-            Top-ranked
-          </strong>
-
-          <span>
-            A globally recognized department with breadth
-            across probability, machine learning, actuarial
-            science, biostatistics and finance.
-          </span>
-
+          <strong>35% / 11%</strong>
+          <span>Projected employment growth for data scientists and statisticians, respectively, between 2027 and 2032*</span>
         </div>
-
       </div>
 
-
-      <small>
-        *U.S. Bureau of Labor Statistics figure as presented
-        in the graduate brochure.
-      </small>
-
+      <small>*ShanghaiRanking Global Ranking of Academic Subjects 2026 for the rankings. Employment projections: U.S. Bureau of Labor Statistics, as presented in the undergraduate brochure.</small>
     </section>
 
-
-    <!-- ======================================================
-         ALUMNI — INTERACTIVE GLOBE
-         ====================================================== -->
-
-    <section
-      id="alumni"
-      class="panel globe-panel"
-    >
-
-
-      <!-- LEFT COLUMN -->
-
+    <!-- ALUMNI / INTERACTIVE GLOBE -->
+    <section id="alumni" class="panel globe-panel">
       <div class="globe-copy">
-
-        <div class="eyebrow">
-          Career &amp; Alumni Network
-        </div>
-
-
-        <h2>
-          From Toronto
-          <br>
-          to the world.
-        </h2>
-
-
-        <p>
-          Our alumni community extends around the globe,
-          connecting U of T Statistical Sciences with
-          destinations across Canada and around the world.
-        </p>
-
+        <div class="eyebrow">A global alumni community</div>
+        <h2>From Toronto<br>to the world.</h2>
+        <p>Our alumni community extends around the world. The brochure's alumni snapshot maps the countries where graduates were employed as of 2025.</p>
 
         <div class="globe-stats">
-
-
           <div>
-
-            <strong id="alumni-total">
-              12K+
-            </strong>
-
-            <span>
-              Alumni
-            </span>
-
+            <strong id="alumni-total">12K+</strong>
+            <span>Worldwide alumni</span>
           </div>
-
-
           <div>
-
-            <strong id="country-total">
-              47
-            </strong>
-
-            <span>
-              Countries
-            </span>
-
+            <strong id="country-total">47</strong>
+            <span>Countries</span>
           </div>
-
-
-          <div>
-
-            <strong id="city-total">
-              212+
-            </strong>
-
-            <span>
-              Destinations
-            </span>
-
-          </div>
-
-
         </div>
-
+        <!-- Retained as a compatibility hook for the existing globe script. -->
+        <span id="city-total" class="sr-only" aria-hidden="true">Alumni destinations</span>
       </div>
 
-
-      <!-- RIGHT COLUMN -->
-
-      <div
-        id="alumni-globe"
-        class="globe-container"
-        aria-label="Interactive globe showing U of T Statistical Sciences alumni destinations"
-      >
-
-        <canvas
-          id="globe-canvas"
-          aria-hidden="true"
-        ></canvas>
-
+      <div id="alumni-globe" class="globe-container" aria-label="Interactive globe showing alumni destinations">
+        <canvas id="globe-canvas" aria-hidden="true"></canvas>
       </div>
-
-
     </section>
 
-
-    <!-- ======================================================
-         RESEARCH
-         ====================================================== -->
-
-    <section
-      id="research"
-      class="panel research"
-    >
+    <!-- CAREERS AND ASIP -->
+    <section id="experience" class="panel research">
+      <div>
+        <div class="eyebrow">Experience and opportunity</div>
+        <h2>Take learning<br>beyond class.</h2>
+        <p class="lede">Build experience, develop professional skills and explore how statistical thinking is used in different sectors.</p>
+        <h3>Arts &amp; Science Internship Program (ASIP)</h3>
+        <p>ASIP offers eligible students paid work experience. The current Faculty of Arts & Science program listing identifies the Data Science Specialist and both Statistical Science Specialist programs as ASIP-eligible. Check the current ASIP eligibility information before applying.</p>
+        <a class="text-link" href="https://www.artsci.utoronto.ca/current/academics/asip/eligibility" target="_blank" rel="noopener">Learn about Statistical Sciences internship opportunities &nearr;</a>
+      </div>
 
       <div>
-
-        <div class="eyebrow">
-          Study &amp; Research Snapshot
-        </div>
-
-        <h2>
-          Where methods
-          <br>
-          meet problems.
-        </h2>
-
+        <div class="eyebrow">Internships and careers</div>
+        <h3>Where can statistics take you?</h3>
+        <p>Graduates pursue careers in technology, finance, health, government, research and more. Common job titles recorded by more than 12,000 alumni include:</p>
+        <ul class="career-list">
+          <li>Data Scientist</li>
+          <li>Professor of Statistics</li>
+          <li>Software Engineer</li>
+          <li>Quantitative Analyst</li>
+          <li>Software Developer</li>
+          <li>Consultant</li>
+          <li>Senior Analyst</li>
+          <li>Business Analyst</li>
+          <li>Director of Data Science</li>
+          <li>Data Engineer</li>
+          <li>Methodologist</li>
+          <li>Financial Analyst</li>
+        </ul>
       </div>
-
-
-      <div class="columns">
-
-        <div>
-
-          <h3>
-            Course highlights
-          </h3>
-
-          <p>
-            Bayesian Inference
-            <br>
-            Machine Learning
-            <br>
-            Survival Analysis
-            <br>
-            Computational Methods in Finance
-            <br>
-            Spatial Statistics
-            <br>
-            High-dimensional Data
-          </p>
-
-        </div>
-
-
-        <div>
-
-          <h3>
-            Research network
-          </h3>
-
-          <p>
-            Vector Institute
-            <br>
-            CANSSI Ontario collaboration hub
-            <br>
-            UHN Bio Stats Core
-            <br>
-            Statstro at Dunlap Institute
-          </p>
-
-        </div>
-
-      </div>
-
     </section>
 
+    <!-- LEARNING, MENTORSHIP AND COMMUNITY -->
+    <section id="community" class="panel dark">
+      <div class="eyebrow">Learning and mentorship</div>
+      <h2>Find your people.<br>Learn together.</h2>
 
-    <!-- ======================================================
-         TORONTO
-         ====================================================== -->
+      <div class="cards">
+        <article>
+          <b>01</b>
+          <h3>STA130 Mentorship Program</h3>
+          <p>Connects first-year students with experienced upper-year students who offer guidance on navigating university life, developing effective study habits and exploring academic opportunities.</p>
+        </article>
 
-    <section
-      id="toronto"
-      class="panel city"
-    >
+        <article>
+          <b>02</b>
+          <h3>Second-Year Learning Community</h3>
+          <p>A learning community for second-year students in the major or specialist programs. Upper-year mentors, faculty and professionals answer questions about academics, graduate school and employment.</p>
+        </article>
 
+        <article>
+          <b>03</b>
+          <h3>Statistical Science Alumni Mentorship</h3>
+          <p>Built into the introductory course for Statistical Sciences, Actuarial Science and Data Science degrees, this mentorship gives first-year students early access to peer support and guidance.</p>
+        </article>
+      </div>
+
+      <div class="columns" style="margin-top: 3rem;">
+        <div>
+          <h3>Student communities and academic support</h3>
+          <p>The Statistical Sciences Student Union (SSU) and Students in Data Science and Statistics (SDSS) connect undergraduate students through academic support, networking and community events. The Stats Aid Centre offers further learning support.</p>
+        </div>
+        <div>
+          <h3>ASA DataFest</h3>
+          <p>A global data analysis competition where undergraduate teams solve real-world problems, analyse datasets and present their findings to industry judges.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- UNDERGRADUATE RESEARCH -->
+    <section id="research" class="panel city">
       <div class="city-box">
-
-        <div class="eyebrow">
-          Life in Toronto and U of T
-        </div>
-
-        <h2>
-          A global city.
-          <br>
-          A campus community.
-        </h2>
-
-        <p>
-          Toronto offers thousands of restaurants,
-          hundreds of kilometres of multi-use trails
-          and a broad university community with graduate
-          housing and 1,000+ clubs.
-        </p>
-
+        <div class="eyebrow">Undergraduate research</div>
+        <h2>Ask questions.<br>Make discoveries.</h2>
+        <p>Work alongside world-class researchers. Faculty research ranges from using data to understand problems in health, the environment, finance and society to developing new mathematical theories and computational methods.</p>
+        <p>Undergraduate students can explore faculty-supervised projects, undergraduate summer research awards and the University of Toronto Statistical Sciences Research Program (UTSSRP).</p>
+        <a class="text-link" href="https://www.statistics.utoronto.ca/Statistics-Science-Programs" target="_blank" rel="noopener">Explore undergraduate opportunities &nearr;</a>
       </div>
-
     </section>
 
-
-    <!-- ======================================================
-         APPLY
-         ====================================================== -->
-
-    <section
-      id="apply"
-      class="panel apply"
-    >
-
+    <!-- ADMISSIONS -->
+    <section id="apply" class="panel apply">
       <div>
+        <div class="eyebrow">New to U of T? Start here.</div>
+        <h2>Choose your<br>starting point.</h2>
 
-        <div class="eyebrow">
-          Before You Apply
-        </div>
-
-        <h2>
-          Your next
+        <div class="apply-copy">
+          <h3>Admissions to Arts &amp; Science</h3>
+          <p>Apply to the Faculty of Arts &amp; Science at the St. George campus. Students interested in Statistics generally apply through the Physical &amp; Mathematical Sciences admission category.</p>
+          <p>Students normally apply to a program of study after completing their first year, subject to the enrolment requirements for each program. Program application dates, stages and steps are available through the Faculty of Arts &amp; Science Program Toolkit.</p>
+          <a class="button" href="https://www.artsci.utoronto.ca/future/ready-apply/how-apply" target="_blank" rel="noopener">How to apply to Arts &amp; Science &nearr;</a>
           <br>
-          step.
-        </h2>
-
+          <a class="text-link" href="https://sidneysmithcommons.artsci.utoronto.ca/program/" target="_blank" rel="noopener">Faculty of Arts &amp; Science Program Toolkit &nearr;</a>
+        </div>
       </div>
-
 
       <div class="apply-copy">
-
+        <div class="eyebrow">Already a U of T student?</div>
+        <h3>Choose your program through ACORN</h3>
         <ol>
-
-          <li>
-            Check program requirements through the
-            School of Graduate Studies.
-          </li>
-
-          <li>
-            Begin your application online via the SGS portal.
-          </li>
-
-          <li>
-            Prepare transcripts, references, CV, statement
-            of purpose and any applicable tests.
-          </li>
-
-          <li>
-            Submit by the posted deadline.
-          </li>
-
+          <li>Select <strong>Enrol &amp; Manage</strong> under Academics in the menu on the left.</li>
+          <li>Click on <strong>Programs</strong>.</li>
+          <li>In the <strong>Add a Program</strong> box, enter the code for your program.</li>
         </ol>
 
+        <dl class="program-codes">
+          <dt>ASSPE1687</dt><dd>Data Science Specialist</dd>
+          <dt>ASMIN0160</dt><dd>Data Science Minor</dd>
+          <dt>ASSPE2270</dt><dd>Specialist in Statistical Science: Methods and Practice</dd>
+          <dt>ASSPE2290</dt><dd>Specialist in Statistical Science: Theory and Methods</dd>
+          <dt>ASMAJ2289</dt><dd>Statistics Major</dd>
+          <dt>ASMIN2289</dt><dd>Statistics Minor</dd>
+        </dl>
 
-        <p>
-          Graduate tuition and fees vary by program and
-          student status. Consult the SGS Fee Schedule
-          for current information.
-        </p>
-
-
-        <a
-          class="button"
-          href="https://www.statistics.utoronto.ca/graduate"
-          target="_blank"
-          rel="noopener"
-        >
-          Visit Graduate Studies ↗
-        </a>
-
+        <p>Program descriptions are summaries. Consult the Faculty of Arts &amp; Science Academic Calendar for complete requirements.</p>
+        <a class="button" href="https://artsci.calendar.utoronto.ca/statistical-sciences-section-text" target="_blank" rel="noopener">View the Academic Calendar &nearr;</a>
       </div>
-
     </section>
 
-
-    <!-- ======================================================
-         FOOTER
-         ====================================================== -->
-
+    <!-- FOOTER -->
     <footer class="panel footer">
-
       <div>
-
-        <strong>
-          Department of Statistical Sciences
-        </strong>
-
-        <br>
-        University of Toronto
-
-        <br>
-        700 University Ave, 9th Floor
-
-        <br>
-        Toronto, Ontario, M5G 1Z5
-
+        <strong>Department of Statistical Sciences</strong><br>
+        University of Toronto<br>
+        700 University Ave, 9th Floor<br>
+        Toronto, Ontario, M5G 1Z5<br>
+        <a href="https://www.statistics.utoronto.ca">statistics.utoronto.ca</a>
       </div>
 
-
       <div>
-
-        <span>
-          #UofTStatsci
-        </span>
-
-        <br>
-
-        <a href="https://statistics.utoronto.ca">
-          statistics.utoronto.ca
-        </a>
-
+        <span>#UofTStatsci</span><br>
+        <a href="https://www.statistics.utoronto.ca/Statistics-Science-Programs">Undergraduate programs</a>
       </div>
-
     </footer>
-
 
   </main>
 
-
-  <!-- ========================================================
-       JAVASCRIPT DEPENDENCIES
-       ======================================================== -->
-
-  <!-- D3 -->
+  <!-- JAVASCRIPT DEPENDENCIES -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-
-  <!-- TopoJSON -->
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 
-
-  <!-- ========================================================
-       SITE JAVASCRIPT
-       ======================================================== -->
-
-  <!-- Interactive collision hero -->
+  <!-- Existing site scripts: keep these files and paths unchanged -->
   <script src="assets/js/collision.js?v=4"></script>
-
-  <!-- Interactive alumni globe -->
   <script src="assets/js/alumni-globe.js?v=8"></script>
-
-  <!-- General site interactions -->
   <script src="assets/js/main.js"></script>
 
-
 </body>
-
 </html>
