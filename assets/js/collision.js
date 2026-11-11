@@ -1,33 +1,66 @@
 
 /* ==========================================================
    U of T Statistical Sciences — Undergraduate Collision Hero
-   Glyph-contoured text collision edition.
+
+   D3 particle simulation retained from the graduate brochure.
+
+   Preserved:
+   - Mobile <= 800px:       100 nodes
+   - Tablet 801–1200px:     200 nodes
+   - Desktop > 1200px:     400 nodes
+   - Original particle sizing, pointer repulsion, centering,
+     damping and node-to-node collision settings.
+
+   Added:
+   - SVG logo alpha mask.
+   - Glyph masks for the cover subheading.
+   - Particles collide with actual visible shapes rather than
+     rectangular image or text boundaries.
+   - Masks rebuild on resize and after fonts/images load.
    ========================================================== */
 
 (() => {
   "use strict";
 
+  /* CANVAS */
+
   const canvas = document.getElementById("collision-canvas");
 
-  if (!canvas || typeof d3 === "undefined") return;
+  if (!canvas) {
+    console.warn("Collision canvas not found.");
+    return;
+  }
+
+  if (typeof d3 === "undefined") {
+    console.warn("D3 is not loaded.");
+    return;
+  }
 
   const context = canvas.getContext("2d");
   if (!context) return;
+
+  /* CONFIGURATION */
 
   const TEXT_CLEARANCE = 6;
   const MASK_SCALE = 2;
   const MASK_PADDING = 10;
   const VELOCITY_RETENTION = 0.9;
   const BOUNCE = 0.16;
+  const ALPHA_THRESHOLD = 48;
 
   let width = 0;
   let height = 0;
   let dpr = 1;
+
   let nodes = [];
   let simulation = null;
   let currentParticleCount = 0;
+
   let resizeTimer = null;
   let textMasks = [];
+  let textResizeObserver = null;
+
+  /* RESPONSIVE PARTICLE COUNT */
 
   function getParticleCount() {
     if (width <= 800) return 100;
@@ -35,9 +68,13 @@
     return 400;
   }
 
+  /* PARTICLE SIZE */
+
   function getParticleScale() {
     return Math.min(width, height) / 200;
   }
+
+  /* CREATE DATA */
 
   function createData() {
     const count = getParticleCount();
@@ -45,16 +82,15 @@
 
     const k = getParticleScale();
     const radius = d3.randomUniform(k, k * 4);
+    const groups = 4;
 
     return Array.from({ length: count }, (_, i) => ({
       r: radius(),
-      group: i && (i % 4 + 1)
+      group: i && (i % groups + 1)
     }));
   }
 
-  /* ==========================================================
-     RESIZE CANVAS
-     ========================================================== */
+  /* CANVAS SIZE */
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
@@ -75,26 +111,27 @@
     buildTextMasks();
   }
 
-  /* ==========================================================
-     TEXT MASK GENERATION
-     ========================================================== */
+  /* MASK UTILITIES */
 
   function parseLineHeight(style, fontSize) {
     const value = style.lineHeight;
 
-    if (!value || value === "normal") return fontSize * 1.2;
+    if (!value || value === "normal") {
+      return fontSize * 1.2;
+    }
 
     const parsed = parseFloat(value);
+
     return Number.isFinite(parsed) ? parsed : fontSize * 1.2;
   }
 
   function makeCanvas(widthPx, heightPx) {
-    const result = document.createElement("canvas");
+    const maskCanvas = document.createElement("canvas");
 
-    result.width = Math.max(1, Math.ceil(widthPx));
-    result.height = Math.max(1, Math.ceil(heightPx));
+    maskCanvas.width = Math.max(1, Math.ceil(widthPx));
+    maskCanvas.height = Math.max(1, Math.ceil(heightPx));
 
-    return result;
+    return maskCanvas;
   }
 
   function getFont(style) {
@@ -147,6 +184,8 @@
 
     return output.length ? output : [text.trim()];
   }
+
+  /* TEXT MASK */
 
   function buildOneTextMask(element, canvasRect) {
     const rect = element.getBoundingClientRect();
@@ -233,17 +272,127 @@
   }
 
   /* ==========================================================
-     BUILD GLYPH MASKS
+     SVG ALPHA MASK
 
-     The transparent masks follow the individual letterforms.
-     There are no rectangular text collision boundaries.
+     The SVG is loaded as an image and rasterized into a
+     transparent offscreen canvas at the displayed dimensions.
+
+     The actual alpha values define the collision surface.
+     Transparent areas in the SVG remain open to particles.
      ========================================================== */
+
+  function buildOneImageMask(element, canvasRect) {
+    if (
+      !element.complete ||
+      !element.naturalWidth ||
+      !element.naturalHeight
+    ) {
+      return null;
+    }
+
+    const rect = element.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return null;
+
+    const maskCanvas = makeCanvas(
+      (rect.width + MASK_PADDING * 2) * MASK_SCALE,
+      (rect.height + MASK_PADDING * 2) * MASK_SCALE
+    );
+
+    const maskContext = maskCanvas.getContext("2d", {
+      willReadFrequently: true
+    });
+
+    if (!maskContext) return null;
+
+    maskContext.setTransform(
+      MASK_SCALE,
+      0,
+      0,
+      MASK_SCALE,
+      MASK_PADDING * MASK_SCALE,
+      MASK_PADDING * MASK_SCALE
+    );
+
+    /*
+     * Match object-fit: contain and object-position: left center.
+     * This ensures that the mask follows the visible SVG artwork
+     * even when its intrinsic ratio differs from its CSS box.
+     */
+
+    const style = window.getComputedStyle(element);
+    const fit = style.objectFit || "fill";
+
+    let drawX = 0;
+    let drawY = 0;
+    let drawWidth = rect.width;
+    let drawHeight = rect.height;
+
+    if (fit === "contain" || fit === "scale-down") {
+      let scale = Math.min(
+        rect.width / element.naturalWidth,
+        rect.height / element.naturalHeight
+      );
+
+      if (fit === "scale-down") {
+        scale = Math.min(1, scale);
+      }
+
+      drawWidth = element.naturalWidth * scale;
+      drawHeight = element.naturalHeight * scale;
+
+      const position = style.objectPosition || "50% 50%";
+      const parts = position.split(/\s+/);
+
+      if (parts[0] === "center") {
+        drawX = (rect.width - drawWidth) / 2;
+      } else if (parts[0] === "right") {
+        drawX = rect.width - drawWidth;
+      } else if (parts[0] === "left") {
+        drawX = 0;
+      }
+
+      if (parts[1] === "top") {
+        drawY = 0;
+      } else if (parts[1] === "bottom") {
+        drawY = rect.height - drawHeight;
+      } else {
+        drawY = (rect.height - drawHeight) / 2;
+      }
+    }
+
+    // Rasterize the vector logo without changing the visible SVG.
+    maskContext.drawImage(
+      element,
+      drawX,
+      drawY,
+      drawWidth,
+      drawHeight
+    );
+
+    const image = maskContext.getImageData(
+      0,
+      0,
+      maskCanvas.width,
+      maskCanvas.height
+    );
+
+    return {
+      left: rect.left - canvasRect.left - width / 2 - MASK_PADDING,
+      top: rect.top - canvasRect.top - height / 2 - MASK_PADDING,
+      width: maskCanvas.width,
+      height: maskCanvas.height,
+      data: image.data
+    };
+  }
+
+  /* BUILD ALL COLLISION MASKS */
 
   function buildTextMasks() {
     const canvasRect = canvas.getBoundingClientRect();
 
     const selectors = [
-      "#cover h1",
+      "#cover-logo",
       "#cover .cover-bottom p",
       "#cover .cover-bottom div"
     ];
@@ -251,13 +400,17 @@
     textMasks = selectors
       .map(selector => document.querySelector(selector))
       .filter(Boolean)
-      .map(element => buildOneTextMask(element, canvasRect))
+      .map(element => {
+        if (element.tagName === "IMG") {
+          return buildOneImageMask(element, canvasRect);
+        }
+
+        return buildOneTextMask(element, canvasRect);
+      })
       .filter(Boolean);
   }
 
-  /* ==========================================================
-     PIXEL DETECTION
-     ========================================================== */
+  /* SAMPLE MASK ALPHA */
 
   function alphaAt(mask, x, y) {
     const px = Math.round((x - mask.left) * MASK_SCALE);
@@ -277,18 +430,15 @@
 
   function pointHitsGlyph(x, y) {
     for (const mask of textMasks) {
-      if (alphaAt(mask, x, y) > 48) return true;
+      if (alphaAt(mask, x, y) > ALPHA_THRESHOLD) {
+        return true;
+      }
     }
 
     return false;
   }
 
-  /* ==========================================================
-     CIRCLE-TO-GLYPH COLLISION
-
-     Checks multiple concentric rings around each particle.
-     This detects contact with the actual character strokes.
-     ========================================================== */
+  /* CIRCLE-TO-GLYPH COLLISION */
 
   function circleHitsGlyph(x, y, radius) {
     if (pointHitsGlyph(x, y)) return true;
@@ -316,11 +466,7 @@
     return false;
   }
 
-  /* ==========================================================
-     FIND NEAREST LETTER PIXEL
-
-     Calculates the outward direction needed to deflect a node.
-     ========================================================== */
+  /* FIND NEAREST GLYPH EDGE */
 
   function nearestGlyphPoint(x, y, searchRadius) {
     let best = null;
@@ -343,7 +489,7 @@
 
       for (let py = minY; py <= maxY; py += step) {
         for (let px = minX; px <= maxX; px += step) {
-          if (alphaAt(mask, px, py) <= 48) continue;
+          if (alphaAt(mask, px, py) <= ALPHA_THRESHOLD) continue;
 
           const dx = x - px;
           const dy = y - py;
@@ -363,11 +509,10 @@
   /* ==========================================================
      GLYPH COLLISION FORCE
 
-     Uses swept movement checks to prevent fast nodes from
-     passing through the letterforms between animation frames.
-
-     Tangential momentum is preserved so nodes slide around
-     the contours instead of stopping at the edges.
+     Checks the predicted particle movement in small steps.
+     On contact, the particle is moved to its last safe position.
+     Its velocity is deflected away from the visible SVG or text,
+     while tangential momentum is retained.
      ========================================================== */
 
   function createGlyphCollisionForce() {
@@ -393,7 +538,10 @@
           Math.min(2.5, radius * 0.25)
         );
 
-        const steps = Math.max(1, Math.ceil(distance / stepSize));
+        const steps = Math.max(
+          1,
+          Math.ceil(distance / stepSize)
+        );
 
         let safeX = startX;
         let safeY = startY;
@@ -441,6 +589,7 @@
           }
         }
 
+        // Fallback for an initial overlap or ambiguous edge.
         if (normalX === undefined) {
           const length = Math.hypot(moveX, moveY) || 1;
 
@@ -448,6 +597,8 @@
           normalY = -moveY / length;
         }
 
+        // Reflect only the velocity component heading into the
+        // obstacle. Keep the tangential component for sliding.
         const dot = node.vx * normalX + node.vy * normalY;
 
         let vx = node.vx;
@@ -463,8 +614,7 @@
         node.vx = vx;
         node.vy = vy;
 
-        // Account for D3's velocity decay and subsequent
-        // position integration.
+        // Compensate for D3 velocity decay and position integration.
         node.x = safeX - node.vx * VELOCITY_RETENTION;
         node.y = safeY - node.vy * VELOCITY_RETENTION;
       }
@@ -477,14 +627,12 @@
     return force;
   }
 
-  /* ==========================================================
-     DRAW PARTICLES
-     ========================================================== */
+  /* DRAW PARTICLES */
 
   function ticked() {
     context.clearRect(0, 0, width, height);
-    context.save();
 
+    context.save();
     context.translate(width / 2, height / 2);
 
     for (let i = 1; i < nodes.length; i += 1) {
@@ -508,9 +656,7 @@
     context.restore();
   }
 
-  /* ==========================================================
-     POINTER INTERACTION
-     ========================================================== */
+  /* POINTER */
 
   function pointermoved(event) {
     if (!nodes.length || !nodes[0]) return;
@@ -521,9 +667,7 @@
     nodes[0].fy = y - height / 2;
   }
 
-  /* ==========================================================
-     D3 SIMULATION
-     ========================================================== */
+  /* D3 SIMULATION */
 
   function createSimulation() {
     if (simulation) simulation.stop();
@@ -569,13 +713,11 @@
       .on("tick", ticked);
 
     console.log(
-      `Collision hero: ${currentParticleCount} nodes at ${Math.round(width)}px; ${textMasks.length} glyph masks`
+      `Collision hero: ${currentParticleCount} nodes at ${Math.round(width)}px; ${textMasks.length} masks`
     );
   }
 
-  /* ==========================================================
-     RESPONSIVE RESIZE
-     ========================================================== */
+  /* RESPONSIVE RESIZE */
 
   function resized() {
     clearTimeout(resizeTimer);
@@ -586,33 +728,49 @@
     }, 120);
   }
 
-  /* ==========================================================
-     INITIALIZE
-     ========================================================== */
+  /* INITIALIZE */
 
   function init() {
     resizeCanvas();
     createSimulation();
 
+    // Rebuild logo mask after SVG image is loaded.
+    const logo = document.getElementById("cover-logo");
+
+    if (logo) {
+      const refreshLogoMask = () => {
+        buildTextMasks();
+
+        if (simulation) {
+          simulation.alpha(0.2).restart();
+        }
+      };
+
+      if (logo.complete && logo.naturalWidth) {
+        refreshLogoMask();
+      } else {
+        logo.addEventListener("load", refreshLogoMask, {
+          once: true
+        });
+
+        logo.addEventListener("error", () => {
+          console.error(
+            "[collision] Could not load statistical sciences_knockedout.svg"
+          );
+        }, { once: true });
+      }
+    }
+
+    // Pointer input works for mouse, pen and touch.
     d3.select(canvas)
+      .on("touchmove", event => event.preventDefault())
+      .on("pointermove", pointermoved);
 
-      .on(
-        "touchmove",
-        event => event.preventDefault()
-      )
+    window.addEventListener("resize", resized, {
+      passive: true
+    });
 
-      .on(
-        "pointermove",
-        pointermoved
-      );
-
-    window.addEventListener(
-      "resize",
-      resized,
-      { passive: true }
-    );
-
-    // Rebuild masks after web fonts load.
+    // Refresh after web fonts finish loading.
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => {
         buildTextMasks();
@@ -623,9 +781,9 @@
       });
     }
 
-    // Rebuild when text dimensions change at responsive breakpoints.
+    // Observe the logo and cover text for responsive changes.
     if ("ResizeObserver" in window) {
-      const observer = new ResizeObserver(() => {
+      textResizeObserver = new ResizeObserver(() => {
         buildTextMasks();
 
         if (simulation) {
@@ -634,20 +792,20 @@
       });
 
       [
-        "#cover h1",
+        "#cover-logo",
         "#cover .cover-bottom p",
         "#cover .cover-bottom div"
       ].forEach(selector => {
         const element = document.querySelector(selector);
 
-        if (element) observer.observe(element);
+        if (element) {
+          textResizeObserver.observe(element);
+        }
       });
     }
   }
 
-  /* ==========================================================
-     START
-     ========================================================== */
+  /* START */
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, {
