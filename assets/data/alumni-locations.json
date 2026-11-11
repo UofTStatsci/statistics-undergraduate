@@ -1,0 +1,11 @@
+[
+ {"city":"New York","country":"USA","lat":40.7128,"lon":-74.0060,"count":12},
+ {"city":"Los Angeles","country":"USA","lat":34.0522,"lon":-118.2437,"count":6},
+ {"city":"London","country":"UK","lat":51.5072,"lon":-0.1276,"count":8},
+ {"city":"Zurich","country":"Switzerland","lat":47.3769,"lon":8.5417,"count":4},
+ {"city":"Singapore","country":"Singapore","lat":1.3521,"lon":103.8198,"count":7},
+ {"city":"Hong Kong","country":"Hong Kong","lat":22.3193,"lon":114.1694,"count":5},
+ {"city":"Tokyo","country":"Japan","lat":35.6762,"lon":139.6503,"count":3},
+ {"city":"Sydney","country":"Australia","lat":-33.8688,"lon":151.2093,"count":3},
+ {"city":"Vancouver","country":"Canada","lat":49.2827,"lon":-123.1207,"count":9}
+]
