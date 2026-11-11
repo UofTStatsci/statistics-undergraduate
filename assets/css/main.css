@@ -847,3 +847,34 @@ body {
     scroll-snap-type: none;
   }
 }
+/* DESKTOP NAVIGATION */
+
+@media (min-width: 801px) {
+  .nav-toggle {
+    display: none !important;
+  }
+
+  .nav nav.nav-menu {
+    display: flex !important;
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+/* MOBILE / TABLET NAVIGATION */
+
+@media (max-width: 800px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav nav.nav-menu {
+    display: flex;
+  }
+}
