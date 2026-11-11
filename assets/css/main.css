@@ -71,7 +71,7 @@ body {
 /* ==========================================================
    3. NAVIGATION
    Desktop: Horizontal links
-   Mobile: Hamburger with dropdown
+   Mobile: Hamburger dropdown
    Breakpoint: 800px
    ========================================================== */
 
@@ -112,6 +112,9 @@ body {
 
 .nav-toggle {
   display: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 
@@ -242,6 +245,7 @@ body {
 .cover-bottom div {
   width: fit-content;
   max-width: 100%;
+
   font-size: 1.15rem;
 }
 
@@ -540,6 +544,16 @@ body {
   text-underline-offset: 4px;
 }
 
+.eyebrow a {
+  color: inherit;
+}
+
+.research .columns ul,
+.city-box ul {
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+
 
 /* ==========================================================
    12. UNDERGRADUATE RESEARCH
@@ -564,11 +578,6 @@ body {
 .city-box p {
   font-size: 1.35rem;
   line-height: 1.55;
-}
-
-.city-box ul {
-  padding-left: 1.2rem;
-  line-height: 1.7;
 }
 
 
@@ -656,26 +665,13 @@ body {
 
 
 /* ==========================================================
-   15. HAMBURGER NAVIGATION
-   ========================================================== */
-
-/* Hamburger: hidden on desktop */
-
-.nav-toggle {
-  display: none;
-}
-
-
-/* ==========================================================
-   16. TABLET AND MOBILE
+   15. MOBILE AND TABLET NAVIGATION
    Breakpoint: 800px
    ========================================================== */
 
 @media (max-width: 800px) {
 
-  /* ------------------------------------------
-     Navigation
-     ------------------------------------------ */
+  /* Navigation container */
 
   .nav {
     justify-content: flex-end;
@@ -686,7 +682,7 @@ body {
     mix-blend-mode: normal;
   }
 
-  /* Show hamburger */
+  /* Hamburger button */
 
   .nav-toggle {
     display: flex;
@@ -726,7 +722,7 @@ body {
       opacity 0.2s ease;
   }
 
-  /* Hamburger becomes X when open */
+  /* Hamburger transforms into X */
 
   .nav-toggle[aria-expanded="true"] span:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
@@ -740,13 +736,13 @@ body {
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* CLOSED: hide all text navigation */
+  /* Closed menu: completely hidden */
 
   .nav nav.nav-menu {
     display: none;
   }
 
-  /* OPEN: show dropdown */
+  /* Open menu: dropdown appears */
 
   .nav nav.nav-menu.is-open {
     display: flex;
@@ -768,13 +764,9 @@ body {
     border-radius: 5px;
 
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-
-    transform: translateY(0);
   }
+
+  /* Dropdown links */
 
   .nav nav.nav-menu a {
     display: block;
@@ -793,9 +785,9 @@ body {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  /* ------------------------------------------
+  /* --------------------------------------------------------
      General panel layouts
-     ------------------------------------------ */
+     -------------------------------------------------------- */
 
   .panel {
     padding: 12vh 7vw 7vh;
@@ -809,9 +801,7 @@ body {
     grid-template-columns: 1fr;
   }
 
-  /* ------------------------------------------
-     Cover
-     ------------------------------------------ */
+  /* Cover */
 
   .cover {
     padding: 5vh 5vw;
@@ -822,9 +812,7 @@ body {
     max-height: 90px;
   }
 
-  /* ------------------------------------------
-     Programs
-     ------------------------------------------ */
+  /* Programs */
 
   .cards {
     margin-top: 4vh;
@@ -838,17 +826,13 @@ body {
     align-content: center;
   }
 
-  /* ------------------------------------------
-     Metrics
-     ------------------------------------------ */
+  /* Metrics */
 
   .metric-grid {
     margin-top: 4vh;
   }
 
-  /* ------------------------------------------
-     Alumni globe
-     ------------------------------------------ */
+  /* Alumni globe */
 
   .globe-panel {
     grid-template-columns: 1fr;
@@ -888,21 +872,19 @@ body {
     min-height: 310px;
   }
 
-  /* ------------------------------------------
-     Research
-     ------------------------------------------ */
+  /* Research */
 
   .columns {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* Careers */
+
   .career-list {
     grid-template-columns: 1fr;
   }
 
-  /* ------------------------------------------
-     Footer
-     ------------------------------------------ */
+  /* Footer */
 
   .footer {
     flex-direction: column;
@@ -911,9 +893,7 @@ body {
     gap: 3rem;
   }
 
-  /* ------------------------------------------
-     Scroll snapping
-     ------------------------------------------ */
+  /* Scroll snapping */
 
   .snap {
     scroll-snap-type: y proximity;
@@ -922,7 +902,7 @@ body {
 
 
 /* ==========================================================
-   17. SMALL MOBILE
+   16. SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
@@ -961,20 +941,26 @@ body {
 
 
 /* ==========================================================
-   18. DESKTOP NAVIGATION
+   17. DESKTOP NAVIGATION
    Explicitly restore horizontal links above 800px
    ========================================================== */
 
 @media (min-width: 801px) {
 
+  .nav {
+    justify-content: flex-end;
+    align-items: center;
+  }
+
   .nav-toggle {
-    display: none !important;
+    display: none;
   }
 
   .nav nav.nav-menu {
-    display: flex !important;
+    display: flex;
 
     position: static;
+
     flex-direction: row;
     align-items: center;
     gap: 22px;
@@ -986,12 +972,6 @@ body {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-
-    transform: none;
   }
 
   .nav nav.nav-menu a {
@@ -999,20 +979,9 @@ body {
   }
 }
 
-@media (max-width: 800px) {
-
-  .nav nav.nav-menu {
-    display: none;
-  }
-
-  .nav nav.nav-menu.is-open {
-    display: flex;
-  }
-
-}
 
 /* ==========================================================
-   19. REDUCED MOTION
+   18. REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
