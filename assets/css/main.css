@@ -1,0 +1,944 @@
+/* ==========================================================
+   U OF T STATISTICS — GRADUATE PROGRAMS
+   ========================================================== */
+
+
+/* ==========================================================
+   VARIABLES
+   ========================================================== */
+
+:root {
+  --blue: #0180a5;
+  --navy: #08264b;
+  --globe-bg: #071b33;
+  --globe-land: #d9e8ed;
+  --black: #050505;
+  --white: #ffffff;
+  --paper: #f3f2ee;
+}
+
+
+/* ==========================================================
+   RESET / GLOBAL
+   ========================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+
+  background: var(--black);
+  color: var(--white);
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* ==========================================================
+   ACCESSIBILITY
+   ========================================================== */
+
+.skip {
+  position: fixed;
+  top: 0;
+  left: -999px;
+  z-index: 99;
+
+  padding: 1rem;
+
+  background: var(--white);
+  color: var(--black);
+}
+
+.skip:focus {
+  left: 0;
+}
+
+
+/* ==========================================================
+   NAVIGATION
+   ========================================================== */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  padding: 20px 3vw;
+
+  mix-blend-mode: difference;
+}
+
+.nav a {
+  color: var(--white);
+  text-decoration: none;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 0.78rem;
+}
+
+.crest {
+  padding: 5px;
+
+  border: 1px solid currentColor;
+}
+
+.nav nav {
+  display: flex;
+  gap: 22px;
+
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* ==========================================================
+   FULL-PAGE SCROLLING
+   ========================================================== */
+
+.snap {
+  height: 100vh;
+
+  overflow-y: auto;
+
+  scroll-snap-type: y mandatory;
+}
+
+.panel {
+  position: relative;
+
+  min-height: 100vh;
+  padding: 12vh 7vw 8vh;
+
+  overflow: hidden;
+
+  scroll-snap-align: start;
+}
+
+
+/* ==========================================================
+   COMMON TYPOGRAPHY
+   ========================================================== */
+
+.dark {
+  background: var(--black);
+}
+
+.eyebrow {
+  margin-bottom: 2rem;
+
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+
+  opacity: 0.72;
+}
+
+.panel h2 {
+  margin: 0;
+
+  font-size: clamp(3rem, 7vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+}
+
+.lede {
+  max-width: 650px;
+
+  font-size: clamp(1.1rem, 1.7vw, 1.55rem);
+  line-height: 1.55;
+}
+
+
+/* ==========================================================
+   COVER
+   ========================================================== */
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 5vh 5vw;
+
+  background: var(--blue);
+}
+
+
+/* ----------------------------------------------------------
+   Collision canvas
+   ---------------------------------------------------------- */
+
+.cover canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  touch-action: none;
+}
+
+
+/* ----------------------------------------------------------
+   Cover foreground
+   ---------------------------------------------------------- */
+
+.cover-top,
+.cover-bottom,
+.down {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* ----------------------------------------------------------
+   Logo lockup
+   ---------------------------------------------------------- */
+
+.logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.logo-mark {
+  padding: 8px;
+
+  border: 1px solid var(--white);
+
+  font-weight: 800;
+}
+
+
+/* ----------------------------------------------------------
+   Statistics title
+   ---------------------------------------------------------- */
+
+.cover h1 {
+  margin: 0.25em 0 0;
+
+  font-size: clamp(4.5rem, 13vw, 12rem);
+  line-height: 0.8;
+  letter-spacing: -0.065em;
+}
+
+
+/* ----------------------------------------------------------
+   Graduate programs title
+   ---------------------------------------------------------- */
+
+.cover-bottom {
+  width: min(560px, 80vw);
+  padding-top: 18px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.cover-bottom p {
+  margin: 0 0 6px;
+
+  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-weight: 700;
+}
+
+.cover-bottom div {
+  font-size: 1.15rem;
+}
+
+.cover-bottom span {
+  opacity: 0.6;
+}
+
+
+/* ----------------------------------------------------------
+   Scroll arrow
+   ---------------------------------------------------------- */
+
+.down {
+  position: absolute;
+  right: 5vw;
+  bottom: 5vh;
+
+  color: var(--white);
+
+  font-size: 2rem;
+  text-decoration: none;
+}
+
+
+/* ==========================================================
+   PROGRAM OVERVIEW
+   ========================================================== */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+
+  margin-top: 8vh;
+
+  background: #444444;
+}
+
+.cards article {
+  min-height: 300px;
+  padding: 2.2rem;
+
+  background: #0b0b0b;
+}
+
+.cards b {
+  color: var(--blue);
+
+  font-size: 3rem;
+}
+
+.cards h3 {
+  font-size: 1.25rem;
+}
+
+.cards p {
+  color: #cfcfcf;
+
+  line-height: 1.55;
+}
+
+.cards a {
+  color: var(--white);
+}
+
+
+/* ==========================================================
+   INDIVIDUAL PROGRAMS
+   ========================================================== */
+
+.program {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--paper);
+  color: #111111;
+}
+
+.program.alt {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.program dl {
+  margin: 0;
+}
+
+.program dl div {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+
+  padding: 1.2rem 0;
+
+  border-top: 1px solid currentColor;
+}
+
+.program dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.program dd {
+  margin: 0;
+
+  line-height: 1.45;
+}
+
+
+/* ==========================================================
+   WHY U OF T / METRICS
+   ========================================================== */
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  align-items: center;
+  gap: 8vw;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.metric-grid div {
+  padding: 1.5rem 1rem 2.5rem 0;
+
+  border-top: 1px solid #555555;
+}
+
+.metric-grid strong {
+  display: block;
+
+  color: var(--blue);
+
+  font-size: clamp(2.5rem, 5vw, 5rem);
+  letter-spacing: -0.05em;
+}
+
+.metric-grid span {
+  line-height: 1.4;
+}
+
+.metrics small {
+  position: absolute;
+  right: 7vw;
+  bottom: 4vh;
+
+  color: #aaaaaa;
+}
+
+
+/* ==========================================================
+   ALUMNI — INTERACTIVE GLOBE
+   ========================================================== */
+
+.globe-panel {
+  display: grid;
+
+  /*
+   * Desktop:
+   * Copy occupies roughly 38%.
+   * Globe occupies roughly 62%.
+   */
+  grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
+
+  align-items: center;
+  gap: 4vw;
+
+  width: 100%;
+
+  background: var(--globe-bg);
+}
+
+
+/* ----------------------------------------------------------
+   Globe copy — LEFT
+   ---------------------------------------------------------- */
+
+.globe-copy {
+  position: relative;
+  z-index: 2;
+
+  grid-column: 1;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.globe-copy p {
+  max-width: 480px;
+
+  color: rgba(255, 255, 255, 0.78);
+
+  line-height: 1.55;
+}
+
+
+/* ----------------------------------------------------------
+   Alumni statistics
+   ---------------------------------------------------------- */
+
+.globe-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+
+  width: 100%;
+  margin-top: 3rem;
+}
+
+.globe-stats div {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.globe-stats strong {
+  color: var(--white);
+
+  font-size: clamp(2rem, 3vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.globe-stats span {
+  margin-top: 0.5rem;
+
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+
+  opacity: 0.6;
+}
+
+
+/* ----------------------------------------------------------
+   Globe — RIGHT
+   ---------------------------------------------------------- */
+
+.globe-container {
+  position: relative;
+
+  grid-column: 2;
+
+  width: 100%;
+  height: 80vh;
+  min-width: 0;
+  min-height: 520px;
+
+  align-self: center;
+  justify-self: stretch;
+
+  cursor: grab;
+}
+
+.globe-container:active {
+  cursor: grabbing;
+}
+
+
+/* ----------------------------------------------------------
+   Globe canvas
+   ---------------------------------------------------------- */
+
+#globe-canvas {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  touch-action: none;
+}
+
+
+/* ----------------------------------------------------------
+   Tooltip not used in simplified version
+   ---------------------------------------------------------- */
+
+.globe-tooltip {
+  display: none;
+}
+
+
+/* ==========================================================
+   ALUMNI — MOBILE
+   ========================================================== */
+
+@media (max-width: 800px) {
+
+  .globe-panel {
+    /*
+     * ONLY mobile becomes one column.
+     */
+    grid-template-columns: minmax(0, 1fr);
+
+    align-content: center;
+
+    gap: 1rem;
+  }
+
+  .globe-copy {
+    grid-column: 1;
+
+    max-width: none;
+  }
+
+  .globe-copy h2 {
+    font-size: 3.3rem;
+  }
+
+  .globe-copy > p {
+    display: none;
+  }
+
+  .globe-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 1rem;
+
+    margin-top: 1.5rem;
+  }
+
+  .globe-stats strong {
+    font-size: clamp(1.8rem, 8vw, 3rem);
+  }
+
+  .globe-container {
+    grid-column: 1;
+
+    width: 100%;
+    height: 46vh;
+    min-height: 310px;
+  }
+}
+
+
+/* ==========================================================
+   ALUMNI — SMALL MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+  .globe-stats {
+    gap: 0.6rem;
+  }
+
+  .globe-stats strong {
+    font-size: 1.8rem;
+  }
+
+  .globe-stats span {
+    font-size: 0.6rem;
+  }
+
+  .globe-container {
+    height: 43vh;
+    min-height: 290px;
+  }
+}
+
+/* ==========================================================
+   RESEARCH
+   ========================================================== */
+
+.research {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--white);
+  color: #111111;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4vw;
+}
+
+.columns h3 {
+  color: var(--blue);
+}
+
+.columns p {
+  line-height: 1.9;
+}
+
+
+/* ==========================================================
+   TORONTO
+   ========================================================== */
+
+.city {
+  display: flex;
+  align-items: center;
+
+  background:
+    linear-gradient(
+      120deg,
+      var(--blue) 0 55%,
+      var(--black) 55%
+    );
+}
+
+.city-box {
+  max-width: 720px;
+}
+
+.city-box p {
+  font-size: 1.35rem;
+  line-height: 1.55;
+}
+
+
+/* ==========================================================
+   APPLY
+   ========================================================== */
+
+.apply {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8vw;
+
+  background: var(--blue);
+}
+
+.apply-copy {
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.apply-copy li {
+  margin-bottom: 1rem;
+}
+
+.button {
+  display: inline-block;
+
+  margin-top: 1rem;
+  padding: 14px 18px;
+
+  border: 1px solid var(--white);
+
+  color: var(--white);
+
+  text-decoration: none;
+}
+
+
+/* ==========================================================
+   FOOTER
+   ========================================================== */
+
+.footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  min-height: 100vh;
+
+  background: var(--black);
+
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.footer a {
+  color: var(--white);
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 800px) {
+
+  /* --------------------------------------------------------
+     Navigation
+     -------------------------------------------------------- */
+
+  .nav nav {
+    display: none;
+  }
+
+
+  /* --------------------------------------------------------
+     Panels
+     -------------------------------------------------------- */
+
+  .panel {
+    padding: 12vh 7vw 7vh;
+  }
+
+
+  /* --------------------------------------------------------
+     Single-column layouts
+     -------------------------------------------------------- */
+
+  .cards,
+  .program,
+  .metrics,
+  .research,
+  .apply {
+    grid-template-columns: 1fr;
+  }
+
+
+  /* --------------------------------------------------------
+     Cover
+     -------------------------------------------------------- */
+
+  .cover {
+    padding: 5vh 5vw;
+  }
+
+  .cover h1 {
+    font-size: 20vw;
+  }
+
+
+  /* --------------------------------------------------------
+     Programs
+     -------------------------------------------------------- */
+
+  .cards {
+    margin-top: 4vh;
+  }
+
+  .cards article {
+    min-height: auto;
+  }
+
+  .program {
+    align-content: center;
+  }
+
+
+  /* --------------------------------------------------------
+     Metrics
+     -------------------------------------------------------- */
+
+  .metric-grid {
+    margin-top: 4vh;
+  }
+
+
+  /* --------------------------------------------------------
+     Alumni globe
+
+     ONLY here does the globe switch to one column.
+     -------------------------------------------------------- */
+
+  .globe-panel {
+    grid-template-columns: 1fr;
+    align-content: center;
+
+    gap: 1rem;
+  }
+
+  .globe-copy h2 {
+    font-size: 3.3rem;
+  }
+
+  .globe-copy > p:not(.globe-instruction) {
+    display: none;
+  }
+
+  .globe-stats {
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 1rem;
+
+    margin-top: 1.5rem;
+  }
+
+  .globe-stats strong {
+    font-size: clamp(1.8rem, 8vw, 3rem);
+  }
+
+  .globe-instruction {
+    margin-top: 1.5rem;
+  }
+
+  .globe-container {
+    width: 100%;
+    height: 46vh;
+    min-height: 310px;
+  }
+
+
+  /* --------------------------------------------------------
+     Research
+     -------------------------------------------------------- */
+
+  .columns {
+    grid-template-columns: 1fr 1fr;
+  }
+
+
+  /* --------------------------------------------------------
+     Footer
+     -------------------------------------------------------- */
+
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+
+    gap: 3rem;
+  }
+
+
+  /* --------------------------------------------------------
+     Scroll snapping
+     -------------------------------------------------------- */
+
+  .snap {
+    scroll-snap-type: y proximity;
+  }
+}
+
+
+/* ==========================================================
+   SMALL MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+  .globe-stats {
+    gap: 0.6rem;
+  }
+
+  .globe-stats strong {
+    font-size: 1.8rem;
+  }
+
+  .globe-stats span {
+    font-size: 0.6rem;
+  }
+
+  .globe-container {
+    height: 43vh;
+    min-height: 290px;
+  }
+
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================================
+   REDUCED MOTION
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .snap {
+    scroll-snap-type: none;
+  }
+}
