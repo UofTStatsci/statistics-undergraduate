@@ -999,6 +999,17 @@ body {
   }
 }
 
+@media (max-width: 800px) {
+
+  .nav nav.nav-menu {
+    display: none;
+  }
+
+  .nav nav.nav-menu.is-open {
+    display: flex;
+  }
+
+}
 
 /* ==========================================================
    19. REDUCED MOTION
