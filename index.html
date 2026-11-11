@@ -463,6 +463,69 @@
   <script src="assets/js/alumni-globe.js?v=8"></script>
   <script src="assets/js/main.js"></script>
   <script src="assets/js/mobile-nav.js?v=2"></script>
+<!-- MOBILE HAMBURGER MENU -->
+<script>
+(() => {
+  "use strict";
 
+  const toggle = document.getElementById("nav-toggle");
+  const menu = document.getElementById("primary-navigation");
+  const header = document.querySelector(".nav");
+
+  if (!toggle || !menu || !header) {
+    console.error("Navigation elements not found.");
+    return;
+  }
+
+  function openMenu() {
+    menu.classList.add("is-open");
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-label", "Close navigation menu");
+  }
+
+  function closeMenu() {
+    menu.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Open navigation menu");
+  }
+
+  toggle.addEventListener("click", () => {
+    const isOpen = toggle.getAttribute("aria-expanded") === "true";
+
+    if (isOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  menu.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", closeMenu);
+  });
+
+  document.addEventListener("click", event => {
+    if (!header.contains(event.target)) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closeMenu();
+      toggle.focus();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 800) {
+      closeMenu();
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
 </body>
 </html>
