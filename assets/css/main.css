@@ -5,16 +5,20 @@
    UNDERGRADUATE DIGITAL BROCHURE
 
    File: assets/css/main.css
-   Version: 2.1
+   Version: 2.3
+
+   Shared design system:
+   Graduate Digital Brochure
 
    Updates:
-   - Dynamic mobile viewport sizing
-   - Android navigation safe-area support
-   - Improved mobile cover spacing
-   - Protected subtitle visibility
-   - Improved landscape tablet layout
-
-   Graduate brochure design preserved.
+   - Compact University and department logos
+   - Consistent white navigation typography
+   - Accessible dark navigation background
+   - Responsive menu icon styling
+   - Mobile navigation support
+   - Dynamic viewport and Android safe-area support
+   - Original D3 collision canvas
+   - Existing alumni globe and layouts preserved
    ========================================================== */
 
 
@@ -30,14 +34,18 @@
   --paper: #f3f2ee;
 
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  --nav-height: 58px;
 }
 
 
 /* ==========================================================
-   02 / RESET / GLOBAL
+   02 / RESET AND GLOBAL
    ========================================================== */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -47,9 +55,14 @@ html {
 
 body {
   margin: 0;
+  min-width: 320px;
+
   font-family: Arial, Helvetica, sans-serif;
-  background: #000;
-  color: #fff;
+
+  background: var(--black);
+  color: var(--white);
+
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -74,6 +87,11 @@ img {
   height: auto;
 }
 
+::selection {
+  background: var(--blue);
+  color: var(--white);
+}
+
 
 /* ==========================================================
    03 / ACCESSIBILITY
@@ -83,14 +101,23 @@ img {
   position: fixed;
   left: -999px;
   top: 0;
-  z-index: 99;
-  background: #fff;
-  color: #000;
+
+  z-index: 200;
+
+  background: var(--white);
+  color: var(--black);
+
   padding: 1rem;
 }
 
 .skip:focus {
-  left: 0;
+  left: 1rem;
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 4px;
 }
 
 
@@ -100,50 +127,201 @@ img {
 
 .nav {
   position: fixed;
-  z-index: 20;
+  z-index: 100;
+
   top: 0;
   left: 0;
+
   width: 100%;
-  padding: 20px 3vw;
+  min-height: var(--nav-height);
+
+  padding: 9px 3vw;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  mix-blend-mode: difference;
+  background: rgba(8, 38, 75, 0.98);
+
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+
+  mix-blend-mode: normal;
+}
+
+
+/* ----------------------------------------------------------
+   All navigation text is white.
+   No colour inversion or blend modes.
+   ---------------------------------------------------------- */
+
+.nav,
+.nav a {
+  color: #ffffff;
 }
 
 .nav a {
-  color: #fff;
   text-decoration: none;
 }
 
-.wordmark {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 0.78rem;
+.nav a:visited {
+  color: #ffffff;
 }
 
-.crest {
-  border: 1px solid;
-  padding: 5px;
+
+/* ----------------------------------------------------------
+   University wordmark
+   ---------------------------------------------------------- */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+
+  color: #ffffff;
+
+  font-size: 0.78rem;
+  font-weight: 500;
+
+  line-height: 1.2;
 }
+
+
+/* ----------------------------------------------------------
+   University crest / mark
+   ---------------------------------------------------------- */
+
+.crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 45px;
+
+  width: 45px;
+  height: 28px;
+
+  padding: 3px;
+
+  border: 1px solid #ffffff;
+
+  color: #ffffff;
+
+  font-size: 0.68rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* Prevent oversized logo images */
+
+.wordmark img,
+.nav .logo-mark img,
+.nav .crest img {
+  display: block;
+
+  width: auto;
+  max-width: 95px;
+
+  height: 27px;
+  max-height: 27px;
+
+  object-fit: contain;
+}
+
+
+/* ----------------------------------------------------------
+   Navigation links
+   ---------------------------------------------------------- */
 
 .nav nav {
   display: flex;
+  align-items: center;
   gap: 22px;
+
   font-size: 0.78rem;
+  font-weight: 700;
+
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .nav nav a {
-  transition: opacity 250ms ease;
+  color: #ffffff !important;
+  opacity: 1;
+
+  transition: opacity 200ms ease;
 }
 
 .nav nav a:hover {
-  opacity: 0.65;
+  color: #ffffff !important;
+  opacity: 0.75;
+}
+
+.nav nav a[aria-current="location"] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+
+/* ----------------------------------------------------------
+   Responsive navigation controls
+
+   Supports common existing toggle class names.
+   These controls should be connected to the existing
+   mobile navigation JavaScript.
+   ---------------------------------------------------------- */
+
+.nav-toggle,
+.menu-toggle,
+.mobile-menu-toggle,
+.menu-button {
+  display: none;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  padding: 8px;
+
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 0;
+
+  background: transparent;
+  color: #ffffff !important;
+
+  cursor: pointer;
+}
+
+.nav-toggle svg,
+.menu-toggle svg,
+.mobile-menu-toggle svg,
+.menu-button svg {
+  width: 24px;
+  height: 24px;
+
+  stroke: #ffffff;
+  color: #ffffff;
+}
+
+.nav-toggle span,
+.menu-toggle span,
+.mobile-menu-toggle span,
+.menu-button span {
+  background: #ffffff;
+}
+
+
+/* Mobile dropdown, when opened by existing JS */
+
+.nav nav.is-open,
+.nav nav.open,
+.nav nav.active {
+  display: flex;
 }
 
 
@@ -159,14 +337,15 @@ img {
   overflow-x: hidden;
 
   scroll-snap-type: y mandatory;
+
   overscroll-behavior-y: contain;
 }
 
 .panel {
+  position: relative;
+
   min-height: 100vh;
   min-height: 100dvh;
-
-  position: relative;
 
   scroll-snap-align: start;
 
@@ -177,105 +356,142 @@ img {
 
 
 /* ==========================================================
-   06 / COVER
+   06 / COVER AND COLLISION CANVAS
    ========================================================== */
 
 .cover {
-  background: var(--blue);
+  position: relative;
 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100%;
+
+  height: 100vh;
+  height: 100dvh;
+
+  min-height: 0;
 
   padding: 5vh 5vw;
 
-  position: relative;
+  overflow: hidden;
+
+  background: var(--blue);
+  color: var(--white);
+
   isolation: isolate;
 }
 
 
-/* ----------------------------------------------------------
-   Collision canvas
-   ---------------------------------------------------------- */
+/* Original D3 collision animation */
 
-#collision-canvas,
-.cover canvas {
+#collision-canvas {
   position: absolute;
   inset: 0;
+
+  display: block;
 
   width: 100%;
   height: 100%;
 
+  max-width: none;
+
   z-index: 0;
 
-  display: block;
   background: transparent;
 
   touch-action: none;
 }
 
 
-/* ----------------------------------------------------------
-   Cover foreground
-   ---------------------------------------------------------- */
+/* Cover foreground */
 
 .cover-top,
-.cover-bottom,
-.down {
+.cover-bottom {
   position: relative;
   z-index: 2;
 }
 
 
-/* ----------------------------------------------------------
-   Cover logo
-   ---------------------------------------------------------- */
+/* Compact department logo lockup */
 
 .logo-lockup {
   display: flex;
-  gap: 14px;
   align-items: center;
+  gap: 12px;
+
+  color: #ffffff;
 
   font-size: 0.78rem;
   line-height: 1.3;
 }
 
 .logo-mark {
-  font-weight: 800;
-  border: 1px solid #fff;
-  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 46px;
+
+  width: 46px;
+  height: 30px;
+
+  padding: 3px;
+
+  border: 1px solid #ffffff;
+
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 
-/* ----------------------------------------------------------
-   Main heading
-   ---------------------------------------------------------- */
+/* Cover logo image constraints */
+
+.cover .logo-lockup img,
+.cover .department-logo,
+.cover .cover-logo {
+  display: block;
+
+  width: auto;
+  height: auto;
+
+  max-width: 260px;
+  max-height: 42px;
+
+  object-fit: contain;
+  object-position: left center;
+}
+
+
+/* Main title */
 
 .cover h1 {
+  margin: 0.25em 0 0;
+
+  color: #ffffff;
+
   font-size: clamp(4.5rem, 13vw, 12rem);
 
-  margin: 0.25em 0 0;
+  font-weight: 900;
 
   line-height: 0.8;
   letter-spacing: -0.065em;
-  font-weight: 900;
 }
 
 
-/* ----------------------------------------------------------
-   Undergraduate Programs subtitle
-   ---------------------------------------------------------- */
+/* Cover subtitle */
 
 .cover-bottom {
-  width: min(560px, 80vw);
+  position: relative;
+  z-index: 2;
 
-  border-top: 1px solid rgba(255, 255, 255, 0.75);
+  width: min(560px, 80vw);
 
   padding-top: 18px;
   padding-bottom: 5px;
+
+  border-top: 1px solid rgba(255,255,255,0.75);
 }
 
 .cover-bottom p {
@@ -283,6 +499,7 @@ img {
 
   font-size: clamp(1.5rem, 3vw, 3rem);
   font-weight: 700;
+
   line-height: 1.1;
 }
 
@@ -295,20 +512,20 @@ img {
 }
 
 
-/* ----------------------------------------------------------
-   Down arrow
-   ---------------------------------------------------------- */
+/* Scroll indicator */
 
-.down {
+.cover .down {
   position: absolute;
+
+  z-index: 3;
 
   right: 5vw;
   bottom: 5vh;
 
-  color: #fff;
-  text-decoration: none;
+  color: #ffffff;
 
   font-size: 2rem;
+  text-decoration: none;
 }
 
 
@@ -323,10 +540,11 @@ img {
 .eyebrow {
   margin-bottom: 2rem;
 
+  font-size: 0.75rem;
+
   text-transform: uppercase;
   letter-spacing: 0.12em;
 
-  font-size: 0.75rem;
   opacity: 0.72;
 }
 
@@ -350,6 +568,10 @@ img {
   line-height: 1.55;
 }
 
+.panel p {
+  line-height: 1.55;
+}
+
 
 /* ==========================================================
    08 / PROGRAM OVERVIEW
@@ -357,21 +579,25 @@ img {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1px;
+
   margin-top: 8vh;
 
-  background: #444;
+  background: #444444;
 }
 
 .cards article {
-  min-height: 300px;
-  background: #0b0b0b;
-  padding: 2.2rem;
-
   display: flex;
   flex-direction: column;
+
+  min-height: 300px;
+
+  padding: 2.2rem;
+
+  background: #0b0b0b;
 }
 
 .cards b {
@@ -385,15 +611,18 @@ img {
 }
 
 .cards p {
-  line-height: 1.55;
   color: #cfcfcf;
+  line-height: 1.55;
 }
 
 .cards a {
-  color: #fff;
   display: inline-block;
+
   margin-top: auto;
   padding-top: 1.2rem;
+
+  color: #ffffff;
+
   text-decoration: none;
 }
 
@@ -407,19 +636,21 @@ img {
    ========================================================== */
 
 .program {
-  background: var(--paper);
-  color: #111;
-
   display: grid;
+
   grid-template-columns: 1.2fr 1fr;
 
   gap: 8vw;
+
   align-items: center;
+
+  background: var(--paper);
+  color: #111111;
 }
 
 .program.alt {
   background: var(--blue);
-  color: #fff;
+  color: #ffffff;
 }
 
 .program dl {
@@ -428,18 +659,21 @@ img {
 
 .program dl div {
   display: grid;
+
   grid-template-columns: 1fr 2fr;
 
   gap: 1rem;
 
-  border-top: 1px solid currentColor;
   padding: 1.2rem 0;
+
+  border-top: 1px solid currentColor;
 }
 
 .program dt {
+  font-size: 0.75rem;
+
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.75rem;
 }
 
 .program dd {
@@ -454,9 +688,11 @@ img {
 
 .metrics {
   display: grid;
+
   grid-template-columns: 1fr 1.3fr;
 
   gap: 8vw;
+
   align-items: center;
 }
 
@@ -466,29 +702,32 @@ img {
 }
 
 .metric-grid div {
-  border-top: 1px solid #555;
   padding: 1.5rem 1rem 2.5rem 0;
+  border-top: 1px solid #555555;
 }
 
 .metric-grid strong {
   display: block;
+
   color: var(--blue);
 
   font-size: clamp(2.5rem, 5vw, 5rem);
+
   letter-spacing: -0.05em;
 }
 
 .metric-grid span {
-  line-height: 1.4;
   display: block;
+  line-height: 1.4;
 }
 
 .metrics small {
   position: absolute;
+
   right: 7vw;
   bottom: 4vh;
 
-  color: #aaa;
+  color: #aaaaaa;
   font-size: 0.75rem;
 }
 
@@ -498,18 +737,21 @@ img {
    ========================================================== */
 
 .map-panel {
-  background: #071b33;
-
   display: grid;
+
   grid-template-columns: 0.65fr 1.35fr;
 
   gap: 4vw;
+
   align-items: center;
+
+  background: #071b33;
 }
 
 .map-copy {
   position: relative;
   z-index: 2;
+
   min-width: 0;
 }
 
@@ -519,33 +761,37 @@ img {
 }
 
 
-/* ----------------------------------------------------------
-   Three anchored statistics
-   ---------------------------------------------------------- */
+/* Alumni statistics */
 
 .globe-stats {
   display: grid;
+
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 1.1rem;
-  margin-top: 3rem;
+
   width: 100%;
+  margin-top: 3rem;
 }
 
 .globe-stats > div {
   display: flex;
   flex-direction: column;
+
   min-width: 0;
 
-  border-top: 1px solid rgba(255, 255, 255, 0.45);
   padding-top: 1.2rem;
+
+  border-top: 1px solid rgba(255,255,255,0.45);
 }
 
 .globe-stats strong {
   display: block;
-  color: var(--white);
+
+  color: #ffffff;
 
   font-size: clamp(2rem, 3.4vw, 4rem);
+
   font-weight: 700;
 
   line-height: 1;
@@ -556,25 +802,26 @@ img {
   margin-top: 0.65rem;
 
   font-size: 0.72rem;
+
   text-transform: uppercase;
   letter-spacing: 0.09em;
 
-  opacity: 0.65;
+  opacity: 0.75;
 }
 
 
-/* ----------------------------------------------------------
-   Globe container and canvas
-   ---------------------------------------------------------- */
+/* Globe container */
 
 .globe-container {
   position: relative;
+
   width: 100%;
 
   height: 75vh;
   min-height: 450px;
 
   overflow: hidden;
+
   cursor: grab;
   touch-action: none;
 }
@@ -583,20 +830,22 @@ img {
   cursor: grabbing;
 }
 
+
+/* Globe canvas */
+
 #globe-canvas {
   display: block;
 
   width: 100%;
   height: 100%;
+
   max-width: none;
 
   touch-action: none;
 }
 
 
-/* ----------------------------------------------------------
-   Globe tooltip
-   ---------------------------------------------------------- */
+/* Globe tooltip */
 
 .globe-tooltip {
   position: absolute;
@@ -604,15 +853,17 @@ img {
 
   pointer-events: none;
 
-  background: rgba(3, 17, 35, 0.94);
-  color: #fff;
-
-  border: 1px solid rgba(255, 255, 255, 0.2);
-
   padding: 7px 10px;
+
+  border: 1px solid rgba(255,255,255,0.2);
+
+  background: rgba(3,17,35,0.94);
+  color: #ffffff;
+
   font-size: 0.75rem;
 
   opacity: 0;
+
   transform: translateY(5px);
 
   transition:
@@ -631,18 +882,21 @@ img {
    ========================================================== */
 
 .research {
-  background: #fff;
-  color: #111;
-
   display: grid;
+
   grid-template-columns: 1fr 1fr;
 
   gap: 8vw;
+
   align-items: center;
+
+  background: #ffffff;
+  color: #111111;
 }
 
 .columns {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
 
   gap: 4vw;
@@ -662,15 +916,15 @@ img {
    ========================================================== */
 
 .city {
+  display: flex;
+  align-items: center;
+
   background:
     linear-gradient(
       120deg,
-      #0180a5 0 55%,
+      var(--blue) 0 55%,
       #050505 55%
     );
-
-  display: flex;
-  align-items: center;
 }
 
 .city-box {
@@ -688,13 +942,16 @@ img {
    ========================================================== */
 
 .apply {
-  background: var(--blue);
-
   display: grid;
+
   grid-template-columns: 1fr 1fr;
 
   gap: 8vw;
+
   align-items: center;
+
+  background: var(--blue);
+  color: #ffffff;
 }
 
 .apply-copy {
@@ -703,9 +960,10 @@ img {
 }
 
 .apply-copy h3 {
-  font-size: 1.3rem;
   margin-top: 1.8rem;
   margin-bottom: 0.7rem;
+
+  font-size: 1.3rem;
 }
 
 .apply-copy li {
@@ -713,7 +971,7 @@ img {
 }
 
 .apply-copy a {
-  color: #fff;
+  color: #ffffff;
 }
 
 .button {
@@ -722,9 +980,9 @@ img {
   margin-top: 1rem;
   padding: 14px 18px;
 
-  border: 1px solid #fff;
-  color: #fff;
+  border: 1px solid #ffffff;
 
+  color: #ffffff;
   text-decoration: none;
 
   transition:
@@ -733,9 +991,8 @@ img {
 }
 
 .button:hover {
-  background: #fff;
+  background: #ffffff;
   color: var(--blue);
-  opacity: 1;
 }
 
 .program-codes {
@@ -744,12 +1001,14 @@ img {
 
 .program-codes > div {
   display: grid;
+
   grid-template-columns: 120px 1fr;
 
   gap: 1rem;
 
-  border-top: 1px solid currentColor;
   padding: 1.2rem 0;
+
+  border-top: 1px solid currentColor;
 }
 
 .program-codes strong {
@@ -767,32 +1026,79 @@ img {
    ========================================================== */
 
 .footer {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: flex-end;
+
+  gap: 3rem;
+
   min-height: 100vh;
   min-height: 100dvh;
 
   background: #050505;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
 
   font-size: 1.1rem;
   line-height: 1.6;
 }
 
 .footer a {
-  color: #fff;
+  color: #ffffff;
 }
 
 
 /* ==========================================================
-   16 / MOBILE
+   16 / TABLET AND MOBILE
    ========================================================== */
 
 @media (max-width: 800px) {
 
+  .nav {
+    min-height: 54px;
+    padding: 8px 5vw;
+  }
+
   .nav nav {
     display: none;
+  }
+
+  .nav-toggle,
+  .menu-toggle,
+  .mobile-menu-toggle,
+  .menu-button {
+    display: inline-flex;
+  }
+
+  .nav nav.is-open,
+  .nav nav.open,
+  .nav nav.active {
+    position: absolute;
+
+    top: 100%;
+    left: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 0;
+
+    width: 100%;
+    padding: 10px 5vw 18px;
+
+    background: #08264b;
+
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .nav nav.is-open a,
+  .nav nav.open a,
+  .nav nav.active a {
+    display: block;
+
+    padding: 12px 0;
+
+    color: #ffffff !important;
   }
 
   .panel {
@@ -861,9 +1167,7 @@ img {
   }
 
 
-  /* --------------------------------------------------------
-     MOBILE COVER — DYNAMIC VIEWPORT
-     -------------------------------------------------------- */
+  /* Mobile cover and safe area */
 
   .cover {
     height: 100vh;
@@ -884,32 +1188,29 @@ img {
     justify-content: space-between;
   }
 
-
-  /* --------------------------------------------------------
-     Mobile logo
-     -------------------------------------------------------- */
-
   .cover-top {
     flex: 0 0 auto;
     min-height: 0;
   }
 
-  .logo-lockup {
+  .cover .logo-lockup {
     font-size: 0.72rem;
     gap: 10px;
   }
 
-  .logo-mark {
-    padding: 6px;
+  .cover .logo-mark {
+    flex-basis: 42px;
+    width: 42px;
+    height: 27px;
+    padding: 3px;
   }
 
-
-  /* --------------------------------------------------------
-     Mobile headline
-
-     Scale with viewport width and height so the
-     headline doesn't push the subtitle below the screen.
-     -------------------------------------------------------- */
+  .cover .logo-lockup img,
+  .cover .department-logo,
+  .cover .cover-logo {
+    max-height: 36px;
+    max-width: 210px;
+  }
 
   .cover h1 {
     font-size:
@@ -920,18 +1221,8 @@ img {
       );
 
     line-height: 0.86;
-
     margin-top: 0.28em;
-
-    letter-spacing: -0.065em;
   }
-
-
-  /* --------------------------------------------------------
-     Mobile subtitle
-
-     Reserve space on the right for the scroll arrow.
-     -------------------------------------------------------- */
 
   .cover-bottom {
     flex: 0 0 auto;
@@ -946,13 +1237,7 @@ img {
   }
 
   .cover-bottom p {
-    font-size:
-      clamp(
-        1.1rem,
-        5vw,
-        1.8rem
-      );
-
+    font-size: clamp(1.1rem, 5vw, 1.8rem);
     line-height: 1.15;
   }
 
@@ -961,40 +1246,15 @@ img {
     line-height: 1.4;
   }
 
-
-  /* --------------------------------------------------------
-     Scroll arrow
-
-     Position above the navigation ribbon.
-     -------------------------------------------------------- */
-
   .cover .down {
-    z-index: 3;
-
     right: 5vw;
-
-    bottom:
-      calc(10px + var(--safe-bottom));
-
+    bottom: calc(10px + var(--safe-bottom));
     font-size: 1.8rem;
   }
-
-
-  /* --------------------------------------------------------
-     Full-page scrolling
-
-     Avoid snapping problems on mobile browsers when
-     their address and navigation bars expand or collapse.
-     -------------------------------------------------------- */
 
   .snap {
     scroll-snap-type: y proximity;
   }
-
-
-  /* --------------------------------------------------------
-     Footer
-     -------------------------------------------------------- */
 
   .footer {
     flex-direction: column;
@@ -1077,7 +1337,7 @@ img {
     margin-top: 0.18em;
   }
 
-  .logo-lockup {
+  .cover .logo-lockup {
     font-size: 0.65rem;
   }
 
