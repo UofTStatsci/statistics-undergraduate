@@ -1,51 +1,27 @@
 
 /* ==========================================================
-   UNIVERSITY OF TORONTO
-   DEPARTMENT OF STATISTICAL SCIENCES
-   UNDERGRADUATE DIGITAL BROCHURE
-
-   File: assets/css/main.css
-   Version: 2.3
-
-   Shared design system:
-   Graduate Digital Brochure
-
-   Updates:
-   - Compact University and department logos
-   - Consistent white navigation typography
-   - Accessible dark navigation background
-   - Responsive menu icon styling
-   - Mobile navigation support
-   - Dynamic viewport and Android safe-area support
-   - Original D3 collision canvas
-   - Existing alumni globe and layouts preserved
+   U OF T STATISTICAL SCIENCES
+   UNDERGRADUATE PROGRAMS
+   MAIN STYLESHEET
    ========================================================== */
 
 
 /* ==========================================================
-   01 / VARIABLES
+   1. VARIABLES AND GLOBAL RESET
    ========================================================== */
 
 :root {
   --blue: #0180a5;
+  --undergrad-blue: #002a5c;
   --navy: #08264b;
+  --globe-bg: #071b33;
+  --globe-land: #d9e8ed;
   --black: #050505;
   --white: #ffffff;
   --paper: #f3f2ee;
-
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-
-  --nav-height: 58px;
 }
 
-
-/* ==========================================================
-   02 / RESET AND GLOBAL
-   ========================================================== */
-
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
 
@@ -55,482 +31,114 @@ html {
 
 body {
   margin: 0;
-  min-width: 320px;
-
-  font-family: Arial, Helvetica, sans-serif;
-
   background: var(--black);
   color: var(--white);
-
-  -webkit-font-smoothing: antialiased;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-a {
-  color: inherit;
-}
-
-img,
-svg,
-canvas {
-  max-width: 100%;
-}
-
-img {
-  display: block;
-  height: auto;
-}
-
-::selection {
-  background: var(--blue);
-  color: var(--white);
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 
 /* ==========================================================
-   03 / ACCESSIBILITY
+   2. ACCESSIBILITY
    ========================================================== */
 
 .skip {
   position: fixed;
-  left: -999px;
   top: 0;
-
-  z-index: 200;
-
+  left: -999px;
+  z-index: 99;
+  padding: 1rem;
   background: var(--white);
   color: var(--black);
-
-  padding: 1rem;
 }
 
 .skip:focus {
-  left: 1rem;
-  top: 1rem;
+  left: 0;
 }
 
-:focus-visible {
-  outline: 3px solid var(--white);
-  outline-offset: 4px;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 
 /* ==========================================================
-   04 / NAVIGATION
+   3. NAVIGATION
+   Desktop: Horizontal links
+   Mobile: Hamburger dropdown
+   Breakpoint: 800px
    ========================================================== */
 
 .nav {
   position: fixed;
-  z-index: 100;
-
   top: 0;
   left: 0;
-
-  width: 100%;
-  min-height: var(--nav-height);
-
-  padding: 9px 3vw;
+  z-index: 20;
 
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: flex-end;
 
-  background: rgba(8, 38, 75, 0.98);
+  width: 100%;
+  padding: 20px 3vw;
 
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-
-  mix-blend-mode: normal;
-}
-
-
-/* ----------------------------------------------------------
-   All navigation text is white.
-   No colour inversion or blend modes.
-   ---------------------------------------------------------- */
-
-.nav,
-.nav a {
-  color: #ffffff;
+  mix-blend-mode: difference;
 }
 
 .nav a {
+  color: var(--white);
   text-decoration: none;
 }
 
-.nav a:visited {
-  color: #ffffff;
-}
+/* Desktop navigation */
 
-
-/* ----------------------------------------------------------
-   University wordmark
-   ---------------------------------------------------------- */
-
-.wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-
-  min-width: 0;
-
-  color: #ffffff;
-
-  font-size: 0.78rem;
-  font-weight: 500;
-
-  line-height: 1.2;
-}
-
-
-/* ----------------------------------------------------------
-   University crest / mark
-   ---------------------------------------------------------- */
-
-.crest {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 45px;
-
-  width: 45px;
-  height: 28px;
-
-  padding: 3px;
-
-  border: 1px solid #ffffff;
-
-  color: #ffffff;
-
-  font-size: 0.68rem;
-  font-weight: 700;
-
-  white-space: nowrap;
-}
-
-
-/* Prevent oversized logo images */
-
-.wordmark img,
-.nav .logo-mark img,
-.nav .crest img {
-  display: block;
-
-  width: auto;
-  max-width: 95px;
-
-  height: 27px;
-  max-height: 27px;
-
-  object-fit: contain;
-}
-
-
-/* ----------------------------------------------------------
-   Navigation links
-   ---------------------------------------------------------- */
-
-.nav nav {
+.nav nav.nav-menu {
   display: flex;
   align-items: center;
   gap: 22px;
 
   font-size: 0.78rem;
-  font-weight: 700;
-
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
-.nav nav a {
-  color: #ffffff !important;
-  opacity: 1;
+/* Hamburger button: hidden on desktop */
 
-  transition: opacity 200ms ease;
-}
-
-.nav nav a:hover {
-  color: #ffffff !important;
-  opacity: 0.75;
-}
-
-.nav nav a[aria-current="location"] {
-  text-decoration: underline;
-  text-underline-offset: 6px;
-}
-
-
-/* ----------------------------------------------------------
-   Responsive navigation controls
-
-   Supports common existing toggle class names.
-   These controls should be connected to the existing
-   mobile navigation JavaScript.
-   ---------------------------------------------------------- */
-
-.nav-toggle,
-.menu-toggle,
-.mobile-menu-toggle,
-.menu-button {
+.nav-toggle {
   display: none;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 42px;
-  height: 42px;
-
-  padding: 8px;
-
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 0;
-
+  border: 0;
   background: transparent;
-  color: #ffffff !important;
-
   cursor: pointer;
-}
-
-.nav-toggle svg,
-.menu-toggle svg,
-.mobile-menu-toggle svg,
-.menu-button svg {
-  width: 24px;
-  height: 24px;
-
-  stroke: #ffffff;
-  color: #ffffff;
-}
-
-.nav-toggle span,
-.menu-toggle span,
-.mobile-menu-toggle span,
-.menu-button span {
-  background: #ffffff;
-}
-
-
-/* Mobile dropdown, when opened by existing JS */
-
-.nav nav.is-open,
-.nav nav.open,
-.nav nav.active {
-  display: flex;
 }
 
 
 /* ==========================================================
-   05 / FULL-PAGE SCROLLING
+   4. FULL-PAGE SCROLLING
    ========================================================== */
 
 .snap {
   height: 100vh;
-  height: 100dvh;
-
   overflow-y: auto;
-  overflow-x: hidden;
-
   scroll-snap-type: y mandatory;
-
-  overscroll-behavior-y: contain;
 }
 
 .panel {
   position: relative;
-
   min-height: 100vh;
-  min-height: 100dvh;
-
-  scroll-snap-align: start;
-
   padding: 12vh 7vw 8vh;
-
   overflow: hidden;
+  scroll-snap-align: start;
 }
 
 
 /* ==========================================================
-   06 / COVER AND COLLISION CANVAS
-   ========================================================== */
-
-.cover {
-  position: relative;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  width: 100%;
-
-  height: 100vh;
-  height: 100dvh;
-
-  min-height: 0;
-
-  padding: 5vh 5vw;
-
-  overflow: hidden;
-
-  background: var(--blue);
-  color: var(--white);
-
-  isolation: isolate;
-}
-
-
-/* Original D3 collision animation */
-
-#collision-canvas {
-  position: absolute;
-  inset: 0;
-
-  display: block;
-
-  width: 100%;
-  height: 100%;
-
-  max-width: none;
-
-  z-index: 0;
-
-  background: transparent;
-
-  touch-action: none;
-}
-
-
-/* Cover foreground */
-
-.cover-top,
-.cover-bottom {
-  position: relative;
-  z-index: 2;
-}
-
-
-/* Compact department logo lockup */
-
-.logo-lockup {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  color: #ffffff;
-
-  font-size: 0.78rem;
-  line-height: 1.3;
-}
-
-.logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 46px;
-
-  width: 46px;
-  height: 30px;
-
-  padding: 3px;
-
-  border: 1px solid #ffffff;
-
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-
-/* Cover logo image constraints */
-
-.cover .logo-lockup img,
-.cover .department-logo,
-.cover .cover-logo {
-  display: block;
-
-  width: auto;
-  height: auto;
-
-  max-width: 260px;
-  max-height: 42px;
-
-  object-fit: contain;
-  object-position: left center;
-}
-
-
-/* Main title */
-
-.cover h1 {
-  margin: 0.25em 0 0;
-
-  color: #ffffff;
-
-  font-size: clamp(4.5rem, 13vw, 12rem);
-
-  font-weight: 900;
-
-  line-height: 0.8;
-  letter-spacing: -0.065em;
-}
-
-
-/* Cover subtitle */
-
-.cover-bottom {
-  position: relative;
-  z-index: 2;
-
-  width: min(560px, 80vw);
-
-  padding-top: 18px;
-  padding-bottom: 5px;
-
-  border-top: 1px solid rgba(255,255,255,0.75);
-}
-
-.cover-bottom p {
-  margin: 0 0 6px;
-
-  font-size: clamp(1.5rem, 3vw, 3rem);
-  font-weight: 700;
-
-  line-height: 1.1;
-}
-
-.cover-bottom div {
-  font-size: 1.15rem;
-}
-
-.cover-bottom span {
-  opacity: 0.6;
-}
-
-
-/* Scroll indicator */
-
-.cover .down {
-  position: absolute;
-
-  z-index: 3;
-
-  right: 5vw;
-  bottom: 5vh;
-
-  color: #ffffff;
-
-  font-size: 2rem;
-  text-decoration: none;
-}
-
-
-/* ==========================================================
-   07 / COMMON TYPOGRAPHY
+   5. COMMON TYPOGRAPHY
    ========================================================== */
 
 .dark {
@@ -539,49 +147,132 @@ img {
 
 .eyebrow {
   margin-bottom: 2rem;
-
   font-size: 0.75rem;
-
   text-transform: uppercase;
   letter-spacing: 0.12em;
-
   opacity: 0.72;
 }
 
 .panel h2 {
   margin: 0;
-
   font-size: clamp(3rem, 7vw, 7rem);
-
   line-height: 0.9;
   letter-spacing: -0.055em;
 }
 
-.panel h3 {
-  line-height: 1.2;
-}
-
 .lede {
   max-width: 650px;
-
   font-size: clamp(1.1rem, 1.7vw, 1.55rem);
-  line-height: 1.55;
-}
-
-.panel p {
   line-height: 1.55;
 }
 
 
 /* ==========================================================
-   08 / PROGRAM OVERVIEW
+   6. COVER
+   ========================================================== */
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 5vh 5vw;
+
+  background: var(--undergrad-blue);
+}
+
+.cover canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  touch-action: none;
+}
+
+.cover-top,
+.cover-bottom,
+.down {
+  position: relative;
+  z-index: 2;
+}
+
+/* Official reverse-white SVG logo */
+
+.cover-top {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.cover-logo {
+  display: block;
+
+  width: clamp(220px, 30vw, 430px);
+  max-width: 100%;
+  max-height: 115px;
+  height: auto;
+
+  object-fit: contain;
+  object-position: left center;
+
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* Undergraduate program title */
+
+.cover-bottom {
+  width: min(560px, 80vw);
+  padding-top: 18px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.cover-bottom p {
+  width: fit-content;
+  max-width: 100%;
+
+  margin: 0 0 6px;
+
+  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-weight: 700;
+}
+
+.cover-bottom div {
+  width: fit-content;
+  max-width: 100%;
+
+  font-size: 1.15rem;
+}
+
+.cover-bottom span {
+  opacity: 0.6;
+}
+
+/* Scroll arrow */
+
+.down {
+  position: absolute;
+  right: 5vw;
+  bottom: 5vh;
+
+  color: var(--white);
+  font-size: 2rem;
+  text-decoration: none;
+}
+
+
+/* ==========================================================
+   7. PROGRAM OVERVIEW
    ========================================================== */
 
 .cards {
   display: grid;
-
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
 
   margin-top: 8vh;
@@ -590,24 +281,19 @@ img {
 }
 
 .cards article {
-  display: flex;
-  flex-direction: column;
-
   min-height: 300px;
-
   padding: 2.2rem;
 
   background: #0b0b0b;
 }
 
 .cards b {
-  font-size: 3rem;
   color: var(--blue);
+  font-size: 3rem;
 }
 
 .cards h3 {
   font-size: 1.25rem;
-  line-height: 1.3;
 }
 
 .cards p {
@@ -616,33 +302,19 @@ img {
 }
 
 .cards a {
-  display: inline-block;
-
-  margin-top: auto;
-  padding-top: 1.2rem;
-
-  color: #ffffff;
-
-  text-decoration: none;
-}
-
-.cards a:hover {
-  opacity: 0.65;
+  color: var(--white);
 }
 
 
 /* ==========================================================
-   09 / INDIVIDUAL PROGRAMS
+   8. INDIVIDUAL PROGRAMS
    ========================================================== */
 
 .program {
   display: grid;
-
   grid-template-columns: 1.2fr 1fr;
-
-  gap: 8vw;
-
   align-items: center;
+  gap: 8vw;
 
   background: var(--paper);
   color: #111111;
@@ -650,7 +322,7 @@ img {
 
 .program.alt {
   background: var(--blue);
-  color: #ffffff;
+  color: var(--white);
 }
 
 .program dl {
@@ -659,9 +331,7 @@ img {
 
 .program dl div {
   display: grid;
-
   grid-template-columns: 1fr 2fr;
-
   gap: 1rem;
 
   padding: 1.2rem 0;
@@ -671,7 +341,6 @@ img {
 
 .program dt {
   font-size: 0.75rem;
-
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -681,19 +350,20 @@ img {
   line-height: 1.45;
 }
 
+.program .lede {
+  max-width: 680px;
+}
+
 
 /* ==========================================================
-   10 / METRICS AND RESEARCH
+   9. WHY STUDY STATISTICS / METRICS
    ========================================================== */
 
 .metrics {
   display: grid;
-
   grid-template-columns: 1fr 1.3fr;
-
-  gap: 8vw;
-
   align-items: center;
+  gap: 8vw;
 }
 
 .metric-grid {
@@ -708,197 +378,141 @@ img {
 
 .metric-grid strong {
   display: block;
-
   color: var(--blue);
 
   font-size: clamp(2.5rem, 5vw, 5rem);
-
   letter-spacing: -0.05em;
 }
 
 .metric-grid span {
-  display: block;
   line-height: 1.4;
 }
 
 .metrics small {
   position: absolute;
-
   right: 7vw;
   bottom: 4vh;
-
   color: #aaaaaa;
-  font-size: 0.75rem;
 }
 
 
 /* ==========================================================
-   11 / ALUMNI GLOBE
+   10. ALUMNI — INTERACTIVE GLOBE
    ========================================================== */
 
-.map-panel {
+.globe-panel {
   display: grid;
 
-  grid-template-columns: 0.65fr 1.35fr;
-
-  gap: 4vw;
+  grid-template-columns:
+    minmax(320px, 0.75fr)
+    minmax(0, 1.25fr);
 
   align-items: center;
+  gap: 4vw;
 
-  background: #071b33;
+  width: 100%;
+
+  background: var(--globe-bg);
 }
 
-.map-copy {
+/* Globe copy */
+
+.globe-copy {
   position: relative;
   z-index: 2;
 
+  grid-column: 1;
+
+  width: 100%;
   min-width: 0;
+  max-width: 520px;
 }
 
-.map-copy p {
+.globe-copy p {
   max-width: 480px;
+  color: rgba(255, 255, 255, 0.78);
   line-height: 1.55;
 }
-
 
 /* Alumni statistics */
 
 .globe-stats {
   display: grid;
-
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-
-  gap: 1.1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
 
   width: 100%;
+  max-width: 390px;
   margin-top: 3rem;
 }
 
-.globe-stats > div {
+.globe-stats div {
   display: flex;
   flex-direction: column;
-
   min-width: 0;
-
-  padding-top: 1.2rem;
-
-  border-top: 1px solid rgba(255,255,255,0.45);
 }
 
 .globe-stats strong {
-  display: block;
-
-  color: #ffffff;
-
-  font-size: clamp(2rem, 3.4vw, 4rem);
-
-  font-weight: 700;
-
+  color: var(--white);
+  font-size: clamp(2rem, 3vw, 4rem);
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
 }
 
 .globe-stats span {
-  margin-top: 0.65rem;
-
+  margin-top: 0.5rem;
   font-size: 0.72rem;
-
   text-transform: uppercase;
-  letter-spacing: 0.09em;
-
-  opacity: 0.75;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
 }
 
-
-/* Globe container */
+/* Globe canvas */
 
 .globe-container {
   position: relative;
+  grid-column: 2;
 
   width: 100%;
+  height: 80vh;
+  min-width: 0;
+  min-height: 520px;
 
-  height: 75vh;
-  min-height: 450px;
-
-  overflow: hidden;
+  align-self: center;
+  justify-self: stretch;
 
   cursor: grab;
-  touch-action: none;
 }
 
 .globe-container:active {
   cursor: grabbing;
 }
 
-
-/* Globe canvas */
-
 #globe-canvas {
   display: block;
-
   width: 100%;
   height: 100%;
-
-  max-width: none;
-
   touch-action: none;
 }
 
 
-/* Globe tooltip */
-
-.globe-tooltip {
-  position: absolute;
-  z-index: 5;
-
-  pointer-events: none;
-
-  padding: 7px 10px;
-
-  border: 1px solid rgba(255,255,255,0.2);
-
-  background: rgba(3,17,35,0.94);
-  color: #ffffff;
-
-  font-size: 0.75rem;
-
-  opacity: 0;
-
-  transform: translateY(5px);
-
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.globe-tooltip.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-
 /* ==========================================================
-   12 / RESEARCH AND EXPERIENCE
+   11. CAREERS AND EXPERIENCE
    ========================================================== */
 
 .research {
   display: grid;
-
   grid-template-columns: 1fr 1fr;
-
+  align-items: center;
   gap: 8vw;
 
-  align-items: center;
-
-  background: #ffffff;
+  background: var(--white);
   color: #111111;
 }
 
 .columns {
   display: grid;
-
   grid-template-columns: 1fr 1fr;
-
   gap: 4vw;
 }
 
@@ -910,48 +524,127 @@ img {
   line-height: 1.9;
 }
 
+.career-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 2rem;
+
+  margin: 1.2rem 0 0;
+  padding-left: 1.2rem;
+
+  line-height: 1.7;
+}
+
+.text-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.eyebrow a {
+  color: inherit;
+}
+
+.research .columns ul,
+.city-box ul {
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+
 
 /* ==========================================================
-   13 / STUDENT COMMUNITY
+   12. UNDERGRADUATE RESEARCH
+   ========================================================== */
+
+
+/* ==========================================================
+   UNDERGRADUATE RESEARCH
    ========================================================== */
 
 .city {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
 
-  background:
-    linear-gradient(
-      120deg,
-      var(--blue) 0 55%,
-      #050505 55%
-    );
+  padding: 0;
+
+  background: linear-gradient(
+    90deg,
+    var(--blue) 0%,
+    var(--blue) 50%,
+    var(--black) 50%,
+    var(--black) 100%
+  );
 }
 
 .city-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
   max-width: 720px;
+  padding: 10vh 7vw;
 }
 
 .city-box p {
-  font-size: 1.35rem;
-  line-height: 1.55;
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+
+.research-image {
+  position: relative;
+  min-width: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.research-image img {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+
+  .city {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 40vh;
+    background: var(--blue);
+  }
+
+  .city-box {
+    padding: 10vh 7vw 7vh;
+  }
+
+  .research-image {
+    min-height: 40vh;
+  }
+
 }
 
 
 /* ==========================================================
-   14 / ADMISSIONS AND APPLY
+   13. ADMISSIONS
    ========================================================== */
 
 .apply {
   display: grid;
-
   grid-template-columns: 1fr 1fr;
-
+  align-items: center;
   gap: 8vw;
 
-  align-items: center;
-
   background: var(--blue);
-  color: #ffffff;
 }
 
 .apply-copy {
@@ -959,19 +652,8 @@ img {
   line-height: 1.55;
 }
 
-.apply-copy h3 {
-  margin-top: 1.8rem;
-  margin-bottom: 0.7rem;
-
-  font-size: 1.3rem;
-}
-
 .apply-copy li {
   margin-bottom: 1rem;
-}
-
-.apply-copy a {
-  color: #ffffff;
 }
 
 .button {
@@ -980,126 +662,258 @@ img {
   margin-top: 1rem;
   padding: 14px 18px;
 
-  border: 1px solid #ffffff;
+  border: 1px solid var(--white);
 
-  color: #ffffff;
+  color: var(--white);
   text-decoration: none;
-
-  transition:
-    background 200ms ease,
-    color 200ms ease;
 }
 
-.button:hover {
-  background: #ffffff;
-  color: var(--blue);
-}
+/* Program codes */
 
 .program-codes {
-  margin: 0;
-}
-
-.program-codes > div {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem 1.2rem;
 
-  grid-template-columns: 120px 1fr;
-
-  gap: 1rem;
-
-  padding: 1.2rem 0;
+  margin: 1rem 0 0;
+  padding-top: 1rem;
 
   border-top: 1px solid currentColor;
+
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
-.program-codes strong {
-  font-size: 0.82rem;
+.program-codes dt {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.program-codes span {
-  font-size: 0.85rem;
-  line-height: 1.45;
+.program-codes dd {
+  margin: 0;
+  text-align: right;
 }
 
 
 /* ==========================================================
-   15 / FOOTER
+   14. FINAL PAGE — DEPARTMENT / CONTACT
    ========================================================== */
 
 .footer {
-  display: flex;
-
-  justify-content: space-between;
-  align-items: flex-end;
-
-  gap: 3rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
 
   min-height: 100vh;
-  min-height: 100dvh;
+  padding: 0;
 
-  background: #050505;
+  background: var(--undergrad-blue);
+  color: var(--white);
 
-  font-size: 1.1rem;
-  line-height: 1.6;
+  overflow: hidden;
 }
 
-.footer a {
-  color: #ffffff;
+/* Contact information */
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 10vh 7vw;
+}
+
+.footer-content .eyebrow {
+  margin-bottom: 2rem;
+}
+
+.footer-content h2 {
+  margin: 0 0 3rem;
+
+  font-size: clamp(3rem, 6vw, 6rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+}
+
+.footer-details {
+  font-size: 1rem;
+  line-height: 1.8;
+  opacity: 0.85;
+}
+
+.footer-link {
+  display: inline-block;
+  width: fit-content;
+
+  margin-top: 1.5rem;
+  padding-bottom: 5px;
+
+  color: var(--white);
+  text-decoration: none;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.footer-social {
+  margin-top: 4rem;
+
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  opacity: 0.65;
+}
+
+/* Photograph */
+
+.footer-image {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+
+  overflow: hidden;
+}
+
+.footer-image img {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: right center;
+
+  /* Avoid unwanted image stretching */
+  max-width: none;
 }
 
 
 /* ==========================================================
-   16 / TABLET AND MOBILE
+   15. MOBILE AND TABLET
+   Breakpoint: 800px
    ========================================================== */
 
 @media (max-width: 800px) {
 
+  /* Navigation container */
+
   .nav {
-    min-height: 54px;
-    padding: 8px 5vw;
+    justify-content: flex-end;
+    align-items: flex-start;
+
+    padding: 16px 5vw;
+
+    mix-blend-mode: normal;
   }
 
-  .nav nav {
+  /* Hamburger button */
+
+  .nav-toggle {
+    display: flex;
+
+    position: relative;
+    z-index: 22;
+
+    width: 42px;
+    height: 42px;
+    padding: 10px;
+
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+
+    background: var(--undergrad-blue);
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-toggle span {
+    display: block;
+
+    width: 20px;
+    height: 2px;
+
+    background: var(--white);
+    border-radius: 2px;
+
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease;
+  }
+
+  /* Hamburger transforms into X */
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .nav-toggle[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* Closed state: hide all text navigation */
+
+  .nav nav.nav-menu {
     display: none;
   }
 
-  .nav-toggle,
-  .menu-toggle,
-  .mobile-menu-toggle,
-  .menu-button {
-    display: inline-flex;
-  }
+  /* Open state: show dropdown */
 
-  .nav nav.is-open,
-  .nav nav.open,
-  .nav nav.active {
-    position: absolute;
-
-    top: 100%;
-    left: 0;
-
+  .nav nav.nav-menu.is-open {
     display: flex;
+
+    position: absolute;
+    top: 68px;
+    right: 5vw;
+
     flex-direction: column;
     align-items: stretch;
-
     gap: 0;
 
-    width: 100%;
-    padding: 10px 5vw 18px;
+    width: min(260px, 90vw);
+    padding: 10px 0;
 
-    background: #08264b;
+    background: rgba(0, 30, 65, 0.98);
 
-    border-top: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
   }
 
-  .nav nav.is-open a,
-  .nav nav.open a,
-  .nav nav.active a {
+  /* Dropdown links */
+
+  .nav nav.nav-menu a {
     display: block;
 
-    padding: 12px 0;
+    padding: 15px 22px;
 
-    color: #ffffff !important;
+    color: var(--white);
+    font-size: 0.82rem;
+    letter-spacing: 0.09em;
+
+    text-decoration: none;
   }
+
+  .nav nav.nav-menu a:hover,
+  .nav nav.nav-menu a:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* General panel layouts */
 
   .panel {
     padding: 12vh 7vw 7vh;
@@ -1108,11 +922,23 @@ img {
   .cards,
   .program,
   .metrics,
-  .map-panel,
   .research,
   .apply {
     grid-template-columns: 1fr;
   }
+
+  /* Cover */
+
+  .cover {
+    padding: 5vh 5vw;
+  }
+
+  .cover-logo {
+    width: clamp(190px, 56vw, 320px);
+    max-height: 90px;
+  }
+
+  /* Programs */
 
   .cards {
     margin-top: 4vh;
@@ -1126,170 +952,106 @@ img {
     align-content: center;
   }
 
+  /* Metrics */
+
   .metric-grid {
     margin-top: 4vh;
   }
 
-  .metrics small {
-    position: static;
-    display: block;
-    margin-top: 2rem;
-  }
+  /* Alumni globe */
 
-  .map-panel {
+  .globe-panel {
+    grid-template-columns: 1fr;
     align-content: center;
+    gap: 1rem;
   }
 
-  .map-copy h2 {
+  .globe-copy {
+    grid-column: 1;
+    max-width: none;
+  }
+
+  .globe-copy h2 {
     font-size: 3.3rem;
   }
 
+  .globe-copy > p {
+    display: none;
+  }
+
   .globe-stats {
-    margin-top: 2rem;
-    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+    max-width: 360px;
   }
 
   .globe-stats strong {
-    font-size: clamp(1.8rem, 6vw, 3rem);
-  }
-
-  .globe-stats span {
-    font-size: 0.65rem;
+    font-size: clamp(1.8rem, 8vw, 3rem);
   }
 
   .globe-container {
-    height: 48vh;
-    min-height: 300px;
+    grid-column: 1;
+
+    width: 100%;
+    height: 46vh;
+    min-height: 310px;
   }
+
+  /* Research */
 
   .columns {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* Careers */
 
-  /* Mobile cover and safe area */
-
-  .cover {
-    height: 100vh;
-    height: 100dvh;
-
-    min-height: 0;
-
-    padding-top:
-      max(24px, env(safe-area-inset-top, 0px));
-
-    padding-right: 5vw;
-
-    padding-bottom:
-      calc(28px + var(--safe-bottom));
-
-    padding-left: 5vw;
-
-    justify-content: space-between;
+  .career-list {
+    grid-template-columns: 1fr;
   }
 
-  .cover-top {
-    flex: 0 0 auto;
-    min-height: 0;
+  /* Footer layout */
+
+  .footer {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 40vh;
+
+    min-height: 100vh;
   }
 
-  .cover .logo-lockup {
-    font-size: 0.72rem;
-    gap: 10px;
+  .footer-content {
+    padding: 10vh 7vw 7vh;
   }
 
-  .cover .logo-mark {
-    flex-basis: 42px;
-    width: 42px;
-    height: 27px;
-    padding: 3px;
+  .footer-content h2 {
+    font-size: clamp(3rem, 12vw, 5rem);
+    margin-bottom: 2rem;
   }
 
-  .cover .logo-lockup img,
-  .cover .department-logo,
-  .cover .cover-logo {
-    max-height: 36px;
-    max-width: 210px;
+  .footer-social {
+    margin-top: 2rem;
   }
 
-  .cover h1 {
-    font-size:
-      clamp(
-        3rem,
-        min(12vw, 10.5vh),
-        6.5rem
-      );
-
-    line-height: 0.86;
-    margin-top: 0.28em;
+  .footer-image {
+    min-height: 40vh;
   }
 
-  .cover-bottom {
-    flex: 0 0 auto;
-
-    width: calc(100% - 55px);
-    max-width: 560px;
-
-    margin-top: auto;
-
-    padding-top: 14px;
-    padding-bottom: 8px;
-  }
-
-  .cover-bottom p {
-    font-size: clamp(1.1rem, 5vw, 1.8rem);
-    line-height: 1.15;
-  }
-
-  .cover-bottom div {
-    font-size: clamp(0.78rem, 3vw, 1rem);
-    line-height: 1.4;
-  }
-
-  .cover .down {
-    right: 5vw;
-    bottom: calc(10px + var(--safe-bottom));
-    font-size: 1.8rem;
-  }
+  /* Scroll snapping */
 
   .snap {
     scroll-snap-type: y proximity;
   }
-
-  .footer {
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-start;
-    gap: 3rem;
-  }
-
 }
 
 
 /* ==========================================================
-   17 / SMALL MOBILE
+   16. SMALL MOBILE
    ========================================================== */
 
 @media (max-width: 520px) {
 
-  .cover h1 {
-    font-size: clamp(2.8rem, 11vw, 4.5rem);
-  }
-
-  .cover-bottom {
-    width: calc(100% - 48px);
-  }
-
-  .cover-bottom p {
-    font-size: clamp(1.05rem, 4.8vw, 1.5rem);
-  }
-
-  .cover-bottom div {
-    font-size: 0.8rem;
-  }
-
   .globe-stats {
-    gap: 0.65rem;
+    gap: 0.6rem;
   }
 
   .globe-stats strong {
@@ -1298,67 +1060,71 @@ img {
 
   .globe-stats span {
     font-size: 0.6rem;
-    letter-spacing: 0.05em;
   }
 
   .globe-container {
-    height: 46vh;
-    min-height: 280px;
+    height: 43vh;
+    min-height: 290px;
   }
 
   .columns {
     grid-template-columns: 1fr;
   }
 
-  .program-codes > div {
+  .program-codes {
     grid-template-columns: 1fr;
-    gap: 0.3rem;
+    gap: 0.2rem;
   }
 
+  .program-codes dd {
+    margin-bottom: 0.65rem;
+    text-align: left;
+  }
 }
 
 
 /* ==========================================================
-   18 / SHORT MOBILE AND TABLET LANDSCAPE
+   17. DESKTOP NAVIGATION
+   Explicitly restore horizontal links above 800px
    ========================================================== */
 
-@media (max-width: 800px) and (max-height: 650px) {
+@media (min-width: 801px) {
 
-  .cover {
-    padding-top:
-      max(14px, env(safe-area-inset-top, 0px));
-
-    padding-bottom:
-      calc(18px + var(--safe-bottom));
+  .nav {
+    justify-content: flex-end;
+    align-items: center;
   }
 
-  .cover h1 {
-    font-size: clamp(2.3rem, 8vh, 4rem);
-    margin-top: 0.18em;
+  .nav-toggle {
+    display: none;
   }
 
-  .cover .logo-lockup {
-    font-size: 0.65rem;
+  .nav nav.nav-menu {
+    display: flex;
+
+    position: static;
+
+    flex-direction: row;
+    align-items: center;
+    gap: 22px;
+
+    width: auto;
+    padding: 0;
+
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
-  .cover-bottom {
-    padding-top: 10px;
-    padding-bottom: 2px;
+  .nav nav.nav-menu a {
+    padding: 0;
   }
-
-  .cover-bottom p {
-    font-size: clamp(1rem, 4vh, 1.5rem);
-  }
-
-  .cover-bottom div {
-    font-size: 0.8rem;
-  }
-
 }
 
 
 /* ==========================================================
-   19 / REDUCED MOTION
+   18. REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1371,8 +1137,7 @@ img {
     scroll-snap-type: none;
   }
 
-  .globe-tooltip {
+  .nav-toggle span {
     transition: none;
   }
-
 }
